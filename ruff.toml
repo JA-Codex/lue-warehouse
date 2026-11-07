@@ -1,0 +1,7 @@
+# Linting for our own Python (etl/ and scripts/). The frozen Phase 1 pack under docs/ is never linted or edited.
+line-length = 100
+target-version = "py311"
+extend-exclude = ["docs", "data", "powerbi", "presentation"]
+
+[lint]
+select = ["E", "F", "W", "I"]

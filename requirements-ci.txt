@@ -1,0 +1,3 @@
+# Tools used only by the CI workflow and `make test`. Project dependencies go in requirements.txt (US-0.4).
+ruff>=0.5
+pglast>=6
