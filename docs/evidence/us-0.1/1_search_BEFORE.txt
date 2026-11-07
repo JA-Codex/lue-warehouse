@@ -1,0 +1,20 @@
+== STRICT (plan regex), UNQUALIFIED forms: must be zero after; loose = concept words for review ==
+sql/physical_model.sql                                  strict=178 unqualified= 4 loose=  0
+diagrams/mermaid/06_architecture.mmd                    strict=  2 unqualified= 1 loose=  5
+tools/build_pdfs.py                                     strict=  5 unqualified= 6 loose= 15
+tools/build_plain.py                                    strict=  3 unqualified= 0 loose=  7
+tools/build_schema_pdf.py                               strict=  0 unqualified= 0 loose=  2
+tools/build_xlsx.py                                     strict=  0 unqualified= 0 loose=  2
+tools/ddl.py                                            strict=  5 unqualified= 4 loose=  0
+tools/diagrams.py                                       strict=  2 unqualified= 1 loose=  5
+tools/model.py                                          strict=  7 unqualified= 0 loose= 10
+tools/sql_examples.py                                   strict= 28 unqualified= 0 loose=  0
+01_Project_Proposal.pdf                                 strict=  3 unqualified= 0 loose= 14
+02_Business_Requirements_Document.pdf                   strict=  2 unqualified= 0 loose=  1
+03_Business_Questions.pdf                               strict= 19 unqualified= 0 loose=  1
+05_Grain_Definition.pdf                                 strict=  9 unqualified= 0 loose=  1
+06_Schema_Diagrams.pdf                                  strict=  2 unqualified= 1 loose=  6
+07_Data_Dictionary.xlsx                                 strict=  3 unqualified= 0 loose= 17
+TOTAL strict=268 unqualified=17 loose(concept words)=86
+src_pms mentions=48  lue_source mentions=0
+Dictionary Tables!Schema values: ['audit', 'dw']

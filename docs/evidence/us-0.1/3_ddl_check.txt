@@ -1,0 +1,11 @@
+US-0.1 DDL check: sql/physical_model.sql (version 2.1) loaded with psql -v ON_ERROR_STOP=1
+into an empty database lue_warehouse on PostgreSQL 16.15. Load completed with no errors.
+
+Schemas created ..................... lue_audit, lue_dw   (no dw, audit, bronze, silver, gold)
+Dimensions in lue_dw ................ 13
+Facts in lue_dw ..................... 6
+Audit tables in lue_audit ........... 4
+Monthly partitions (occupancy) ...... 48
+Foreign keys in lue_dw (excl. copies on partitions) ... 41
+Tables outside lue_* schemas ........ 0
+Special members in dim_date (key<0) . 2

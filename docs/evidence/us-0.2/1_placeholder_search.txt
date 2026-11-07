@@ -1,0 +1,20 @@
+== Placeholder search (bracketed prompts, TODO/TBD/FIXME, lorem, ???) ==
+01_Project_Proposal.pdf (text+metadata)            hits=0
+    cover has 4 names + 4 roll numbers: True;  Author metadata has 4 roll numbers: True
+02_Business_Requirements_Document.pdf (text+metadata) hits=0
+    cover has 4 names + 4 roll numbers: True;  Author metadata has 4 roll numbers: True
+03_Business_Questions.pdf (text+metadata)          hits=0
+    cover has 4 names + 4 roll numbers: True;  Author metadata has 4 roll numbers: True
+04_Fact_Dimension_Identification.pdf (text+metadata) hits=0
+    cover has 4 names + 4 roll numbers: True;  Author metadata has 4 roll numbers: True
+05_Grain_Definition.pdf (text+metadata)            hits=0
+    cover has 4 names + 4 roll numbers: True;  Author metadata has 4 roll numbers: True
+06_Schema_Diagrams.pdf (text+metadata)             hits=0
+    cover has 4 names + 4 roll numbers: True;  Author metadata has 4 roll numbers: True
+07_Data_Dictionary.xlsx (all cells)                hits=0
+    dictionary README sheet lists 4 roll numbers: True
+README.md                                          hits=0
+tools/model.py                                     hits=0
+plan (LUE_Development_Plan_v1.1.md)                hits=0
+plan still contains 'Esha' as a name: False
+RESULT: PASS (0 placeholders, authors present everywhere)

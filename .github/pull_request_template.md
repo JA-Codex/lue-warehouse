@@ -16,13 +16,14 @@
 
 ## Definition of Done (plan A10)
 
-- [ ] Code is merged to `main` through a reviewed pull request and `make rebuild` still passes.
+- [ ] Code is merged to `main` through a pull request with `ci` passing, and `make rebuild` still passes.
 - [ ] Acceptance criteria are met and the stated evidence is captured and stored under `docs/` or `powerbi/`.
 - [ ] Tests for the story exist and pass (grain, integrity or reconciliation as applicable).
 - [ ] Names and grain sentences match the Phase 1 pack.
 - [ ] The audit log shows the step ran with row counts.
 - [ ] The README or story note records any deviation from the brief or the pack.
+- [ ] The story log is updated: `docs/stories/US-x.y.md` and the status row in `docs/stories/README.md`.
 
 ## Review
 
-Reviewer (rotation: Junaid reviews Hanan, Hanan reviews Ahmad Waqar, Ahmad Waqar reviews Eesha, Eesha reviews Junaid):
+Reviewer (optional):
