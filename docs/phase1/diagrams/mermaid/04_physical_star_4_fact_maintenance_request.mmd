@@ -1,0 +1,152 @@
+---
+title: "Physical star 4 - fact_maintenance_request (Accumulating snapshot). Grain: One row represents one maintenance request across its whole lifecycle, updated as it is assigned, resolved and verified."
+---
+erDiagram
+    dim_date ||--o{ fact_maintenance_request : raised_date
+    dim_date ||--o{ fact_maintenance_request : assigned_date
+    dim_date ||--o{ fact_maintenance_request : resolved_date
+    dim_date ||--o{ fact_maintenance_request : verified_date
+    dim_unit ||--o{ fact_maintenance_request : unit
+    dim_tenant ||--o{ fact_maintenance_request : tenant
+    dim_owner ||--o{ fact_maintenance_request : owner
+    dim_maintenance_category ||--o{ fact_maintenance_request : maint_category
+    dim_vendor ||--o{ fact_maintenance_request : vendor
+    dim_request_flags ||--o{ fact_maintenance_request : request_flags
+    dim_weather ||--o{ fact_maintenance_request : weather
+    fact_maintenance_request {
+        BIGINT request_sk PK "NOT NULL"
+        INT raised_date_key FK "NOT NULL; FK to dim_date"
+        INT assigned_date_key FK "NOT NULL; FK to dim_date"
+        INT resolved_date_key FK "NOT NULL; FK to dim_date"
+        INT verified_date_key FK "NOT NULL; FK to dim_date"
+        INT unit_key FK "NOT NULL; FK to dim_unit"
+        INT tenant_key FK "NOT NULL; FK to dim_tenant"
+        INT owner_key FK "NOT NULL; FK to dim_owner"
+        INT maint_category_key FK "NOT NULL; FK to dim_maintenance_category"
+        INT vendor_key FK "NOT NULL; FK to dim_vendor"
+        INT request_flags_key FK "NOT NULL; FK to dim_request_flags"
+        INT weather_key FK "NOT NULL; FK to dim_weather"
+        VARCHAR(14) request_number "NOT NULL"
+        VARCHAR(12) request_status "NOT NULL"
+        NUMERIC(6,2) days_to_assign "NULL"
+        NUMERIC(6,2) days_to_resolve "NULL"
+        NUMERIC(6,2) days_to_verify "NULL"
+        NUMERIC(12,2) estimated_cost "NULL"
+        NUMERIC(12,2) actual_cost "NULL"
+        SMALLINT sla_breached_flag "NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_date {
+        INT date_key PK "NOT NULL"
+        DATE full_date "NOT NULL"
+        SMALLINT day_of_month "NOT NULL"
+        VARCHAR(10) day_name "NOT NULL"
+        BOOLEAN is_weekend "NOT NULL"
+        SMALLINT week_of_year "NOT NULL"
+        SMALLINT month_no "NOT NULL"
+        VARCHAR(10) month_name "NOT NULL"
+        SMALLINT quarter_no "NOT NULL"
+        SMALLINT year_no "NOT NULL"
+        SMALLINT fiscal_month_no "NOT NULL"
+        SMALLINT fiscal_quarter_no "NOT NULL"
+        VARCHAR(9) fiscal_year_label "NOT NULL"
+        BOOLEAN is_public_holiday "NOT NULL"
+        VARCHAR(60) holiday_name "NULL"
+        BOOLEAN is_ramadan "NOT NULL"
+    }
+    dim_unit {
+        INT unit_key PK "NOT NULL"
+        VARCHAR(20) unit_nk "NOT NULL"
+        VARCHAR(8) building_code "NOT NULL"
+        VARCHAR(10) unit_no "NOT NULL"
+        VARCHAR(20) unit_type "NOT NULL"
+        SMALLINT bedrooms "NOT NULL"
+        NUMERIC(8,1) area_sqft "NOT NULL"
+        BOOLEAN furnished_flag "NOT NULL"
+        SMALLINT floor_no "NOT NULL"
+        VARCHAR(80) building_name "NOT NULL"
+        CHAR(1) building_class "NOT NULL"
+        VARCHAR(12) building_age_band "NOT NULL"
+        VARCHAR(40) locality "NOT NULL"
+        VARCHAR(30) city "NOT NULL"
+        VARCHAR(30) region "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_tenant {
+        INT tenant_key PK "NOT NULL"
+        VARCHAR(12) tenant_code "NOT NULL"
+        VARCHAR(100) tenant_name "NOT NULL"
+        VARCHAR(12) tenant_type "NOT NULL"
+        VARCHAR(30) employer_sector "NOT NULL"
+        VARCHAR(12) contact_channel "NOT NULL"
+        BOOLEAN is_inferred "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_owner {
+        INT owner_key PK "NOT NULL"
+        VARCHAR(10) owner_code "NOT NULL"
+        VARCHAR(100) owner_name "NOT NULL"
+        VARCHAR(12) owner_type "NOT NULL"
+        VARCHAR(10) portfolio_size_band "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_maintenance_category {
+        INT maint_category_key PK "NOT NULL"
+        VARCHAR(10) subcategory_code "NOT NULL"
+        VARCHAR(40) subcategory_name "NOT NULL"
+        VARCHAR(30) category_name "NOT NULL"
+        SMALLINT default_sla_hours "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_vendor {
+        INT vendor_key PK "NOT NULL"
+        VARCHAR(10) vendor_code "NOT NULL"
+        VARCHAR(80) vendor_name "NOT NULL"
+        VARCHAR(30) trade "NOT NULL"
+        CHAR(1) rating_band "NOT NULL"
+        VARCHAR(20) phone "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_request_flags {
+        INT request_flags_key PK "NOT NULL"
+        BOOLEAN is_emergency "NOT NULL"
+        BOOLEAN is_recurring "NOT NULL"
+        BOOLEAN is_tenant_caused "NOT NULL"
+        VARCHAR(60) flags_label "NOT NULL"
+    }
+    dim_weather {
+        INT weather_key PK "NOT NULL"
+        VARCHAR(30) city "NOT NULL"
+        DATE weather_date "NOT NULL"
+        NUMERIC(6,1) rainfall_mm "NOT NULL"
+        VARCHAR(8) rain_band "NOT NULL"
+        NUMERIC(4,1) max_temp_c "NOT NULL"
+        VARCHAR(8) heat_band "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }

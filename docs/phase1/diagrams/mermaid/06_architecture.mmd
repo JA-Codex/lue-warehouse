@@ -1,0 +1,109 @@
+---
+title: LUE end-to-end architecture - mapped to the 11 sections of the reference diagram
+---
+flowchart TB
+    subgraph S1[1. Source systems]
+        direction LR
+        SRC1[(S1 PropertyHub<br/>PostgreSQL src_pms)]
+        SRC2[S2 Owner, vendor, SLA,<br/>holiday registers - Excel]
+        SRC3[S3 Bank and wallet<br/>settlements - CSV]
+        SRC4[S4 Tenant app<br/>tickets - JSON]
+        SRC5[S5 Weather<br/>Open-Meteo REST API]
+        SRC6[S6 Incentive log<br/>leasing CSV]
+    end
+
+    subgraph S2[2. Pipeline orchestration - run_pipeline.py]
+        direction LR
+        O1[Ingest] --> O2[Validate] --> O3[Transform] --> O4[Load dims] --> O5[Load facts] --> O6[Build marts] --> O7[Test and reconcile] --> O8[Log run]
+    end
+
+    subgraph S3["3. Bronze - raw landing (lue_staging.brz_*)"]
+        direction LR
+        B1[lue_staging.brz_* as-is copies] --> B2[+ batch_id, source_system, loaded_at]
+    end
+
+    subgraph S4[4. Data quality and validation]
+        direction LR
+        Q1[NULL] --> Q2[Data type] --> Q3[Duplicate] --> Q4[Business rule] --> Q5[Referential] --> Q6[Range]
+    end
+
+    subgraph REJ[4b. Reject / quarantine - lue_audit.quarantine]
+        direction LR
+        R1[Rejected row as JSON] --> R2[Check and reason] --> R3[Source + batch_id] --> R4[Rejected at]
+    end
+
+    subgraph S5["5. Silver - cleaned and standardised (lue_staging.stg_*)"]
+        direction LR
+        V1[Cleaning] --> V2[Standardisation<br/>casing, dates, unit codes] --> V3[Deduplication] --> V4[Business transformations<br/>allocations, days past due] --> V5[Incremental load<br/>watermark per source]
+    end
+
+    subgraph SCD[SCD processing - dimensions.sql]
+        direction LR
+        C1{Detect change} -->|Type 1| C2[Overwrite in place]
+        C1 -->|Type 2| C3[Expire current row,<br/>insert new version]
+        C1 -->|Missing member| C4[Inferred member,<br/>deferred update]
+    end
+
+    subgraph S6[6. Dimensional data warehouse - schema lue_dw]
+        direction LR
+        subgraph DIMS[13 conformed dimensions]
+            direction TB
+            D1[dim_date - role-playing]
+            D2[dim_unit SCD2 - dim_tenant SCD2]
+            D3[dim_lease - dim_owner - dim_vendor SCD2]
+            D4[dim_payment_method - dim_charge_type]
+            D5[dim_maintenance_category SCD2 - dim_weather]
+            D6[dim_lease_event_type - dim_request_flags junk - dim_incentive]
+        end
+        subgraph FACTS[6 fact tables]
+            direction TB
+            F1[fact_rent_invoice_line - transaction]
+            F2[fact_payment - transaction]
+            F3[fact_unit_occupancy_daily - periodic snapshot]
+            F4[fact_maintenance_request - accumulating snapshot]
+            F5[fact_lease_event - factless event]
+            F6[fact_vacancy_incentive_coverage - factless coverage]
+        end
+        DIMS --> FACTS
+    end
+
+    subgraph S7[7. Warehouse performance]
+        direction LR
+        P1[Monthly partitions] --> P2[FK and composite indexes] --> P3[EXPLAIN ANALYZE before and after] --> P4[Performance comparison]
+    end
+
+    subgraph S8["8. Gold - data marts and materialized views (lue_reporting)"]
+        direction LR
+        G1[mart_collections_monthly]
+        G2[mart_occupancy_monthly]
+        G3[mart_maintenance_monthly]
+        G4[mart_owner_portfolio_monthly]
+    end
+
+    subgraph S9[9. Analytics and BI]
+        direction LR
+        A1[Analytical SQL] --> A2[ROLLUP / CUBE / GROUPING] --> A3[Window functions] --> A4[Power BI - 5 pages] --> A5[Business decisions]
+    end
+
+    subgraph S10[10. Audit, monitoring and reconciliation]
+        direction LR
+        M1[etl_run_log] --> M2[Rows read] --> M3[Inserted / updated] --> M4[Rejected] --> M5[Source vs DW reconciliation] --> M6[Pipeline status]
+    end
+
+    subgraph S11[11. Metadata and data lineage]
+        direction LR
+        L1[Source] --> L2[Bronze] --> L3[Silver] --> L4[DW] --> L5[Gold] --> L6[Power BI]
+    end
+
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 -->|Valid| S5
+    S4 -.->|Invalid| REJ
+    S5 --> SCD
+    SCD --> S6
+    S6 -.-> S7
+    S6 --> S8
+    S8 --> S9
+    S6 -.-> S10
+    S9 -.-> S11

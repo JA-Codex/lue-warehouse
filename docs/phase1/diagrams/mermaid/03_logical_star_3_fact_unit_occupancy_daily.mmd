@@ -1,0 +1,87 @@
+---
+title: "Logical star 3 - fact_unit_occupancy_daily (Periodic snapshot). Grain: One row represents one unit at the end of one calendar day, whether occupied or vacant."
+---
+erDiagram
+    dim_date ||--o{ fact_unit_occupancy_daily : snapshot_date
+    dim_unit ||--o{ fact_unit_occupancy_daily : unit
+    dim_tenant ||--o{ fact_unit_occupancy_daily : tenant
+    dim_lease ||--o{ fact_unit_occupancy_daily : lease
+    dim_owner ||--o{ fact_unit_occupancy_daily : owner
+    fact_unit_occupancy_daily {
+        SK snapshot_date_key PK,FK "FK to dim_date"
+        SK unit_key PK,FK "FK to dim_unit"
+        SK tenant_key FK "FK to dim_tenant"
+        SK lease_key FK "FK to dim_lease"
+        SK owner_key FK "FK to dim_owner"
+        integer is_occupied "measure: Semi-additive"
+        money contract_rent "measure: Semi-additive"
+        money current_lease_arrears "measure: Semi-additive"
+    }
+    dim_date {
+        SK date_key PK
+        date full_date "hierarchy Day level (calendar and fiscal)"
+        integer day_of_month
+        text day_name
+        flag is_weekend
+        integer week_of_year
+        integer month_no
+        text month_name "hierarchy Calendar L2 Month"
+        integer quarter_no "hierarchy Calendar L3 Quarter"
+        integer year_no "hierarchy Calendar L4 Year"
+        integer fiscal_month_no "hierarchy Fiscal L2 Month"
+        integer fiscal_quarter_no "hierarchy Fiscal L3 Quarter"
+        text fiscal_year_label "hierarchy Fiscal L4 Year (Jul-Jun)"
+        flag is_public_holiday
+        text holiday_name
+        flag is_ramadan
+    }
+    dim_unit {
+        SK unit_key PK
+        text unit_nk "hierarchy Location L1 Unit"
+        text building_code
+        text unit_no
+        text unit_type "SCD2"
+        integer bedrooms
+        decimal area_sqft
+        flag furnished_flag "SCD2"
+        integer floor_no "hierarchy Location L2 Floor"
+        text building_name "hierarchy Location L3 Building"
+        text building_class
+        text building_age_band
+        text locality "hierarchy Location L4 Locality"
+        text city "hierarchy Location L5 City"
+        text region "hierarchy Location L6 Region"
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_tenant {
+        SK tenant_key PK
+        text tenant_code
+        text tenant_name "hierarchy L1 Tenant"
+        text tenant_type "hierarchy L2 Tenant type; SCD2"
+        text employer_sector "SCD2"
+        text contact_channel
+        flag is_inferred
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_lease {
+        SK lease_key PK
+        text lease_number
+        text lease_type
+        date start_date
+        date end_date
+        integer term_months
+        money original_monthly_rent
+        text rent_review_type
+        text previous_lease_number
+    }
+    dim_owner {
+        SK owner_key PK
+        text owner_code
+        text owner_name "hierarchy L1 Owner"
+        text owner_type "hierarchy L2 Owner type"
+        text portfolio_size_band
+    }

@@ -1,0 +1,131 @@
+---
+title: "Logical star 4 - fact_maintenance_request (Accumulating snapshot). Grain: One row represents one maintenance request across its whole lifecycle, updated as it is assigned, resolved and verified."
+---
+erDiagram
+    dim_date ||--o{ fact_maintenance_request : raised_date
+    dim_date ||--o{ fact_maintenance_request : assigned_date
+    dim_date ||--o{ fact_maintenance_request : resolved_date
+    dim_date ||--o{ fact_maintenance_request : verified_date
+    dim_unit ||--o{ fact_maintenance_request : unit
+    dim_tenant ||--o{ fact_maintenance_request : tenant
+    dim_owner ||--o{ fact_maintenance_request : owner
+    dim_maintenance_category ||--o{ fact_maintenance_request : maint_category
+    dim_vendor ||--o{ fact_maintenance_request : vendor
+    dim_request_flags ||--o{ fact_maintenance_request : request_flags
+    dim_weather ||--o{ fact_maintenance_request : weather
+    fact_maintenance_request {
+        SK request_sk PK
+        SK raised_date_key FK "FK to dim_date"
+        SK assigned_date_key FK "FK to dim_date"
+        SK resolved_date_key FK "FK to dim_date"
+        SK verified_date_key FK "FK to dim_date"
+        SK unit_key FK "FK to dim_unit"
+        SK tenant_key FK "FK to dim_tenant"
+        SK owner_key FK "FK to dim_owner"
+        SK maint_category_key FK "FK to dim_maintenance_category"
+        SK vendor_key FK "FK to dim_vendor"
+        SK request_flags_key FK "FK to dim_request_flags"
+        SK weather_key FK "FK to dim_weather"
+        text request_number "degenerate dimension"
+        text request_status
+        decimal days_to_assign "measure: Non-additive"
+        decimal days_to_resolve "measure: Non-additive"
+        decimal days_to_verify "measure: Non-additive"
+        money estimated_cost "measure: Additive"
+        money actual_cost "measure: Additive"
+        integer sla_breached_flag "measure: Additive count"
+    }
+    dim_date {
+        SK date_key PK
+        date full_date "hierarchy Day level (calendar and fiscal)"
+        integer day_of_month
+        text day_name
+        flag is_weekend
+        integer week_of_year
+        integer month_no
+        text month_name "hierarchy Calendar L2 Month"
+        integer quarter_no "hierarchy Calendar L3 Quarter"
+        integer year_no "hierarchy Calendar L4 Year"
+        integer fiscal_month_no "hierarchy Fiscal L2 Month"
+        integer fiscal_quarter_no "hierarchy Fiscal L3 Quarter"
+        text fiscal_year_label "hierarchy Fiscal L4 Year (Jul-Jun)"
+        flag is_public_holiday
+        text holiday_name
+        flag is_ramadan
+    }
+    dim_unit {
+        SK unit_key PK
+        text unit_nk "hierarchy Location L1 Unit"
+        text building_code
+        text unit_no
+        text unit_type "SCD2"
+        integer bedrooms
+        decimal area_sqft
+        flag furnished_flag "SCD2"
+        integer floor_no "hierarchy Location L2 Floor"
+        text building_name "hierarchy Location L3 Building"
+        text building_class
+        text building_age_band
+        text locality "hierarchy Location L4 Locality"
+        text city "hierarchy Location L5 City"
+        text region "hierarchy Location L6 Region"
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_tenant {
+        SK tenant_key PK
+        text tenant_code
+        text tenant_name "hierarchy L1 Tenant"
+        text tenant_type "hierarchy L2 Tenant type; SCD2"
+        text employer_sector "SCD2"
+        text contact_channel
+        flag is_inferred
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_owner {
+        SK owner_key PK
+        text owner_code
+        text owner_name "hierarchy L1 Owner"
+        text owner_type "hierarchy L2 Owner type"
+        text portfolio_size_band
+    }
+    dim_maintenance_category {
+        SK maint_category_key PK
+        text subcategory_code
+        text subcategory_name "hierarchy L1 Subcategory"
+        text category_name "hierarchy L2 Category"
+        integer default_sla_hours "SCD2"
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_vendor {
+        SK vendor_key PK
+        text vendor_code
+        text vendor_name "hierarchy L1 Vendor"
+        text trade "hierarchy L2 Trade"
+        text rating_band "SCD2"
+        text phone
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_request_flags {
+        SK request_flags_key PK
+        flag is_emergency
+        flag is_recurring
+        flag is_tenant_caused
+        text flags_label
+    }
+    dim_weather {
+        SK weather_key PK
+        text city
+        date weather_date
+        decimal rainfall_mm
+        text rain_band
+        decimal max_temp_c
+        text heat_band
+    }

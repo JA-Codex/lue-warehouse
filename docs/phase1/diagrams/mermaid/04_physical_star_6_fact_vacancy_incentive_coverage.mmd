@@ -1,0 +1,79 @@
+---
+title: "Physical star 6 - fact_vacancy_incentive_coverage (Factless (coverage)). Grain: One row represents one incentive offer being available on one vacant unit on one calendar day."
+---
+erDiagram
+    dim_date ||--o{ fact_vacancy_incentive_coverage : coverage_date
+    dim_unit ||--o{ fact_vacancy_incentive_coverage : unit
+    dim_incentive ||--o{ fact_vacancy_incentive_coverage : incentive
+    dim_owner ||--o{ fact_vacancy_incentive_coverage : owner
+    fact_vacancy_incentive_coverage {
+        INT coverage_date_key PK,FK "NOT NULL; FK to dim_date"
+        INT unit_key PK,FK "NOT NULL; FK to dim_unit"
+        INT incentive_key PK,FK "NOT NULL; FK to dim_incentive"
+        INT owner_key FK "NOT NULL; FK to dim_owner"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_date {
+        INT date_key PK "NOT NULL"
+        DATE full_date "NOT NULL"
+        SMALLINT day_of_month "NOT NULL"
+        VARCHAR(10) day_name "NOT NULL"
+        BOOLEAN is_weekend "NOT NULL"
+        SMALLINT week_of_year "NOT NULL"
+        SMALLINT month_no "NOT NULL"
+        VARCHAR(10) month_name "NOT NULL"
+        SMALLINT quarter_no "NOT NULL"
+        SMALLINT year_no "NOT NULL"
+        SMALLINT fiscal_month_no "NOT NULL"
+        SMALLINT fiscal_quarter_no "NOT NULL"
+        VARCHAR(9) fiscal_year_label "NOT NULL"
+        BOOLEAN is_public_holiday "NOT NULL"
+        VARCHAR(60) holiday_name "NULL"
+        BOOLEAN is_ramadan "NOT NULL"
+    }
+    dim_unit {
+        INT unit_key PK "NOT NULL"
+        VARCHAR(20) unit_nk "NOT NULL"
+        VARCHAR(8) building_code "NOT NULL"
+        VARCHAR(10) unit_no "NOT NULL"
+        VARCHAR(20) unit_type "NOT NULL"
+        SMALLINT bedrooms "NOT NULL"
+        NUMERIC(8,1) area_sqft "NOT NULL"
+        BOOLEAN furnished_flag "NOT NULL"
+        SMALLINT floor_no "NOT NULL"
+        VARCHAR(80) building_name "NOT NULL"
+        CHAR(1) building_class "NOT NULL"
+        VARCHAR(12) building_age_band "NOT NULL"
+        VARCHAR(40) locality "NOT NULL"
+        VARCHAR(30) city "NOT NULL"
+        VARCHAR(30) region "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_incentive {
+        INT incentive_key PK "NOT NULL"
+        VARCHAR(10) incentive_code "NOT NULL"
+        VARCHAR(20) incentive_type "NOT NULL"
+        VARCHAR(80) incentive_description "NOT NULL"
+        NUMERIC(5,2) discount_pct "NOT NULL"
+        SMALLINT rent_free_days "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_owner {
+        INT owner_key PK "NOT NULL"
+        VARCHAR(10) owner_code "NOT NULL"
+        VARCHAR(100) owner_name "NOT NULL"
+        VARCHAR(12) owner_type "NOT NULL"
+        VARCHAR(10) portfolio_size_band "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }

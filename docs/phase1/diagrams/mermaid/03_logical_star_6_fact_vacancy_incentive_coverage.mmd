@@ -1,0 +1,67 @@
+---
+title: "Logical star 6 - fact_vacancy_incentive_coverage (Factless (coverage)). Grain: One row represents one incentive offer being available on one vacant unit on one calendar day."
+---
+erDiagram
+    dim_date ||--o{ fact_vacancy_incentive_coverage : coverage_date
+    dim_unit ||--o{ fact_vacancy_incentive_coverage : unit
+    dim_incentive ||--o{ fact_vacancy_incentive_coverage : incentive
+    dim_owner ||--o{ fact_vacancy_incentive_coverage : owner
+    fact_vacancy_incentive_coverage {
+        SK coverage_date_key PK,FK "FK to dim_date"
+        SK unit_key PK,FK "FK to dim_unit"
+        SK incentive_key PK,FK "FK to dim_incentive"
+        SK owner_key FK "FK to dim_owner"
+    }
+    dim_date {
+        SK date_key PK
+        date full_date "hierarchy Day level (calendar and fiscal)"
+        integer day_of_month
+        text day_name
+        flag is_weekend
+        integer week_of_year
+        integer month_no
+        text month_name "hierarchy Calendar L2 Month"
+        integer quarter_no "hierarchy Calendar L3 Quarter"
+        integer year_no "hierarchy Calendar L4 Year"
+        integer fiscal_month_no "hierarchy Fiscal L2 Month"
+        integer fiscal_quarter_no "hierarchy Fiscal L3 Quarter"
+        text fiscal_year_label "hierarchy Fiscal L4 Year (Jul-Jun)"
+        flag is_public_holiday
+        text holiday_name
+        flag is_ramadan
+    }
+    dim_unit {
+        SK unit_key PK
+        text unit_nk "hierarchy Location L1 Unit"
+        text building_code
+        text unit_no
+        text unit_type "SCD2"
+        integer bedrooms
+        decimal area_sqft
+        flag furnished_flag "SCD2"
+        integer floor_no "hierarchy Location L2 Floor"
+        text building_name "hierarchy Location L3 Building"
+        text building_class
+        text building_age_band
+        text locality "hierarchy Location L4 Locality"
+        text city "hierarchy Location L5 City"
+        text region "hierarchy Location L6 Region"
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_incentive {
+        SK incentive_key PK
+        text incentive_code
+        text incentive_type "hierarchy L2 Incentive type"
+        text incentive_description "hierarchy L1 Incentive"
+        decimal discount_pct
+        integer rent_free_days
+    }
+    dim_owner {
+        SK owner_key PK
+        text owner_code
+        text owner_name "hierarchy L1 Owner"
+        text owner_type "hierarchy L2 Owner type"
+        text portfolio_size_band
+    }

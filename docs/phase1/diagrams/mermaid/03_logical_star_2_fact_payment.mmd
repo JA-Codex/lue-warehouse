@@ -1,0 +1,111 @@
+---
+title: "Logical star 2 - fact_payment (Transaction). Grain: One row represents one portion of one payment receipt allocated to one invoice line."
+---
+erDiagram
+    dim_date ||--o{ fact_payment : paid_date
+    dim_date ||--o{ fact_payment : due_date
+    dim_unit ||--o{ fact_payment : unit
+    dim_tenant ||--o{ fact_payment : tenant
+    dim_lease ||--o{ fact_payment : lease
+    dim_owner ||--o{ fact_payment : owner
+    dim_payment_method ||--o{ fact_payment : payment_method
+    dim_charge_type ||--o{ fact_payment : charge_type
+    fact_payment {
+        SK payment_alloc_sk PK
+        SK paid_date_key FK "FK to dim_date"
+        SK due_date_key FK "FK to dim_date"
+        SK unit_key FK "FK to dim_unit"
+        SK tenant_key FK "FK to dim_tenant"
+        SK lease_key FK "FK to dim_lease"
+        SK owner_key FK "FK to dim_owner"
+        SK payment_method_key FK "FK to dim_payment_method"
+        SK charge_type_key FK "FK to dim_charge_type"
+        text payment_reference "degenerate dimension"
+        text invoice_number "degenerate dimension"
+        integer invoice_line_no "degenerate dimension"
+        money payment_amount "measure: Additive (signed)"
+        integer days_past_due "measure: Non-additive"
+        integer settlement_lag_days "measure: Non-additive"
+        flag is_reversal
+    }
+    dim_date {
+        SK date_key PK
+        date full_date "hierarchy Day level (calendar and fiscal)"
+        integer day_of_month
+        text day_name
+        flag is_weekend
+        integer week_of_year
+        integer month_no
+        text month_name "hierarchy Calendar L2 Month"
+        integer quarter_no "hierarchy Calendar L3 Quarter"
+        integer year_no "hierarchy Calendar L4 Year"
+        integer fiscal_month_no "hierarchy Fiscal L2 Month"
+        integer fiscal_quarter_no "hierarchy Fiscal L3 Quarter"
+        text fiscal_year_label "hierarchy Fiscal L4 Year (Jul-Jun)"
+        flag is_public_holiday
+        text holiday_name
+        flag is_ramadan
+    }
+    dim_unit {
+        SK unit_key PK
+        text unit_nk "hierarchy Location L1 Unit"
+        text building_code
+        text unit_no
+        text unit_type "SCD2"
+        integer bedrooms
+        decimal area_sqft
+        flag furnished_flag "SCD2"
+        integer floor_no "hierarchy Location L2 Floor"
+        text building_name "hierarchy Location L3 Building"
+        text building_class
+        text building_age_band
+        text locality "hierarchy Location L4 Locality"
+        text city "hierarchy Location L5 City"
+        text region "hierarchy Location L6 Region"
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_tenant {
+        SK tenant_key PK
+        text tenant_code
+        text tenant_name "hierarchy L1 Tenant"
+        text tenant_type "hierarchy L2 Tenant type; SCD2"
+        text employer_sector "SCD2"
+        text contact_channel
+        flag is_inferred
+        date effective_from
+        date effective_to
+        flag is_current
+    }
+    dim_lease {
+        SK lease_key PK
+        text lease_number
+        text lease_type
+        date start_date
+        date end_date
+        integer term_months
+        money original_monthly_rent
+        text rent_review_type
+        text previous_lease_number
+    }
+    dim_owner {
+        SK owner_key PK
+        text owner_code
+        text owner_name "hierarchy L1 Owner"
+        text owner_type "hierarchy L2 Owner type"
+        text portfolio_size_band
+    }
+    dim_payment_method {
+        SK payment_method_key PK
+        text method_code
+        text method_name "hierarchy L1 Method"
+        text channel_group "hierarchy L2 Channel group"
+        integer typical_settlement_days
+    }
+    dim_charge_type {
+        SK charge_type_key PK
+        text charge_code
+        text charge_type_name "hierarchy L1 Charge type"
+        text charge_category "hierarchy L2 Category"
+    }

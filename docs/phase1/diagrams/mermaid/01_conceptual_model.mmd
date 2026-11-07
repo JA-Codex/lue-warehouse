@@ -1,0 +1,21 @@
+---
+title: Conceptual model - LUE business entities and relationships (no attributes)
+---
+erDiagram
+    BUILDING ||--|{ UNIT : contains
+    OWNER ||--o{ OWNERSHIP_PERIOD : holds
+    UNIT ||--|{ OWNERSHIP_PERIOD : "owned during"
+    TENANT ||--o{ LEASE : signs
+    UNIT ||--o{ LEASE : "let under"
+    LEASE ||--o{ LEASE_EVENT : records
+    LEASE ||--o{ INVOICE_LINE : "billed by"
+    TENANT ||--o{ PAYMENT : makes
+    PAYMENT }|--|{ INVOICE_LINE : "allocated to"
+    PAYMENT_METHOD ||--o{ PAYMENT : "used by"
+    UNIT ||--o{ MAINTENANCE_REQUEST : raises
+    VENDOR ||--o{ MAINTENANCE_REQUEST : resolves
+    MAINTENANCE_CATEGORY ||--o{ MAINTENANCE_REQUEST : classifies
+    WEATHER_DAY ||--o{ MAINTENANCE_REQUEST : "conditions on"
+    INCENTIVE ||--o{ INCENTIVE_OFFER_DAY : "offered as"
+    UNIT ||--o{ INCENTIVE_OFFER_DAY : "receives while vacant"
+    UNIT ||--o{ OCCUPANCY_DAY : "is occupied or vacant on"

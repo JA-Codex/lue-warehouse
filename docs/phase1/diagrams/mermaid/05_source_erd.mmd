@@ -1,0 +1,103 @@
+---
+title: Source ERD - src_pms normalised operational schema (S1 PropertyHub)
+---
+erDiagram
+    buildings ||--o{ units : "contains"
+    units ||--o{ leases : "let under"
+    tenants ||--o{ leases : "signs"
+    leases |o--o| leases : "renews"
+    leases ||--o{ lease_events : "records"
+    leases ||--o{ invoices : "billed by"
+    invoices ||--|{ invoice_lines : "contains"
+    charge_types ||--o{ invoice_lines : "classifies"
+    tenants ||--o{ payments : "makes"
+    payment_methods ||--o{ payments : "used by"
+    payments ||--|{ payment_allocations : "split into"
+    invoice_lines ||--o{ payment_allocations : "settled by"
+    payments |o--o| payments : "reverses"
+    buildings {
+        VARCHAR(8) building_code PK
+        VARCHAR(80) building_name
+        VARCHAR(30) city
+        VARCHAR(40) locality
+        CHAR(1) building_class
+        SMALLINT year_built
+    }
+    units {
+        INT unit_id PK
+        VARCHAR(8) building_code FK
+        VARCHAR(10) unit_no
+        SMALLINT floor_no
+        VARCHAR(20) unit_type
+        NUMERIC(8,1) area_sqft
+        SMALLINT bedrooms
+        BOOLEAN furnished
+        TIMESTAMP updated_at
+    }
+    tenants {
+        VARCHAR(12) tenant_code PK
+        VARCHAR(100) full_name
+        VARCHAR(12) tenant_type
+        VARCHAR(30) employer_sector
+        VARCHAR(20) phone
+        VARCHAR(12) contact_channel
+        TIMESTAMP updated_at
+    }
+    leases {
+        VARCHAR(14) lease_number PK
+        INT unit_id FK
+        VARCHAR(12) tenant_code FK
+        VARCHAR(12) lease_type
+        DATE start_date
+        DATE end_date
+        NUMERIC(12,2) monthly_rent
+        VARCHAR(20) rent_review_type
+        VARCHAR(14) previous_lease_number FK
+        VARCHAR(12) status
+    }
+    lease_events {
+        INT event_id PK
+        VARCHAR(14) lease_number FK
+        VARCHAR(8) event_code
+        DATE event_date
+    }
+    invoices {
+        VARCHAR(16) invoice_number PK
+        VARCHAR(14) lease_number FK
+        DATE invoice_date
+        DATE due_date
+        VARCHAR(12) status
+    }
+    invoice_lines {
+        VARCHAR(16) invoice_number PK,FK
+        SMALLINT line_no PK
+        VARCHAR(8) charge_code FK
+        NUMERIC(12,2) billed_amount
+        NUMERIC(12,2) tax_amount
+        NUMERIC(12,2) discount_amount
+        NUMERIC(12,2) net_amount
+    }
+    charge_types {
+        VARCHAR(8) charge_code PK
+        VARCHAR(30) name
+        VARCHAR(12) category
+    }
+    payments {
+        VARCHAR(20) payment_reference PK
+        VARCHAR(12) tenant_code FK
+        TIMESTAMP paid_at
+        VARCHAR(10) method_code FK
+        NUMERIC(12,2) amount
+        VARCHAR(10) status
+        VARCHAR(20) reversal_of FK
+    }
+    payment_allocations {
+        VARCHAR(20) payment_reference PK,FK
+        VARCHAR(16) invoice_number PK,FK
+        SMALLINT line_no PK,FK
+        NUMERIC(12,2) allocated_amount
+    }
+    payment_methods {
+        VARCHAR(10) method_code PK
+        VARCHAR(30) name
+    }

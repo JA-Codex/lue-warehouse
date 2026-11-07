@@ -1,0 +1,72 @@
+---
+title: Dimension hierarchies used for drill-down and roll-up
+---
+flowchart LR
+    subgraph H0["dim_date - Calendar"]
+        direction LR
+        H0L0["Day"]
+        H0L1["Month"]
+        H0L2["Quarter"]
+        H0L3["Year"]
+        H0L0 --> H0L1 --> H0L2 --> H0L3
+    end
+    subgraph H1["dim_date - Fiscal (July–June)"]
+        direction LR
+        H1L0["Day"]
+        H1L1["Fiscal month"]
+        H1L2["Fiscal quarter"]
+        H1L3["Fiscal year"]
+        H1L0 --> H1L1 --> H1L2 --> H1L3
+    end
+    subgraph H2["dim_unit - Location"]
+        direction LR
+        H2L0["Unit"]
+        H2L1["Floor"]
+        H2L2["Building"]
+        H2L3["Locality"]
+        H2L4["City"]
+        H2L5["Region"]
+        H2L0 --> H2L1 --> H2L2 --> H2L3 --> H2L4 --> H2L5
+    end
+    subgraph H3["dim_payment_method - Channel"]
+        direction LR
+        H3L0["Method"]
+        H3L1["Channel group"]
+        H3L0 --> H3L1
+    end
+    subgraph H4["dim_charge_type - Charge"]
+        direction LR
+        H4L0["Charge type"]
+        H4L1["Charge category"]
+        H4L0 --> H4L1
+    end
+    subgraph H5["dim_maintenance_category - Maintenance"]
+        direction LR
+        H5L0["Subcategory"]
+        H5L1["Category"]
+        H5L0 --> H5L1
+    end
+    subgraph H6["dim_vendor - Trade"]
+        direction LR
+        H6L0["Vendor"]
+        H6L1["Trade"]
+        H6L0 --> H6L1
+    end
+    subgraph H7["dim_tenant - Tenant type"]
+        direction LR
+        H7L0["Tenant"]
+        H7L1["Tenant type"]
+        H7L0 --> H7L1
+    end
+    subgraph H8["dim_owner - Owner type"]
+        direction LR
+        H8L0["Owner"]
+        H8L1["Owner type"]
+        H8L0 --> H8L1
+    end
+    subgraph H9["dim_incentive - Incentive"]
+        direction LR
+        H9L0["Incentive"]
+        H9L1["Incentive type"]
+        H9L0 --> H9L1
+    end

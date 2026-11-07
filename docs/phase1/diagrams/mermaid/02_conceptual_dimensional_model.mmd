@@ -1,0 +1,76 @@
+---
+title: Conceptual dimensional model - 5 business processes, 6 facts, 13 conformed dimensions
+---
+flowchart LR
+    P1["P1 Rent invoicing and payment"]
+    P2["P2 Unit occupancy"]
+    P3["P3 Maintenance"]
+    P4["P4 Lease lifecycle"]
+    P5["P5 Vacancy marketing"]
+    fact_rent_invoice_line(["fact_rent_invoice_line<br/><i>Transaction</i>"])
+    fact_payment(["fact_payment<br/><i>Transaction</i>"])
+    fact_unit_occupancy_daily(["fact_unit_occupancy_daily<br/><i>Periodic snapshot</i>"])
+    fact_maintenance_request(["fact_maintenance_request<br/><i>Accumulating snapshot</i>"])
+    fact_lease_event(["fact_lease_event<br/><i>Factless (event tracking)</i>"])
+    fact_vacancy_incentive_coverage(["fact_vacancy_incentive_coverage<br/><i>Factless (coverage)</i>"])
+    dim_date["dim_date"]
+    dim_unit["dim_unit"]
+    dim_tenant["dim_tenant"]
+    dim_lease["dim_lease"]
+    dim_owner["dim_owner"]
+    dim_payment_method["dim_payment_method"]
+    dim_charge_type["dim_charge_type"]
+    dim_maintenance_category["dim_maintenance_category"]
+    dim_vendor["dim_vendor"]
+    dim_lease_event_type["dim_lease_event_type"]
+    dim_request_flags["dim_request_flags"]
+    dim_incentive["dim_incentive"]
+    dim_weather["dim_weather"]
+    P1 --> fact_rent_invoice_line
+    P1 --> fact_payment
+    P2 --> fact_unit_occupancy_daily
+    P3 --> fact_maintenance_request
+    P4 --> fact_lease_event
+    P5 --> fact_vacancy_incentive_coverage
+    fact_rent_invoice_line --- dim_date
+    fact_rent_invoice_line --- dim_unit
+    fact_rent_invoice_line --- dim_tenant
+    fact_rent_invoice_line --- dim_lease
+    fact_rent_invoice_line --- dim_owner
+    fact_rent_invoice_line --- dim_charge_type
+    fact_payment --- dim_date
+    fact_payment --- dim_unit
+    fact_payment --- dim_tenant
+    fact_payment --- dim_lease
+    fact_payment --- dim_owner
+    fact_payment --- dim_payment_method
+    fact_payment --- dim_charge_type
+    fact_unit_occupancy_daily --- dim_date
+    fact_unit_occupancy_daily --- dim_unit
+    fact_unit_occupancy_daily --- dim_tenant
+    fact_unit_occupancy_daily --- dim_lease
+    fact_unit_occupancy_daily --- dim_owner
+    fact_maintenance_request --- dim_date
+    fact_maintenance_request --- dim_unit
+    fact_maintenance_request --- dim_tenant
+    fact_maintenance_request --- dim_owner
+    fact_maintenance_request --- dim_maintenance_category
+    fact_maintenance_request --- dim_vendor
+    fact_maintenance_request --- dim_request_flags
+    fact_maintenance_request --- dim_weather
+    fact_lease_event --- dim_date
+    fact_lease_event --- dim_unit
+    fact_lease_event --- dim_tenant
+    fact_lease_event --- dim_lease
+    fact_lease_event --- dim_owner
+    fact_lease_event --- dim_lease_event_type
+    fact_vacancy_incentive_coverage --- dim_date
+    fact_vacancy_incentive_coverage --- dim_unit
+    fact_vacancy_incentive_coverage --- dim_incentive
+    fact_vacancy_incentive_coverage --- dim_owner
+    classDef proc fill:#F4F4F4,stroke:#888
+    classDef fact fill:#E8F0FB,stroke:#2F5D9A,stroke-width:1.5px
+    classDef dim fill:#FFFFFF,stroke:#666
+    class P1,P2,P3,P4,P5 proc
+    class fact_rent_invoice_line,fact_payment,fact_unit_occupancy_daily,fact_maintenance_request,fact_lease_event,fact_vacancy_incentive_coverage fact
+    class dim_date,dim_unit,dim_tenant,dim_lease,dim_owner,dim_payment_method,dim_charge_type,dim_maintenance_category,dim_vendor,dim_lease_event_type,dim_request_flags,dim_incentive,dim_weather dim

@@ -1,0 +1,132 @@
+---
+title: "Physical star 2 - fact_payment (Transaction). Grain: One row represents one portion of one payment receipt allocated to one invoice line."
+---
+erDiagram
+    dim_date ||--o{ fact_payment : paid_date
+    dim_date ||--o{ fact_payment : due_date
+    dim_unit ||--o{ fact_payment : unit
+    dim_tenant ||--o{ fact_payment : tenant
+    dim_lease ||--o{ fact_payment : lease
+    dim_owner ||--o{ fact_payment : owner
+    dim_payment_method ||--o{ fact_payment : payment_method
+    dim_charge_type ||--o{ fact_payment : charge_type
+    fact_payment {
+        BIGINT payment_alloc_sk PK "NOT NULL"
+        INT paid_date_key FK "NOT NULL; FK to dim_date"
+        INT due_date_key FK "NOT NULL; FK to dim_date"
+        INT unit_key FK "NOT NULL; FK to dim_unit"
+        INT tenant_key FK "NOT NULL; FK to dim_tenant"
+        INT lease_key FK "NOT NULL; FK to dim_lease"
+        INT owner_key FK "NOT NULL; FK to dim_owner"
+        INT payment_method_key FK "NOT NULL; FK to dim_payment_method"
+        INT charge_type_key FK "NOT NULL; FK to dim_charge_type"
+        VARCHAR(20) payment_reference "NOT NULL"
+        VARCHAR(16) invoice_number "NOT NULL"
+        SMALLINT invoice_line_no "NOT NULL"
+        NUMERIC(12,2) payment_amount "NOT NULL"
+        SMALLINT days_past_due "NOT NULL"
+        SMALLINT settlement_lag_days "NULL"
+        BOOLEAN is_reversal "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_date {
+        INT date_key PK "NOT NULL"
+        DATE full_date "NOT NULL"
+        SMALLINT day_of_month "NOT NULL"
+        VARCHAR(10) day_name "NOT NULL"
+        BOOLEAN is_weekend "NOT NULL"
+        SMALLINT week_of_year "NOT NULL"
+        SMALLINT month_no "NOT NULL"
+        VARCHAR(10) month_name "NOT NULL"
+        SMALLINT quarter_no "NOT NULL"
+        SMALLINT year_no "NOT NULL"
+        SMALLINT fiscal_month_no "NOT NULL"
+        SMALLINT fiscal_quarter_no "NOT NULL"
+        VARCHAR(9) fiscal_year_label "NOT NULL"
+        BOOLEAN is_public_holiday "NOT NULL"
+        VARCHAR(60) holiday_name "NULL"
+        BOOLEAN is_ramadan "NOT NULL"
+    }
+    dim_unit {
+        INT unit_key PK "NOT NULL"
+        VARCHAR(20) unit_nk "NOT NULL"
+        VARCHAR(8) building_code "NOT NULL"
+        VARCHAR(10) unit_no "NOT NULL"
+        VARCHAR(20) unit_type "NOT NULL"
+        SMALLINT bedrooms "NOT NULL"
+        NUMERIC(8,1) area_sqft "NOT NULL"
+        BOOLEAN furnished_flag "NOT NULL"
+        SMALLINT floor_no "NOT NULL"
+        VARCHAR(80) building_name "NOT NULL"
+        CHAR(1) building_class "NOT NULL"
+        VARCHAR(12) building_age_band "NOT NULL"
+        VARCHAR(40) locality "NOT NULL"
+        VARCHAR(30) city "NOT NULL"
+        VARCHAR(30) region "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_tenant {
+        INT tenant_key PK "NOT NULL"
+        VARCHAR(12) tenant_code "NOT NULL"
+        VARCHAR(100) tenant_name "NOT NULL"
+        VARCHAR(12) tenant_type "NOT NULL"
+        VARCHAR(30) employer_sector "NOT NULL"
+        VARCHAR(12) contact_channel "NOT NULL"
+        BOOLEAN is_inferred "NOT NULL"
+        DATE effective_from "NOT NULL"
+        DATE effective_to "NOT NULL"
+        BOOLEAN is_current "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_lease {
+        INT lease_key PK "NOT NULL"
+        VARCHAR(14) lease_number "NOT NULL"
+        VARCHAR(12) lease_type "NOT NULL"
+        DATE start_date "NOT NULL"
+        DATE end_date "NOT NULL"
+        SMALLINT term_months "NOT NULL"
+        NUMERIC(12,2) original_monthly_rent "NOT NULL"
+        VARCHAR(20) rent_review_type "NOT NULL"
+        VARCHAR(14) previous_lease_number "NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_owner {
+        INT owner_key PK "NOT NULL"
+        VARCHAR(10) owner_code "NOT NULL"
+        VARCHAR(100) owner_name "NOT NULL"
+        VARCHAR(12) owner_type "NOT NULL"
+        VARCHAR(10) portfolio_size_band "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_payment_method {
+        INT payment_method_key PK "NOT NULL"
+        VARCHAR(10) method_code "NOT NULL"
+        VARCHAR(30) method_name "NOT NULL"
+        VARCHAR(20) channel_group "NOT NULL"
+        SMALLINT typical_settlement_days "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }
+    dim_charge_type {
+        INT charge_type_key PK "NOT NULL"
+        VARCHAR(8) charge_code "NOT NULL"
+        VARCHAR(30) charge_type_name "NOT NULL"
+        VARCHAR(12) charge_category "NOT NULL"
+        VARCHAR(20) source_system "NOT NULL"
+        BIGINT batch_id "NOT NULL"
+        TIMESTAMP loaded_at "NOT NULL"
+    }

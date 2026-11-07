@@ -1,0 +1,15 @@
+Run these once the repository exists (US-0.3). Paths assume the repo root.
+
+# 1. Put the frozen pack in the repo and verify it against the manifest
+mkdir -p docs && cp -r <path-to-extracted-tar>/docs/phase1 docs/
+(cd docs/phase1 && sha256sum -c MANIFEST.sha256)      # every line must say OK
+
+# 2. Commit and tag
+git add docs/phase1
+git commit -m "Freeze Phase 1 baseline v2.1 (US-0.2)"
+git tag -a phase1-v2.1-final -m "Phase 1 pack v2.1, frozen"
+git push origin main --tags
+
+# 3. Acceptance check: docs/phase1 matches the submitted files
+git show phase1-v2.1-final:docs/phase1/MANIFEST.sha256 | head -3
+git ls-tree -r --name-only phase1-v2.1-final docs/phase1 | wc -l    # expect 55 files (54 pack files + MANIFEST.sha256)
