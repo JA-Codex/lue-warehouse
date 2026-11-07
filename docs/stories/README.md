@@ -9,8 +9,8 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 |---|---|---|---|---|---|---|
 | US-0.1 | Align the Phase 1 pack with the briefs | Hanan | Done | 2026-11-06 | [US-0.1](US-0.1.md) | [evidence](../evidence/us-0.1/) |
 | US-0.2 | Complete and freeze the Phase 1 baseline | Whole team | Done | 2026-11-07 | [US-0.2](US-0.2.md) | [evidence](../evidence/us-0.2/) |
-| US-0.3 | Create the repository, branching and quality gates | Junaid | In progress | | [US-0.3](US-0.3.md) | [evidence](../evidence/us-0.3/) |
-| US-0.4 | Provide a reproducible local environment | Eesha | Not started | | | |
+| US-0.3 | Create the repository, branching and quality gates | Junaid | Done | 2026-11-07 | [US-0.3](US-0.3.md) | [evidence](../evidence/us-0.3/) |
+| US-0.4 | Provide a reproducible local environment | Eesha | Done | 2026-11-07 | [US-0.4](US-0.4.md) | [evidence](../evidence/us-0.4/) |
 
 ## Later epics
 
