@@ -77,3 +77,5 @@ The warehouse database is `lue_warehouse`.
 
 `docs/phase1/` matches `MANIFEST.sha256`, and CI fails if any file there changes. A design change needs a dated row in
 the change log in `docs/phase1/README.md`, a regeneration with `docs/phase1/tools/`, and a new manifest and tag.
+
+Branch rules verified with a test pull request (US-0.3).
