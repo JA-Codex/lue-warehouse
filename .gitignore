@@ -1,0 +1,34 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Credentials and local settings (keep .env.example)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+secrets/
+credentials*.json
+
+# Generated data (everything except the weather cache, decision D12, and the folder placeholder)
+data/*
+!data/.gitkeep
+!data/weather_cache.json
+
+# Database dumps and backups
+*.dump
+*.backup
+*.bak
+
+# Editors and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
