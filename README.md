@@ -18,6 +18,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 
 ```
 docs/phase1/      frozen Phase 1 pack (do not edit; see Change control)
+docs/plan/        the development plan for Phases 2 and 3
+docs/stories/     story log: what was done in each user story (start at docs/stories/README.md)
 docs/contracts/   generated table and key contracts, refreshed weekly
 docs/reports/     generated PDFs: cleaning, data quality, indexing, insights
 docs/evidence/    screenshots and outputs that prove each story (one folder per story)
@@ -50,11 +52,11 @@ or use Git Bash with `make` installed.
 
 ## How we work
 
-- `main` is always runnable. Nobody pushes to it: every change is a pull request with one approval and a
-  passing `ci` check.
+- `main` is always runnable. Nobody pushes to it: every change is a pull request, and the `ci` check must pass
+  before it can merge. A teammate review is optional and not enforced by the ruleset.
 - Branch names are `epic-story`, for example `e6-6.2-tenant-scd2`.
-- Review rotation: Junaid reviews Hanan, Hanan reviews Ahmad Waqar, Ahmad Waqar reviews Eesha,
-  Eesha reviews Junaid.
+- Reviews are optional. If one is wanted, the rotation is: Junaid reviews Hanan, Hanan reviews Ahmad Waqar,
+  Ahmad Waqar reviews Eesha, Eesha reviews Junaid.
 - The pull request template carries the Definition of Done. Evidence goes under `docs/evidence/<story>/`.
 - Never commit credentials. `.env` is ignored; only `.env.example` is committed.
 
