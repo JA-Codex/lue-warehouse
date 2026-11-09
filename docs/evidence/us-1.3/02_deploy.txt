@@ -1,0 +1,8 @@
+======================================================================
+ LUE Warehouse - deploy 2 DDL file(s) as lue_etl to lue_warehouse
+======================================================================
+[OK]   sql/10_ddl/01_dimensions.sql
+[OK]   sql/10_ddl/02_facts.sql
+======================================================================
+ RESULT: DEPLOY COMPLETE. Check it with: python scripts/test_dimensions.py
+======================================================================

@@ -35,9 +35,10 @@ db-setup: ## Create databases, roles and schemas; safe to re-run (US-1.1)
 db-deploy: ## Deploy sql/10_ddl as lue_etl; safe to re-run (US-1.2)
 	$(PYTHON) scripts/db_deploy.py
 
-db-test: ## Database acceptance tests (US-1.1, US-1.2)
+db-test: ## Database acceptance tests (US-1.1, US-1.2, US-1.3)
 	$(PYTHON) scripts/test_db_setup.py
 	$(PYTHON) scripts/test_dimensions.py
+	$(PYTHON) scripts/test_facts.py
 
 db-reset: ## Stub: drop and recreate the warehouse schemas and redeploy (US-1.5)
 	@echo "db-reset: not implemented yet (US-1.5)"

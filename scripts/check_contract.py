@@ -23,6 +23,9 @@ NOT_NULL_KINDS = ("CONSTR_NOTNULL", "CONSTR_IDENTITY")  # an identity column is 
 ALLOWED_EXTRA_CONSTRAINTS = {
     r"ck_dim_\w+_effective_range": "US-1.2: SCD2 range check",
 }
+# Fact surrogate keys become identity columns (US-1.3); type and NOT NULL are unchanged, so the
+# column comparison below already accepts them. Partitions (including the default) are checked by
+# scripts/test_facts.py in the database.
 ALLOWED_EXTRA_INDEXES = {
     r"uq_dim_\w+_one_current": "US-1.2: one current row per natural key (SCD2)",
 }
@@ -82,8 +85,16 @@ def main() -> int:
         print("FAIL  pglast is not installed (pip install -r requirements-ci.txt)")
         return 1
 
+    from pglast.parser import ParseError
+
     frozen = read_model([FROZEN.read_text(encoding="utf-8")])
     files = sorted(DDL_DIR.glob("*.sql"))
+    for f in files:
+        try:
+            read_model([f.read_text(encoding="utf-8")])
+        except ParseError as exc:
+            print(f"FAIL  {f.relative_to(ROOT).as_posix()}: {exc} (fix the SQL syntax first)")
+            return 1
     ours = read_model([f.read_text(encoding="utf-8") for f in files])
     problems, notes = [], []
 
