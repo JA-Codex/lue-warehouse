@@ -113,6 +113,13 @@ def main() -> int:
     print(" US-1.1 acceptance tests: databases, roles and schemas")
     print("=" * 70)
 
+    try:
+        admin(s, "postgres").close()
+    except psycopg2.OperationalError as exc:
+        print(f"  [FAIL] cannot connect as {s.get('PGUSER', 'postgres')}: {exc}".rstrip())
+        print(" RESULT: FAILED (is PostgreSQL running? are PGUSER and PGPASSWORD right in .env?)")
+        return 1
+
     print("Structure")
     with closing(admin(s, "postgres")) as conn, conn.cursor() as cur:
         for role in (ETL_ROLE, READER_ROLE):
