@@ -1,0 +1,9 @@
+note  dim_maintenance_category: + ck_dim_maintenance_category_effective_range (US-1.2: SCD2 range check)
+note  dim_tenant: + ck_dim_tenant_effective_range (US-1.2: SCD2 range check)
+note  dim_unit: + ck_dim_unit_effective_range (US-1.2: SCD2 range check)
+note  dim_vendor: + ck_dim_vendor_effective_range (US-1.2: SCD2 range check)
+note  dim_maintenance_category: + index uq_dim_maintenance_category_one_current (US-1.2: one current row per natural key (SCD2))
+note  dim_tenant: + index uq_dim_tenant_one_current (US-1.2: one current row per natural key (SCD2))
+note  dim_unit: + index uq_dim_unit_one_current (US-1.2: one current row per natural key (SCD2))
+note  dim_vendor: + index uq_dim_vendor_one_current (US-1.2: one current row per natural key (SCD2))
+contract: 19 table(s) checked against the pack, 0 problem(s); 4 pack table(s) not deployed yet
