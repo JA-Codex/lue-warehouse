@@ -111,8 +111,25 @@ make setup       install dependencies and run PostgreSQL connection test (US-0.4
 make test        lint + SQL parse check + frozen-pack check (what CI runs)
 make rebuild     stub until the pipeline exists; must always pass on main
 make reports     stub
-make db-reset    stub until US-1.1
+make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
+make db-test     check them: 22 PASS lines expected (US-1.1)
+make db-reset    stub until US-1.5
 ```
+
+Without `make`: `python scripts/db_setup.py` and `python scripts/test_db_setup.py`.
+
+### Databases, roles and schemas (US-1.1)
+
+| Object | Name | Notes |
+|---|---|---|
+| Databases | `lue_source`, `lue_warehouse` | Both owned by `lue_etl`. `lue_source` holds schema `src_pms` (S1) |
+| Pipeline role | `lue_etl` | Owns all schemas; not a superuser |
+| Power BI role | `lue_reader` | Connects to `lue_warehouse` only; reads `lue_reporting` only; sessions start read-only |
+| Warehouse schemas | `lue_staging`, `lue_dw`, `lue_reporting`, `lue_audit` | Decision D2 |
+
+The SQL is in `sql/00_setup/01` to `05` (each file names the database it runs in, so it also works in psql).
+Role passwords come from `.env` (`LUE_ETL_PASSWORD`, `LUE_READER_PASSWORD`) and are never committed.
+`scripts/db_setup.py` reads `.env` first, so a `PGPASSWORD` left in the shell cannot override it.
 
 On Windows, `make` is not installed by default. Either run the checks directly
 (`pip install -r requirements-ci.txt`, then `ruff check etl scripts` and `python scripts/ci_checks.py`)
