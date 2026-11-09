@@ -1,0 +1,14 @@
+======================================================================
+ LUE Warehouse - create databases, roles and schemas (US-1.1)
+======================================================================
+[OK]   01_roles.sql                 on database postgres
+[OK]   passwords from .env          lue_etl, lue_reader
+       running: CREATE DATABASE lue_source OWNER lue_etl ENCODING 'UTF8' TEMPLATE template0
+       running: CREATE DATABASE lue_warehouse OWNER lue_etl ENCODING 'UTF8' TEMPLATE template0
+[OK]   02_databases.sql             on database postgres (2 statement(s) generated)
+[OK]   03_database_access.sql       on database postgres
+[OK]   04_source_schema.sql         on database lue_source
+[OK]   05_warehouse_schemas.sql     on database lue_warehouse
+======================================================================
+ RESULT: SETUP COMPLETE. Check it with: python scripts/test_db_setup.py
+======================================================================
