@@ -10,8 +10,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Item | State |
 |---|---|
 | Phase 1 design pack | Frozen as v2.1 in `docs/phase1/` (git tag `phase1-v2.1-final`) |
-| Repository, branch rules, CI | US-0.3 (this change) |
-| Local environment and `.env.example` | US-0.4, pending |
+| Repository, branch rules, CI | US-0.3 (Done) |
+| Local environment and `.env.example` | US-0.4 (Done) |
 | Database, ETL, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
@@ -29,18 +29,86 @@ etl/              generate_data.py, refresh_weather.py, ingest/, run_pipeline.py
 data/             generated source files (not committed) and data/weather_cache.json (committed)
 powerbi/          PBIX and screenshots
 presentation/     final slides
-scripts/          ci_checks.py (SQL parse check and frozen-pack check)
+scripts/          ci_checks.py (CI quality gates), test_connection.py (connection test)
 ```
 
 Two small additions to the plan's layout, recorded here as deviations: `scripts/` holds the CI checks, and
 `docs/evidence/` holds story evidence (plan A10 says evidence lives under `docs/`).
 
+## Environment setup (US-0.4)
+
+### Software versions
+
+| Component | Minimum / Pinned Version | Notes |
+|---|---|---|
+| PostgreSQL | 16.x or newer (64-bit) | Database engine; default superuser `postgres` |
+| pgAdmin | 4 (v8.x or newer) | Database GUI management |
+| Python | 3.11 or newer (tested on 3.11, 3.12, 3.13) | Pipeline and analytics runtime |
+| Power BI Desktop | 2.138+ (64-bit, Nov 2024 or later) | Dashboard interface (E13) |
+| Git | 2.40+ | Version control |
+
+### 30-Minute quickstart
+
+1. **Clone the repository and switch to the active branch:**
+   ```bash
+   git clone https://github.com/JA-Codex/lue-warehouse.git
+   cd lue-warehouse
+   ```
+
+2. **Create and activate a Python virtual environment:**
+   ```bash
+   # Windows PowerShell:
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+
+   # Linux / macOS / Git Bash:
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Install project dependencies:**
+   ```bash
+   pip install -r requirements.txt
+
+   # Optional: install CI and quality check tools (ruff, pglast)
+   pip install -r requirements-ci.txt
+   ```
+
+4. **Configure your local `.env` file:**
+   ```bash
+   # Windows Command Prompt:
+   copy .env.example .env
+
+   # PowerShell:
+   Copy-Item .env.example .env
+
+   # Linux / macOS / Git Bash:
+   cp .env.example .env
+   ```
+   Open `.env` and set `PGPASSWORD` to match your local PostgreSQL superuser password. Never commit `.env`.
+
+5. **Run the connection test:**
+   ```bash
+   python scripts/test_connection.py
+   # Or using make:
+   make setup
+   ```
+   The script verifies your Python version, connects to PostgreSQL, displays the server version, creates a throwaway table `_lue_conn_test_tmp`, inserts a test record, verifies it, and drops it.
+
+6. **Verify repository quality gates:**
+   ```bash
+   ruff check etl scripts
+   python scripts/ci_checks.py --manifest --allow-missing-pglast
+   # Or if pglast is installed:
+   make test
+   ```
+
 ## Commands
 
 ```
 make help        list the targets
+make setup       install dependencies and run PostgreSQL connection test (US-0.4)
 make test        lint + SQL parse check + frozen-pack check (what CI runs)
-make setup       stub until US-0.4
 make rebuild     stub until the pipeline exists; must always pass on main
 make reports     stub
 make db-reset    stub until US-1.1

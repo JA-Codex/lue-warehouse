@@ -5,8 +5,9 @@ PYTHON ?= python
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
 
-setup: ## Stub: US-0.4 adds the virtual environment, .env and connection test
-	@echo "setup: not implemented yet (US-0.4)"
+setup: ## Set up environment dependencies and test database connection (US-0.4)
+	$(PYTHON) -m pip install -r requirements.txt
+	$(PYTHON) scripts/test_connection.py
 
 rebuild: ## Stub: full rebuild of databases, data, pipeline and marts (E9)
 	@echo "rebuild: not implemented yet (grows with each epic; must always pass on main)"

@@ -1,0 +1,31 @@
+[INFO] Loaded environment from C:\Users\Personal\Documents\lue-warehouse\.env
+======================================================================
+ LUE Warehouse - Local Environment & PostgreSQL Connection Test (US-0.4)
+======================================================================
+Timestamp:       2026-11-09 18:46:29
+Operating System:Windows 11 (AMD64)
+Python Version:  3.12.10 (C:\Users\Personal\Documents\lue-warehouse\.venv\Scripts\python.exe)
+psycopg2 Version:2.9.13 (dt dec pq3 ext lo64)
+----------------------------------------------------------------------
+Target Connection Parameters:
+  Host:          localhost
+  Port:          5432
+  User:          postgres
+  Password:      ******
+  Database:      lue_warehouse
+----------------------------------------------------------------------
+[INFO] Target database 'lue_warehouse' does not exist yet (expected prior to US-1.1).
+[INFO] Connecting to default maintenance database 'postgres' instead...
+[PASS] Connected successfully to database: 'postgres'
+[PASS] Server Version:
+       PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit
+[INFO] Session: database='postgres', user='postgres', server_addr='::1:5432'
+----------------------------------------------------------------------
+Testing throwaway table operations: table '_lue_conn_test_tmp'...
+  [PASS] CREATE TABLE _lue_conn_test_tmp succeeded.
+  [PASS] INSERT INTO _lue_conn_test_tmp succeeded (id=1, time=2026-11-09 18:46:29.566535+05:00).
+  [PASS] SELECT verification passed (read back marker: 'US-0.4 local environment check').
+  [PASS] DROP TABLE _lue_conn_test_tmp clean-up succeeded.
+======================================================================
+ RESULT: ALL LOCAL ENVIRONMENT CHECKS PASSED (US-0.4)
+======================================================================

@@ -1,0 +1,25 @@
+# LUE Warehouse - Core Python Dependencies (US-0.4)
+# Python 3.11 or newer required
+
+# Data processing and analysis
+pandas>=2.1.0
+numpy>=1.26.0
+
+# Synthetic data generation (E2)
+Faker>=20.0.0
+
+# PostgreSQL database driver
+psycopg2-binary>=2.9.9
+
+# Weather API client (E2)
+requests>=2.31.0
+
+# Excel data dictionary and reports (E0, E9)
+openpyxl>=3.1.2
+
+# PDF report generation (E9, E14)
+reportlab>=4.0.0
+
+# Environment variables loader (.env)
+python-dotenv>=1.0.0
+
