@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest reports db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest reports db-setup db-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -26,5 +26,11 @@ manifest: ## docs/phase1 must still match MANIFEST.sha256 (frozen baseline)
 reports: ## Stub: generate the report PDFs (E9, E14)
 	@echo "reports: not implemented yet"
 
-db-reset: ## Stub: drop and recreate databases, roles and schemas (US-1.1)
-	@echo "db-reset: not implemented yet (US-1.1)"
+db-setup: ## Create databases, roles and schemas; safe to re-run (US-1.1)
+	$(PYTHON) scripts/db_setup.py
+
+db-test: ## Acceptance tests for the databases, roles and schemas (US-1.1)
+	$(PYTHON) scripts/test_db_setup.py
+
+db-reset: ## Stub: drop and recreate the warehouse schemas and redeploy (US-1.5)
+	@echo "db-reset: not implemented yet (US-1.5)"

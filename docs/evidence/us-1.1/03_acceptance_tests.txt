@@ -1,0 +1,32 @@
+======================================================================
+ US-1.1 acceptance tests: databases, roles and schemas
+======================================================================
+Structure
+  [PASS] role lue_etl exists once and is not a superuser
+  [PASS] role lue_reader exists once and is not a superuser
+  [PASS] database lue_source exists once, owned by lue_etl
+  [PASS] database lue_warehouse exists once, owned by lue_etl
+  [PASS] lue_warehouse has exactly the schemas lue_audit, lue_dw, lue_reporting, lue_staging, owned by lue_etl
+  [PASS] lue_source has schema src_pms, owned by lue_etl
+lue_etl (pipeline)
+  [PASS] lue_etl logs in to lue_warehouse with the password from .env
+  [PASS] lue_etl can create and write tables in all four schemas
+  [PASS] lue_etl search_path starts with lue_dw
+  [PASS] lue_etl can create tables in lue_source.src_pms
+lue_reader (Power BI)
+  [PASS] lue_reader logs in to lue_warehouse with the password from .env
+  [PASS] lue_reader can read a new lue_reporting table
+  [PASS] lue_reader sessions start read-only
+  [PASS] lue_reader cannot insert into lue_reporting (permission denied)
+  [PASS] lue_reader cannot create tables in lue_reporting
+  [PASS] lue_reader cannot create tables in public
+  [PASS] lue_reader cannot read lue_dw
+  [PASS] lue_reader cannot read lue_staging
+  [PASS] lue_reader cannot read lue_audit
+  [PASS] lue_reader cannot connect to lue_source
+Re-run
+  [PASS] running db_setup.py a second time succeeds
+  [PASS] the second run changes no role, database, schema or grant
+======================================================================
+ RESULT: 22/22 checks passed
+======================================================================

@@ -12,9 +12,19 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-0.3 | Create the repository, branching and quality gates | Junaid | Done | 2026-11-07 | [US-0.3](US-0.3.md) | [evidence](../evidence/us-0.3/) |
 | US-0.4 | Provide a reproducible local environment | Eesha | Done | 2026-11-07 | [US-0.4](US-0.4.md) | [evidence](../evidence/us-0.4/) |
 
+## E1. Database implementation
+
+| Story | Title | Owner (plan) | Status | Done on | Log | Evidence |
+|---|---|---|---|---|---|---|
+| US-1.1 | Create databases, roles and schemas | Hanan | Done | 2026-11-09 | [US-1.1](US-1.1.md) | [evidence](../evidence/us-1.1/) |
+| US-1.2 | Deploy dimension DDL with keys and special members | Hanan | Not started | | | |
+| US-1.3 | Deploy fact DDL, foreign keys and partitions | Hanan | Not started | | | |
+| US-1.4 | Load the date dimension and static reference dimensions | Eesha | Not started | | | |
+| US-1.5 | Create audit tables, the watermark table and the reset script | Eesha | Not started | | | |
+
 ## Later epics
 
-Add a section per epic as work starts (E1 database implementation, and so on), using `_TEMPLATE.md` for each story.
+Add a section per epic as work starts (E2 generator, and so on), using `_TEMPLATE.md` for each story.
 
 ## Team decisions made while doing the work
 
