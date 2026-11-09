@@ -112,7 +112,7 @@ make test        lint + SQL parse + frozen-pack + DDL contract check (what CI ru
 make rebuild     stub until the pipeline exists; must always pass on main
 make reports     stub
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
-make db-deploy   deploy sql/10_ddl (the 13 dimensions so far, 6 facts) as lue_etl (US-1.2)
+make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
 make db-test     database acceptance tests: 22 (US-1.1), 27 (US-1.2) and 24 (US-1.3) PASS lines
 make db-reset    stub until US-1.5
 ```
