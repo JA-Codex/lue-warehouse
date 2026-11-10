@@ -190,30 +190,47 @@ def main() -> int:
     )
 
     print("First loaded member gets key 1")
-    unused = []
+    # US-1.4 loads the static dimensions, so some dimensions already hold real members. A loaded
+    # dimension must have started at key 1; a still-empty one must have an unused sequence.
+    empty, loaded = [], []
     for d in want_identity:
+        cur.execute(f"SELECT count(*), min({dims[d]}) FROM lue_dw.{d} WHERE {dims[d]} > 0")
+        n, first = cur.fetchone()
+        (empty if n == 0 else loaded).append((d, first))
+    unused = []
+    for d, _ in empty:
         cur.execute(
             "SELECT pg_sequence_last_value(pg_get_serial_sequence(%s, %s)) IS NULL",
             (f"lue_dw.{d}", dims[d]),
         )
         unused.append(cur.fetchone()[0])
-    check(all(unused), f"all {len(want_identity)} identity sequences are unused (next value is 1)")
+    check(all(unused), f"all {len(empty)} still-empty identity sequences are unused (next is 1)")
+    if loaded:
+        check(
+            all(first == 1 for _, first in loaded),
+            f"the {len(loaded)} already-loaded dimensions started at key 1",
+        )
+    empty = [d for d, _ in empty]
 
     conn.autocommit = False
     try:
-        sql, p = copy_special_row(
-            cur,
-            "dim_tenant",
-            "tenant_key",
-            {
-                "tenant_code": "T-TEST",
-                "effective_from": "2024-01-01",
-                "effective_to": "9999-12-31",
-                "is_current": True,
-            },
-        )
-        cur.execute(sql, p)
-        check(cur.fetchone()[0] == 1, "a new tenant inserted without a key receives tenant_key 1")
+        if "dim_tenant" in empty:
+            sql, p = copy_special_row(
+                cur,
+                "dim_tenant",
+                "tenant_key",
+                {
+                    "tenant_code": "T-TEST",
+                    "effective_from": "2024-01-01",
+                    "effective_to": "9999-12-31",
+                    "is_current": True,
+                },
+            )
+            cur.execute(sql, p)
+            check(
+                cur.fetchone()[0] == 1,
+                "a new tenant inserted without a key receives tenant_key 1",
+            )
 
         print("SCD Type 2 rules (unit, tenant, maintenance category, vendor)")
         for d, nk in SCD2.items():
