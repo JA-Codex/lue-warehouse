@@ -1,0 +1,64 @@
+======================================================================
+ LUE Warehouse - create databases, roles and schemas (US-1.1)
+======================================================================
+[OK]   01_roles.sql                 on database postgres
+[OK]   passwords from .env          lue_etl, lue_reader
+[OK]   02_databases.sql             on database postgres
+[OK]   03_database_access.sql       on database postgres
+[OK]   04_source_schema.sql         on database lue_source
+[OK]   05_warehouse_schemas.sql     on database lue_warehouse
+======================================================================
+ RESULT: SETUP COMPLETE. Check it with: python scripts/test_db_setup.py
+======================================================================
+======================================================================
+ LUE Warehouse - deploy 3 DDL file(s) as lue_etl to lue_warehouse
+======================================================================
+[OK]   sql/10_ddl/01_dimensions.sql
+[OK]   sql/10_ddl/02_facts.sql
+[OK]   sql/10_ddl/03_audit.sql
+======================================================================
+ RESULT: DEPLOY COMPLETE. Check it with: python scripts/test_dimensions.py
+======================================================================
+======================================================================
+ LUE Warehouse - load reference dimensions as lue_etl into lue_warehouse
+======================================================================
+[OK]   dim_date                 1463 row(s)
+[OK]   dim_payment_method          8 row(s)
+[OK]   dim_charge_type             8 row(s)
+[OK]   dim_lease_event_type        6 row(s)
+[OK]   dim_request_flags           8 row(s)
+======================================================================
+ RESULT: REFERENCE LOAD COMPLETE. Check it with: python scripts/test_reference.py
+======================================================================
+======================================================================
+ US-1.5 smoke test: is the whole warehouse in place?
+======================================================================
+Objects
+  [PASS] 13 dimension tables in lue_dw (found 13)
+  [PASS] 6 fact tables in lue_dw (found 6)
+  [PASS] 5 tables in lue_audit: 4 audit tables + etl_watermark (found 5)
+  [PASS] 41 foreign keys from the facts to the dimensions (found 41)
+  [PASS] 48 monthly partitions of fact_unit_occupancy_daily (plus a default) (found 48)
+Reference data
+  [PASS] dim_date has 1,461 days
+  [PASS] 6 payment methods
+  [PASS] 6 charge types
+  [PASS] 4 lease event types
+  [PASS] 8 request-flag combinations
+Audit tables
+  [PASS] etl_watermark has its 4 columns
+  [PASS] quarantine_id is generated automatically
+======================================================================
+ RESULT: 12/12 checks passed
+======================================================================
+======================================================================
+ LUE Warehouse - reset lue_warehouse (the source database is not touched)
+======================================================================
+[OK]   reset.sql: warehouse schemas dropped
+--- db_setup.py
+--- db_deploy.py
+--- db_load_reference.py
+--- test_smoke.py
+======================================================================
+ RESULT: RESET COMPLETE. The warehouse is rebuilt and the smoke test passed.
+======================================================================

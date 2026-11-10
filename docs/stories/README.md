@@ -20,7 +20,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-1.2 | Deploy dimension DDL with keys and special members | Hanan | Done | 2026-11-09 | [US-1.2](US-1.2.md) | [evidence](../evidence/us-1.2/) |
 | US-1.3 | Deploy fact DDL, foreign keys and partitions | Hanan | Done | 2026-11-10 | [US-1.3](US-1.3.md) | [evidence](../evidence/us-1.3/) |
 | US-1.4 | Load the date dimension and static reference dimensions | Eesha | Done | 2026-11-10 | [US-1.4](US-1.4.md) | [evidence](../evidence/us-1.4/) |
-| US-1.5 | Create audit tables, the watermark table and the reset script | Eesha | Not started | | | |
+| US-1.5 | Create audit tables, the watermark table and the reset script | Eesha | Done | 2026-11-10 | [US-1.5](US-1.5.md) | [evidence](../evidence/us-1.5/) |
 
 ## Later epics
 
