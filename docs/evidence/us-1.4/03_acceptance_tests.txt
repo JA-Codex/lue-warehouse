@@ -1,0 +1,43 @@
+======================================================================
+ US-1.4 acceptance tests: date dimension and static reference dimensions
+======================================================================
+dim_date
+  [PASS] 1,461 calendar days loaded (found 1461)
+  [PASS] plus the 2 special members (-1 Unknown, -2 Not applicable)
+  [PASS] runs from 2023-07-01 to 2027-06-30
+  [PASS] no gaps: every day between the first and the last date is present
+  [PASS] date_key is YYYYMMDD of full_date for every row
+  [PASS] the leap day 2024-02-29 exists
+  [PASS] all attributes match Python's calendar (weekday, ISO week, quarter, fiscal): 0 wrong
+  [PASS] fiscal year changes at 1 July: 2026-06-30 is FY2025-26 (month 12), 2026-07-01 is FY2026-27 (month 1)
+  [PASS] four fiscal years: FY2023-24 to FY2026-27
+  [PASS] holiday and Ramadan flags start FALSE (US-6.4 fills them)
+Static reference dimensions (members from etl/reference_data.py)
+  [PASS] dim_payment_method has exactly the 6 agreed methods
+  [PASS] payment method keys are 1 to 6, in the agreed order
+  [PASS] 5 channel groups: Cash, Cheque, Bank, Instant payment, Mobile wallet
+  [PASS] dim_charge_type has exactly the 6 agreed charge types
+  [PASS] charge type keys are 1 to 6; RENT is key 1
+  [PASS] 4 charge categories: Rent, Ancillary, Penalty, Credit
+  [PASS] dim_lease_event_type has exactly the 4 agreed events
+  [PASS] lease event keys are 1 to 4
+  [PASS] exit events are Notice given and Terminated only
+  [PASS] dim_request_flags has all 8 flag combinations, once each
+  [PASS] flag combinations are in key order 1 to 8
+  [PASS] every flags_label is the readable text of its three flags
+  [PASS] dim_request_flags has no special members (as in the Phase 1 pack)
+Special members and lineage
+  [PASS] dim_payment_method: special members -2 and -1 are still there
+  [PASS] dim_payment_method: lineage columns are filled (source SEED, batch 0)
+  [PASS] dim_charge_type: special members -2 and -1 are still there
+  [PASS] dim_charge_type: lineage columns are filled (source SEED, batch 0)
+  [PASS] dim_lease_event_type: special members -2 and -1 are still there
+  [PASS] dim_lease_event_type: lineage columns are filled (source SEED, batch 0)
+Facts can resolve their keys
+  [PASS] date 2025-03-14 = 20250314; JAZZ = 5; RENT = 1; RENEW = 2
+Re-run
+  [PASS] running db_load_reference.py a second time succeeds
+  [PASS] the second run changes no row and uses no extra key number
+======================================================================
+ RESULT: 32/32 checks passed
+======================================================================

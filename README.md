@@ -113,7 +113,8 @@ make rebuild     stub until the pipeline exists; must always pass on main
 make reports     stub
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
 make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
-make db-test     database acceptance tests: 22 (US-1.1), 27 (US-1.2) and 24 (US-1.3) PASS lines
+make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
+make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3) and 32 (US-1.4) PASS lines
 make db-reset    stub until US-1.5
 ```
 
@@ -179,6 +180,20 @@ from the development plan:
 The partial unique indexes enforce uniqueness, like the primary keys, so they belong to the D20 baseline; the pack's
 38 foreign-key and filter indexes are left out of the baseline and are added in the Phase 3 indexing experiments
 (US-12.2). `dim_request_flags` has no special members, as in the pack: all 8 flag combinations always exist.
+
+### Reference data (US-1.4)
+
+`python scripts/db_load_reference.py` (or `make db-load-ref`) runs `sql/30_dimensions/01_reference_dimensions.sql` as `lue_etl`. It is separate from `sql/10_ddl/` on purpose: that folder is structure only and is compared with the frozen pack row for row. Safe to re-run: a second run changes nothing and uses no extra key numbers.
+
+| Table | Rows loaded | Notes |
+|---|---|---|
+| `dim_date` | 1,461 (2023-07-01 to 2027-06-30) | `date_key` is YYYYMMDD; fiscal year runs July to June (`FY2025-26`); holiday and Ramadan flags start FALSE and are filled in US-6.4 |
+| `dim_payment_method` | 6 | `CASH`, `CHEQUE`, `BANK`, `RAAST`, `JAZZ`, `EASY`; keys 1 to 6 |
+| `dim_charge_type` | 6 | `RENT`, `SERVICE`, `LATEFEE`, `UTILITY`, `CREDIT`, `DEPADJ`; keys 1 to 6 |
+| `dim_lease_event_type` | 4 | `SIGN`, `RENEW`, `NOTICE`, `TERM`; keys 1 to 4 |
+| `dim_request_flags` | 8 | every combination of the three flags; no special members (as in the pack) |
+
+The same members are in `etl/reference_data.py`, which the data generator uses for the source system S1 codes. `scripts/test_reference.py` fails if the two ever differ.
 
 ## Change control for the frozen Phase 1 pack
 

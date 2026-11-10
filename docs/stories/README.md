@@ -18,7 +18,8 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 |---|---|---|---|---|---|---|
 | US-1.1 | Create databases, roles and schemas | Hanan | Done | 2026-11-09 | [US-1.1](US-1.1.md) | [evidence](../evidence/us-1.1/) |
 | US-1.2 | Deploy dimension DDL with keys and special members | Hanan | Done | 2026-11-09 | [US-1.2](US-1.2.md) | [evidence](../evidence/us-1.2/) |
-| US-1.3 | Deploy fact DDL, foreign keys and partitions | Hanan | Done | 2026-11-10 | [US-1.3](US-1.3.md) | [evidence](../evidence/us-1.3/) || US-1.4 | Load the date dimension and static reference dimensions | Eesha | Not started | | | |
+| US-1.3 | Deploy fact DDL, foreign keys and partitions | Hanan | Done | 2026-11-10 | [US-1.3](US-1.3.md) | [evidence](../evidence/us-1.3/) |
+| US-1.4 | Load the date dimension and static reference dimensions | Eesha | Done | 2026-11-10 | [US-1.4](US-1.4.md) | [evidence](../evidence/us-1.4/) |
 | US-1.5 | Create audit tables, the watermark table and the reset script | Eesha | Not started | | | |
 
 ## Later epics
@@ -32,4 +33,5 @@ Add a section per epic as work starts (E2 generator, and so on), using `_TEMPLAT
 | 2026-11-06 | Renamed schemas (`lue_*`) are used instead of the brief's `project_*`; pending instructor confirmation (O4) | [US-0.1](US-0.1.md), `phase1/README.md` |
 | 2026-11-07 | Repository is public, because GitHub Free does not enforce branch rules on private repositories | [US-0.3](US-0.3.md) |
 | 2026-11-07 | A teammate review before merging is optional and not enforced; the `ci` check and the pull request are enforced | [US-0.3](US-0.3.md) |
+| 2026-11-10 | The static reference dimensions have 6 charge types (not the plan's 4), following the Phase 1 pack; settlement days are our assumption | [US-1.4](US-1.4.md) |
 | 2026-11-09 | `dim_request_flags` keeps no special members, as in the Phase 1 pack; plan US-1.4's "plus the Unknown member" cannot fit (three NOT NULL flags, all 8 combinations unique) | [US-1.2](US-1.2.md) |

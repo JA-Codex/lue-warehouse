@@ -1,0 +1,11 @@
+======================================================================
+ LUE Warehouse - load reference dimensions as lue_etl into lue_warehouse
+======================================================================
+[OK]   dim_date                 1463 row(s)
+[OK]   dim_payment_method          8 row(s)
+[OK]   dim_charge_type             8 row(s)
+[OK]   dim_lease_event_type        6 row(s)
+[OK]   dim_request_flags           8 row(s)
+======================================================================
+ RESULT: REFERENCE LOAD COMPLETE. Check it with: python scripts/test_reference.py
+======================================================================
