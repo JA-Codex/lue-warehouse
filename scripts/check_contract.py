@@ -20,6 +20,9 @@ DDL_DIR = ROOT / "sql" / "10_ddl"
 
 # Phase 2 additions that may exist in sql/10_ddl but not in the pack (name pattern -> reason).
 NOT_NULL_KINDS = ("CONSTR_NOTNULL", "CONSTR_IDENTITY")  # an identity column is always NOT NULL
+ALLOWED_EXTRA_TABLES = {
+    "etl_watermark": "US-1.5: last loaded value per source table (decision O5)",
+}
 ALLOWED_EXTRA_CONSTRAINTS = {
     r"ck_dim_\w+_effective_range": "US-1.2: SCD2 range check",
 }
@@ -100,7 +103,10 @@ def main() -> int:
 
     for name, table in sorted(ours["tables"].items()):
         if name not in frozen["tables"]:
-            problems.append(f"{name}: not in the Phase 1 pack")
+            if name in ALLOWED_EXTRA_TABLES:
+                notes.append(f"{name}: extra table allowed ({ALLOWED_EXTRA_TABLES[name]})")
+            else:
+                problems.append(f"{name}: not in the Phase 1 pack")
             continue
         want = frozen["tables"][name]
         got_cols = [c[:3] for c in table["columns"]]

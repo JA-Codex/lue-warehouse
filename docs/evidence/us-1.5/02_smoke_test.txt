@@ -1,0 +1,21 @@
+======================================================================
+ US-1.5 smoke test: is the whole warehouse in place?
+======================================================================
+Objects
+  [PASS] 13 dimension tables in lue_dw (found 13)
+  [PASS] 6 fact tables in lue_dw (found 6)
+  [PASS] 5 tables in lue_audit: 4 audit tables + etl_watermark (found 5)
+  [PASS] 41 foreign keys from the facts to the dimensions (found 41)
+  [PASS] 48 monthly partitions of fact_unit_occupancy_daily (plus a default) (found 48)
+Reference data
+  [PASS] dim_date has 1,461 days
+  [PASS] 6 payment methods
+  [PASS] 6 charge types
+  [PASS] 4 lease event types
+  [PASS] 8 request-flag combinations
+Audit tables
+  [PASS] etl_watermark has its 4 columns
+  [PASS] quarantine_id is generated automatically
+======================================================================
+ RESULT: 12/12 checks passed
+======================================================================

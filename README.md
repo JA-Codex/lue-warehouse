@@ -114,12 +114,14 @@ make reports     stub
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
 make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
-make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3) and 32 (US-1.4) PASS lines
-make db-reset    stub until US-1.5
+make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
+make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
+make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4) and 12 (US-1.5) PASS lines
 ```
 
-Without `make`: `python scripts/db_setup.py`, `python scripts/db_deploy.py`, then
-`python scripts/test_db_setup.py` and `python scripts/test_dimensions.py`.
+Without `make`: `python scripts/db_setup.py`, `python scripts/db_deploy.py`, `python scripts/db_load_reference.py`,
+then `python scripts/test_db_setup.py`, `test_dimensions.py`, `test_facts.py`, `test_reference.py` and
+`test_smoke.py` (all in `scripts/`). To start again from nothing: `python scripts/db_reset.py`.
 
 ### Databases, roles and schemas (US-1.1)
 

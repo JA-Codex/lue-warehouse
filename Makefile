@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract reports db-setup db-deploy db-load-ref db-test db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest contract reports db-setup db-deploy db-load-ref db-smoke db-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -38,11 +38,15 @@ db-deploy: ## Deploy sql/10_ddl as lue_etl; safe to re-run (US-1.2)
 db-load-ref: ## Load dim_date and the static dimensions; safe to re-run (US-1.4)
 	$(PYTHON) scripts/db_load_reference.py
 
-db-test: ## Database acceptance tests (US-1.1 to US-1.4)
+db-test: ## Database acceptance tests (US-1.1 to US-1.5)
 	$(PYTHON) scripts/test_db_setup.py
 	$(PYTHON) scripts/test_dimensions.py
 	$(PYTHON) scripts/test_facts.py
 	$(PYTHON) scripts/test_reference.py
+	$(PYTHON) scripts/test_smoke.py
 
-db-reset: ## Stub: drop and recreate the warehouse schemas and redeploy (US-1.5)
-	@echo "db-reset: not implemented yet (US-1.5)"
+db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
+	$(PYTHON) scripts/db_reset.py
+
+db-smoke: ## Count the warehouse objects (US-1.5)
+	$(PYTHON) scripts/test_smoke.py
