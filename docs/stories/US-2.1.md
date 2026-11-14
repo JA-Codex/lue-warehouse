@@ -49,8 +49,9 @@ As a developer, I want a configurable, seeded generator skeleton, so that every 
 - **Output hash covers files only.** Folders (`answer_key` is empty until US-2.6) and `run_info.json` are not hashed.
 - **NumPy version.** NumPy does not promise identical streams across versions. Teammates on different versions could get
   different hashes for the same seed. Pin a NumPy version in `requirements.txt` if the team sees this.
-- **Evidence was produced on Linux.** The same command should print the same content hash on the team's Windows
-  machines; that has not been checked yet.
+- **Cross-platform check done.** The evidence was first produced on Linux. On 2026-11-14 the same command on a Windows
+  machine printed the same content hash (`67c361e8...fd1f68`) and `scripts/test_generator.py` passed 39/39
+  (`04_windows_run.txt`).
 
 ## Acceptance criteria
 
@@ -63,11 +64,10 @@ As a developer, I want a configurable, seeded generator skeleton, so that every 
 ## How to re-check it
 
     python scripts/test_generator.py      # expect "RESULT: 39/39 checks passed"
-    python etl/generate_data.py --seed 3004 --out data    # expect content hash 67c361e8...fd1f68 (Linux, NumPy 2.5.3)
+    python etl/generate_data.py --seed 3004 --out data    # expect content hash 67c361e8...fd1f68 (Linux and Windows)
 
 ## Open items and follow-ups
 
-- Run the two commands above on each teammate's Windows machine and compare the hash (see the NumPy note).
 - US-2.2 onward: add stages with `@stage`, follow the rules at the top of `etl/generate_data.py`, and re-run
   `make gen-test`; the "no unseeded randomness" check also scans any `etl/gen_*.py` file.
 - The small profile's speed check should be re-run once the real stages exist.
