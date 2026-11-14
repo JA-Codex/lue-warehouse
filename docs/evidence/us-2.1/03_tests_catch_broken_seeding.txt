@@ -1,0 +1,17 @@
+Proof that the acceptance tests can fail. Two deliberately broken copies of the generator were tested; neither
+change is in the repository.
+
+Mutant 1: the probe draws with the global, unseeded np.random.random(n) instead of the seeded stream.
+  [FAIL] same seed: identical hashes
+  [FAIL] same seed: files are byte-identical
+  [FAIL] same seed: the manifest itself is byte-identical (no timestamps, no paths)
+  [FAIL] same seed into the same folder again: same content hash
+  [FAIL] adding a stage does not change the data of the other stages
+  [FAIL] no `random`, `uuid` or global `np.random` calls: ['generate_data.py: np.random.random']
+  RESULT: 33/39 checks passed - FAILED
+
+Mutant 2: the stage name is ignored when deriving a stream, so every stage would get the same numbers.
+  [FAIL] different stage names give different streams
+  RESULT: 38/39 checks passed - FAILED
+
+Unmodified code: RESULT: 39/39 checks passed (02_acceptance_tests.txt)

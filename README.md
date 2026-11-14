@@ -12,7 +12,9 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Phase 1 design pack | Frozen as v2.1 in `docs/phase1/` (git tag `phase1-v2.1-final`) |
 | Repository, branch rules, CI | US-0.3 (Done) |
 | Local environment and `.env.example` | US-0.4 (Done) |
-| Database, ETL, marts, reports | Phase 2 and 3, pending |
+| Database (E1): schemas, 13 dimensions, 6 facts, audit tables, reference data | US-1.1 to US-1.5 (Done) |
+| Data generator framework (E2) | US-2.1 (Done); US-2.2 to US-2.6 pending |
+| Ingestion, staging, dimensions, facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
 
@@ -108,7 +110,7 @@ Two small additions to the plan's layout, recorded here as deviations: `scripts/
 ```
 make help        list the targets
 make setup       install dependencies and run PostgreSQL connection test (US-0.4)
-make test        lint + SQL parse + frozen-pack + DDL contract check (what CI runs)
+make test        lint + SQL parse + frozen-pack + DDL contract check + generator tests (what CI runs)
 make rebuild     stub until the pipeline exists; must always pass on main
 make reports     stub
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
@@ -116,8 +118,14 @@ make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
+make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n
+make gen-test    generator acceptance tests, no database needed (US-2.1)
 make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4) and 12 (US-1.5) PASS lines
 ```
+
+Generator without `make`: `python etl/generate_data.py --profile small --seed 3004 --out data`. The command
+prints a content hash; two runs with the same seed and profile must print the same one. The rules every generator
+stage follows (seeded streams only, `ctx.write_text`) are at the top of `etl/generate_data.py`.
 
 Without `make`: `python scripts/db_setup.py`, `python scripts/db_deploy.py`, `python scripts/db_load_reference.py`,
 then `python scripts/test_db_setup.py`, `test_dimensions.py`, `test_facts.py`, `test_reference.py` and
