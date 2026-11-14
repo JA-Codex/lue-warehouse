@@ -1,0 +1,35 @@
+$ python etl/generate_data.py --profile small --seed 3004 --out run_A
+profile       small (2 buildings, 90 units, 3 months)
+seed          3004
+output        ./hA  (folders: s1, s2, s3, s4, s5, s6, answer_key)
+stages        framework_probe
+files         1
+content hash  67c361e826115383461b85b9160a9f0630c365625b3175bfc8d1c47d60fd1f68
+
+$ python etl/generate_data.py --profile small --seed 3004 --out run_B   (same seed again)
+profile       small (2 buildings, 90 units, 3 months)
+seed          3004
+output        ./hB  (folders: s1, s2, s3, s4, s5, s6, answer_key)
+stages        framework_probe
+files         1
+content hash  67c361e826115383461b85b9160a9f0630c365625b3175bfc8d1c47d60fd1f68
+
+$ python etl/generate_data.py --profile small --seed 3005 --out run_C   (different seed)
+profile       small (2 buildings, 90 units, 3 months)
+seed          3005
+output        ./hC  (folders: s1, s2, s3, s4, s5, s6, answer_key)
+stages        framework_probe
+files         1
+content hash  64944597a18af7057f8b06f13defb9dac6765c6573c41a84d0a6e4e0623c1c01
+
+$ sha256sum run_A/_framework/rng_probe.csv run_B/... run_C/...
+9c9a6f364fb89f9be032384b1a493bd4768100aebfcf814cdd46bc01cb96c0a8  run_A/_framework/rng_probe.csv
+9c9a6f364fb89f9be032384b1a493bd4768100aebfcf814cdd46bc01cb96c0a8  run_B/_framework/rng_probe.csv
+17c4bb90627cf8f952e657aae91c7de0f1084425a5d18aa64555cd107808c3e9  run_C/_framework/rng_probe.csv
+
+$ cmp run_A/_framework/rng_probe.csv run_B/_framework/rng_probe.csv && echo IDENTICAL
+IDENTICAL
+
+$ cmp run_A/... run_C/...
+run_A/_framework/rng_probe.csv run_C/_framework/rng_probe.csv differ: char 33, line 2
+DIFFERENT
