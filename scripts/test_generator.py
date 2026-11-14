@@ -133,10 +133,15 @@ def main() -> int:
             and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in manifest["files"].values()),
             "the manifest lists every generated file with a SHA-256",
         )
+        # Workbooks are hashed by content (their bytes depend on the openpyxl version): US-2.2.
+        by_content = set(manifest.get("logical_hash_files", []))
         recomputed = {
-            k: hashlib.sha256((out_a / k).read_bytes()).hexdigest() for k in manifest["files"]
+            k: hashlib.sha256((out_a / k).read_bytes()).hexdigest()
+            for k in manifest["files"]
+            if k not in by_content
         }
-        check(recomputed == manifest["files"], "every manifest hash matches the file on disk")
+        expected = {k: v for k, v in manifest["files"].items() if k not in by_content}
+        check(recomputed == expected, "every manifest hash matches the file on disk")
         check(
             manifest["content_hash"] in stdout,
             "the command prints the content hash (the single number to compare)",

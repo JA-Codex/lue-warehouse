@@ -13,7 +13,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Repository, branch rules, CI | US-0.3 (Done) |
 | Local environment and `.env.example` | US-0.4 (Done) |
 | Database (E1): schemas, 13 dimensions, 6 facts, audit tables, reference data | US-1.1 to US-1.5 (Done) |
-| Data generator framework (E2) | US-2.1 (Done); US-2.2 to US-2.6 pending |
+| Data generator (E2): framework, master data and registers | US-2.1, US-2.2 (Done); US-2.3 to US-2.6 pending |
 | Ingestion, staging, dimensions, facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
@@ -119,8 +119,9 @@ make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n
-make gen-test    generator acceptance tests, no database needed (US-2.1)
-make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4) and 12 (US-1.5) PASS lines
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39 checks, US-2.2: 129 checks)
+make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2)
+make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4), 12 (US-1.5) and 30 (US-2.2) PASS lines
 ```
 
 Generator without `make`: `python etl/generate_data.py --profile small --seed 3004 --out data`. The command

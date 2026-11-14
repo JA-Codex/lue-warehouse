@@ -1,0 +1,18 @@
+Proof that the acceptance tests can fail. Deliberately broken copies of the generator and of the database were
+tested; none of these changes is in the repository.
+
+scripts/test_master_data.py (129 checks on unmodified code)
+  Mutant: ownership periods overlap by a day            -> FAIL "ownership periods are contiguous" (127/129)
+  Mutant: one unit placed in a non-existent building    -> FAIL "every unit belongs to an existing building"
+  Mutant: vendors allocated without a minimum per trade -> FAIL "every trade has at least 2 vendors"
+  Mutant: a sheet renamed in the workbook               -> FAIL "the workbook has the sheets ..."
+  Mutant: no tenants exist when the window opens        -> FAIL "% of tenants exist when the window opens"
+
+scripts/test_source_load.py (30 checks on unmodified code)
+  Mutant: a building deleted from src_pms.buildings     -> FAIL building count, CSV row count, "every unit belongs to a building"
+  Mutant: a duplicate unit_no, area_sqft widened        -> FAIL "columns and types equal the ERD", "(building_code, unit_no) is unique"
+
+scripts/db_load_source.py
+  A malformed timestamp in tenants.csv                  -> load rolled back, previous rows (1800 units, 3800 tenants) untouched
+  A missing units.csv                                   -> refused before connecting, with the command to run
+  Run twice                                             -> identical row counts (the load replaces, never doubles)

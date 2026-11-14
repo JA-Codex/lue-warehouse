@@ -35,6 +35,8 @@ DEFECT_RATES = {
     "tenant_attribute_change": 0.02,
     "mid_lease_rent_change": 0.02,
 }
+MAX_CITIES = 4  # Lahore, Karachi, Islamabad, Faisalabad (plan A4)
+MIN_VENDORS = 12  # at least 2 per trade (6 trades)
 MAX_DEFECT_RATE = 0.10  # a safety limit: above this the data stops being "mostly clean"
 
 
@@ -46,6 +48,9 @@ class Profile:
     cities: int
     buildings: int
     units: int
+    tenants: int  # distinct tenants over the whole window (US-2.2)
+    owners: int
+    vendors: int
     window_start: date
     window_end: date
     target_active_leases: int  # at any one time
@@ -78,6 +83,9 @@ PROFILES = {
         cities=2,
         buildings=2,
         units=90,
+        tenants=120,
+        owners=40,
+        vendors=12,
         window_start=date(2026, 4, 1),
         window_end=WINDOW_END,
         target_active_leases=75,
@@ -91,6 +99,9 @@ PROFILES = {
         cities=4,
         buildings=40,
         units=1800,
+        tenants=3800,
+        owners=900,
+        vendors=140,
         window_start=WINDOW_START,
         window_end=WINDOW_END,
         target_active_leases=1500,
@@ -108,13 +119,21 @@ def validate(profile: Profile) -> list[str]:
         problems.append("window_start is after window_end")
     if profile.window_start < WINDOW_START or profile.window_end > WINDOW_END:
         problems.append(f"the window must lie inside {WINDOW_START} to {WINDOW_END}")
-    for name in ("cities", "buildings", "units"):
+    if profile.cities > MAX_CITIES:
+        problems.append(f"cities cannot exceed {MAX_CITIES}")
+    for name in ("cities", "buildings", "units", "tenants", "owners"):
         if getattr(profile, name) < 1:
             problems.append(f"{name} must be at least 1")
     if profile.units < profile.buildings:
         problems.append("units must be at least the number of buildings")
     if profile.buildings < profile.cities:
         problems.append("buildings must be at least the number of cities")
+    if profile.owners > profile.units:
+        problems.append("owners cannot exceed units (every owner must hold at least one unit)")
+    if profile.tenants < profile.target_active_leases:
+        problems.append("tenants must be at least target_active_leases")
+    if profile.vendors < MIN_VENDORS:
+        problems.append(f"vendors must be at least {MIN_VENDORS} (two per trade)")
     if profile.target_active_leases > profile.units:
         problems.append("target_active_leases cannot exceed units (one lease per unit at a time)")
     for name in ("target_invoice_lines", "target_payments", "target_tickets"):

@@ -66,6 +66,9 @@ As a developer, I want a configurable, seeded generator skeleton, so that every 
     python scripts/test_generator.py      # expect "RESULT: 39/39 checks passed"
     python etl/generate_data.py --seed 3004 --out data    # expect content hash 67c361e8...fd1f68 (Linux and Windows)
 
+That hash is the value for the framework alone. It changes every time a stage is added: with US-2.2 merged the same
+command prints `7e1030ea...ffbf7089` (see US-2.2).
+
 ## Open items and follow-ups
 
 - US-2.2 onward: add stages with `@stage`, follow the rules at the top of `etl/generate_data.py`, and re-run

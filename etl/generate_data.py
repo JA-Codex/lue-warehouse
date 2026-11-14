@@ -31,15 +31,19 @@ wallet settlements, s4 maintenance tickets (JSON), s5 weather (the cache itself 
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
+import io
 import json
 import platform
+import re
 import shutil
 import sys
 import time
+import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -54,7 +58,7 @@ from etl.generator_config import (  # noqa: E402
     get_profile,
 )
 
-GENERATOR_VERSION = "2.1"
+GENERATOR_VERSION = "2.2"
 SOURCES = ("s1", "s2", "s3", "s4", "s5", "s6")
 # Folders and files the generator owns inside --out. Nothing else in --out is ever touched
 # (in particular data/weather_cache.json, which is committed, decision D12).
@@ -79,6 +83,9 @@ class Context:
         self.profile = profile
         self.seed = seed
         self.out = out
+        # Files whose bytes depend on a library version (workbooks): the manifest records a hash of
+        # their content instead, so the content hash is the same on every machine.
+        self.logical_hashes: dict[str, str] = {}
 
     def rng(self, name: str | None = None) -> np.random.Generator:
         """A seeded NumPy generator for one stage (default: the running stage's own name).
@@ -118,6 +125,110 @@ class Context:
     def write_text(self, relative: str, text: str) -> Path:
         """Write UTF-8 text with `\\n` line ends, on every operating system."""
         return self.write_bytes(relative, text.replace("\r\n", "\n").encode("utf-8"))
+
+    def write_csv(self, relative: str, header: list[str], rows) -> Path:
+        """Write a CSV file: header row, `\\n` line ends, UTF-8, no byte-order mark.
+
+        Cells may be str, int, bool (written true/false), None (written empty), date or datetime.
+        A float is refused: format it yourself with a fixed number of decimals (rule 4).
+        """
+        buffer = io.StringIO()
+        writer = csv.writer(buffer, lineterminator="\n")
+        writer.writerow(header)
+        for row in rows:
+            if len(row) != len(header):
+                raise GeneratorError(
+                    f"{relative}: a row has {len(row)} cells, expected {len(header)}"
+                )
+            writer.writerow([_cell_text(v) for v in row])
+        return self.write_text(relative, buffer.getvalue())
+
+    def write_workbook(self, relative: str, sheets: list[tuple[str, list[str], list]]) -> Path:
+        """Write an .xlsx workbook from (sheet name, header, rows) tuples, deterministically.
+
+        The file is byte-identical on every run with the same library version (fixed timestamps,
+        no compression). Its manifest hash covers the sheet content, not the bytes, so it is also
+        identical across openpyxl versions. Cells: str, int, bool, None, date or datetime.
+        """
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        fixed = datetime(2026, 1, 1)
+        wb.properties.creator = "LUE data generator"
+        wb.properties.lastModifiedBy = "LUE data generator"
+        wb.properties.created = fixed
+        wb.properties.modified = fixed
+        canonical = []
+        for name, header, rows in sheets:
+            ws = wb.create_sheet(title=name)
+            ws.append(header)
+            for row in rows:
+                if len(row) != len(header):
+                    raise GeneratorError(f"{relative}/{name}: a row has {len(row)} cells")
+                for v in row:
+                    if isinstance(v, float):
+                        raise GeneratorError(f"{relative}/{name}: a float cell; format it as text")
+                ws.append(list(row))
+            for cell in ws[1]:
+                cell.font = cell.font.copy(bold=True)
+            for column in ws.columns:
+                letter = column[0].column_letter
+                width = max(len(_cell_text(c.value)) for c in column) + 2
+                ws.column_dimensions[letter].width = min(max(width, 10), 60)
+                if any(
+                    isinstance(c.value, date) and not isinstance(c.value, datetime) for c in column
+                ):
+                    for c in column[1:]:
+                        c.number_format = "yyyy-mm-dd"
+            ws.freeze_panes = "A2"
+            canonical.append([name, header, [[_cell_text(v) for v in r] for r in rows]])
+        raw = io.BytesIO()
+        wb.save(raw)
+        target = self.write_bytes(relative, _fixed_zip(raw.getvalue()))
+        text = json.dumps(canonical, ensure_ascii=True, separators=(",", ":"))
+        self.logical_hashes[Path(relative).as_posix()] = hashlib.sha256(text.encode()).hexdigest()
+        return target
+
+
+def _cell_text(v) -> str:
+    """One cell as text; refuses floats so number formatting is always explicit."""
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, np.integer):
+        return str(int(v))
+    if isinstance(v, int | str):
+        return str(v)
+    if isinstance(v, datetime):
+        return v.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(v, date):
+        return v.isoformat()
+    raise TypeError(f"unsupported cell value {v!r} ({type(v).__name__}); format floats as text")
+
+
+def _fixed_zip(data: bytes) -> bytes:
+    """Rewrite a zip with fixed timestamps and no compression: equal content, equal bytes."""
+    out = io.BytesIO()
+    with (
+        zipfile.ZipFile(io.BytesIO(data)) as src,
+        zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as dst,
+    ):
+        for info in sorted(src.infolist(), key=lambda i: i.filename):
+            entry = zipfile.ZipInfo(info.filename, date_time=(2026, 1, 1, 0, 0, 0))
+            entry.compress_type = zipfile.ZIP_STORED
+            entry.external_attr = 0o600 << 16
+            content = src.read(info.filename)
+            if info.filename == "docProps/core.xml":
+                # openpyxl stamps the save time into "modified" whatever we set; pin it.
+                content = re.sub(
+                    rb"(<dcterms:modified[^>]*>)[^<]*(</dcterms:modified>)",
+                    rb"\g<1>2026-01-01T00:00:00Z\g<2>",
+                    content,
+                )
+            dst.writestr(entry, content)
+    return out.getvalue()
 
 
 # --------------------------------------------------------------------------------------------------
@@ -170,15 +281,20 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def hash_outputs(out: Path) -> dict[str, str]:
-    """SHA-256 of every generated file, keyed by its path relative to `out` (sorted)."""
+def hash_outputs(out: Path, logical: dict[str, str] | None = None) -> dict[str, str]:
+    """SHA-256 of every generated file, keyed by its path relative to `out` (sorted).
+
+    Files in `logical` (workbooks) are hashed by content, as their writer computed.
+    """
+    logical = logical or {}
     files = {}
     for folder in OWNED_DIRS:
         base = out / folder
         if base.is_dir():
             for p in sorted(base.rglob("*")):
                 if p.is_file():
-                    files[p.relative_to(out).as_posix()] = sha256_file(p)
+                    key = p.relative_to(out).as_posix()
+                    files[key] = logical.get(key) or sha256_file(p)
     return dict(sorted(files.items()))
 
 
@@ -205,6 +321,15 @@ def prepare_output(out: Path) -> None:
         (out / name).unlink(missing_ok=True)
 
 
+def _openpyxl_version() -> str:
+    try:
+        import openpyxl
+
+        return openpyxl.__version__
+    except ImportError:
+        return "not installed"
+
+
 def run(profile: Profile, seed: int, out: Path) -> dict:
     """Generate everything for one profile and seed into `out`; return the manifest."""
     if not isinstance(seed, int) or isinstance(seed, bool) or not 0 <= seed <= MAX_SEED:
@@ -220,7 +345,7 @@ def run(profile: Profile, seed: int, out: Path) -> dict:
             ran.append(st.name)
     finally:
         _current_stage["name"] = None
-    files = hash_outputs(out)
+    files = hash_outputs(out, ctx.logical_hashes)
     manifest = {
         "generator_version": GENERATOR_VERSION,
         "seed": seed,
@@ -228,6 +353,7 @@ def run(profile: Profile, seed: int, out: Path) -> dict:
         "stages": ran,
         "source_folders": list(SOURCES),
         "files": files,
+        "logical_hash_files": sorted(ctx.logical_hashes),
         "content_hash": content_hash(files),
     }
     (out / MANIFEST_FILE).write_bytes(
@@ -238,6 +364,7 @@ def run(profile: Profile, seed: int, out: Path) -> dict:
         "seconds": round(time.perf_counter() - started, 3),
         "python": platform.python_version(),
         "numpy": np.__version__,
+        "openpyxl": _openpyxl_version(),
         "platform": platform.platform(),
         "note": "Not part of the determinism check. If two machines disagree on content_hash, "
         "compare the numpy versions here first.",
@@ -290,5 +417,13 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+# Stage modules register themselves when imported. Import order is run order (dependency order).
+# Each later story adds its module here, after the ones it depends on.
+from etl import gen_master  # noqa: E402,F401  US-2.2 master data and registers
+
 if __name__ == "__main__":
-    sys.exit(main())
+    # Run through the importable module, so stages register in the one registry that run() reads
+    # (running this file directly would otherwise create a second copy named __main__).
+    from etl.generate_data import main as _main
+
+    sys.exit(_main())

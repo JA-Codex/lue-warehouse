@@ -1,0 +1,43 @@
+Run against PostgreSQL 16. The sandbox could not install psycopg2, so the scripts ran through a psql-backed stand-in for it
+(not shipped). The SQL, the data and the checks are real; run it yourself with the real psycopg2 to confirm.
+
+======================================================================
+ US-2.2 database tests: S1 master data in lue_source.src_pms
+======================================================================
+Tables and columns (the Phase 1 source ERD)
+  [PASS] src_pms.buildings: columns and types equal the ERD
+  [PASS] src_pms.buildings: the primary key is building_code
+  [PASS] src_pms.units: columns and types equal the ERD
+  [PASS] src_pms.units: the primary key is unit_id
+  [PASS] src_pms.tenants: columns and types equal the ERD
+  [PASS] src_pms.tenants: the primary key is tenant_code
+  [PASS] src_pms.charge_types: columns and types equal the ERD
+  [PASS] src_pms.charge_types: the primary key is charge_code
+  [PASS] src_pms.payment_methods: columns and types equal the ERD
+  [PASS] src_pms.payment_methods: the primary key is method_code
+Row counts match the generated profile
+  [PASS] 40 buildings = 40
+  [PASS] 1800 units = 1800
+  [PASS] 3800 tenants = 3800
+  [PASS] 6 charge types, 6 payment methods
+  [PASS] src_pms.buildings has the 40 rows of its CSV file
+  [PASS] src_pms.units has the 1800 rows of its CSV file
+  [PASS] src_pms.tenants has the 3800 rows of its CSV file
+  [PASS] src_pms.charge_types has the 6 rows of its CSV file
+  [PASS] src_pms.payment_methods has the 6 rows of its CSV file
+Units, buildings and cities
+  [PASS] every unit belongs to a building (0 units without one)
+  [PASS] every unit therefore has a city and a locality
+  [PASS] 4 distinct cities
+  [PASS] (building_code, unit_no) is unique
+  [PASS] every building has units
+  [PASS] area > 0, unit type is one of three, bedrooms fit the type, updated_at is filled
+  [PASS] building class A, B or C; year built 1980 to 2023
+Tenants and reference tables
+  [PASS] every tenant has a name, a phone and a creation time from go-live onwards
+  [PASS] tenant type and contact channel use the pack's values
+  [PASS] src_pms.charge_types equals etl/reference_data.py
+  [PASS] src_pms.payment_methods equals etl/reference_data.py
+======================================================================
+ RESULT: 30/30 checks passed
+======================================================================
