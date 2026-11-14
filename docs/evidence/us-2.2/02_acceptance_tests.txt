@@ -1,0 +1,138 @@
+======================================================================
+ US-2.2 acceptance tests: master data and registers
+======================================================================
+Small profile (2 buildings, 90 units)
+  [PASS] the master_data stage ran
+  [PASS] s1/buildings.csv: columns equal src_pms.buildings in the Phase 1 source ERD
+  [PASS] s1/units.csv: columns equal src_pms.units in the Phase 1 source ERD
+  [PASS] s1/tenants.csv: columns equal src_pms.tenants in the Phase 1 source ERD
+  [PASS] s1/charge_types.csv: columns equal src_pms.charge_types in the Phase 1 source ERD
+  [PASS] s1/payment_methods.csv: columns equal src_pms.payment_methods in the Phase 1 source ERD
+  [PASS] every S1 text value fits its column width in the source ERD
+  [PASS] 2 buildings, as configured
+  [PASS] 90 units, as configured
+  [PASS] 120 tenants, as configured
+  [PASS] exactly 2 cities, each with a building: Karachi, Lahore
+  [PASS] 6 charge types and 6 payment methods
+  [PASS] charge types and payment methods equal etl/reference_data.py (the loaders' source)
+  [PASS] building codes are unique
+  [PASS] building codes look like GLB01 (3 letters or digits, 2-digit sequence)
+  [PASS] building names are unique
+  [PASS] building class is A, B or C and year built is 1980 to 2023
+  [PASS] every unit belongs to an existing building
+  [PASS] every unit therefore has a city, one of the configured cities
+  [PASS] unit_id runs 1..N without gaps
+  [PASS] unit_no is unique inside a building
+  [PASS] building code + unit number fits the 20 characters of dim_unit.unit_nk
+  [PASS] every building has at least 10 units
+  [PASS] unit type is Apartment, Office or Shop
+  [PASS] bedrooms: 1 to 4 for apartments, 0 for offices and shops
+  [PASS] area is positive, floor is not negative, furnished is true or false
+  [PASS] no shop is let furnished
+  [PASS] units carry an updated_at inside the go-live fortnight
+  [PASS] tenant codes run T-0001.. in order
+  [PASS] tenant codes follow the order the tenants were created
+  [PASS] tenants are created between go-live and the end of the window
+  [PASS] 64% of tenants exist when the window opens (enough to staff the opening leases)
+  [PASS] tenant type and contact channel use the pack's values
+  [PASS] tenant phone numbers look like 0300-1234567 and are unique
+  [PASS] about 5% of tenants lack an employer sector (2.5%), mapped to Unknown
+  [PASS] every individual name is a curated first name plus a curated surname (no real people)
+  [PASS] the workbook has the sheets owners, ownership, vendors, sla_policy, holidays
+  [PASS] every sheet has its header row
+  [PASS] 40 owners, as configured
+  [PASS] 12 vendors, as configured
+  [PASS] owner codes are unique; owner type is Individual or Company
+  [PASS] owner, vendor and subcategory text fits the dimension column widths
+  [PASS] every ownership period names an existing unit and an existing owner
+  [PASS] every unit has an ownership history
+  [PASS] every owner holds at least one unit at some point
+  [PASS] ownership periods are contiguous: each ends the day the next begins
+  [PASS] only the last period is open-ended, and every period has length
+  [PASS] the owner changes at each transfer, and the first period starts before the window opens
+  [PASS] 18% of units change owner inside the window (planted for the owner dimension)
+  [PASS] every transfer date lies inside the window
+  [PASS] every trade has at least 2 vendors
+  [PASS] vendor ratings are A, B or C; vendor codes are unique
+  [PASS] 1 vendors changed rating inside the window (SCD2 test data for dim_vendor)
+  [PASS] 30 subcategories each have an initial policy, equal to etl/reference_data.py
+  [PASS] 6 maintenance categories
+  [PASS] 4 subcategories tighten their SLA inside the window (SCD2 test data)
+  [PASS] holidays are unique dates in order, inside the dim_date range
+  [PASS] a holiday has a name exactly when it is public; every other row is a Ramadan day
+  [PASS] Independence Day is listed every year; Pakistan Day 2025 falls in Ramadan and is both
+  [PASS] 4 Ramadan periods of 29 to 30 days are listed (116 days)
+  [PASS] holiday and policy dates are real Excel dates, not text
+Full profile (40 buildings, 1800 units)
+  [PASS] the master_data stage ran
+  [PASS] s1/buildings.csv: columns equal src_pms.buildings in the Phase 1 source ERD
+  [PASS] s1/units.csv: columns equal src_pms.units in the Phase 1 source ERD
+  [PASS] s1/tenants.csv: columns equal src_pms.tenants in the Phase 1 source ERD
+  [PASS] s1/charge_types.csv: columns equal src_pms.charge_types in the Phase 1 source ERD
+  [PASS] s1/payment_methods.csv: columns equal src_pms.payment_methods in the Phase 1 source ERD
+  [PASS] every S1 text value fits its column width in the source ERD
+  [PASS] 40 buildings, as configured
+  [PASS] 1800 units, as configured
+  [PASS] 3800 tenants, as configured
+  [PASS] exactly 4 cities, each with a building: Faisalabad, Islamabad, Karachi, Lahore
+  [PASS] 6 charge types and 6 payment methods
+  [PASS] charge types and payment methods equal etl/reference_data.py (the loaders' source)
+  [PASS] building codes are unique
+  [PASS] building codes look like GLB01 (3 letters or digits, 2-digit sequence)
+  [PASS] building names are unique
+  [PASS] building class is A, B or C and year built is 1980 to 2023
+  [PASS] every unit belongs to an existing building
+  [PASS] every unit therefore has a city, one of the configured cities
+  [PASS] unit_id runs 1..N without gaps
+  [PASS] unit_no is unique inside a building
+  [PASS] building code + unit number fits the 20 characters of dim_unit.unit_nk
+  [PASS] every building has at least 10 units
+  [PASS] unit type is Apartment, Office or Shop
+  [PASS] bedrooms: 1 to 4 for apartments, 0 for offices and shops
+  [PASS] area is positive, floor is not negative, furnished is true or false
+  [PASS] no shop is let furnished
+  [PASS] units carry an updated_at inside the go-live fortnight
+  [PASS] tenant codes run T-0001.. in order
+  [PASS] tenant codes follow the order the tenants were created
+  [PASS] tenants are created between go-live and the end of the window
+  [PASS] 36% of tenants exist when the window opens (enough to staff the opening leases)
+  [PASS] tenant type and contact channel use the pack's values
+  [PASS] tenant phone numbers look like 0300-1234567 and are unique
+  [PASS] about 5% of tenants lack an employer sector (4.9%), mapped to Unknown
+  [PASS] every individual name is a curated first name plus a curated surname (no real people)
+  [PASS] the workbook has the sheets owners, ownership, vendors, sla_policy, holidays
+  [PASS] every sheet has its header row
+  [PASS] 900 owners, as configured
+  [PASS] 140 vendors, as configured
+  [PASS] owner codes are unique; owner type is Individual or Company
+  [PASS] owner, vendor and subcategory text fits the dimension column widths
+  [PASS] every ownership period names an existing unit and an existing owner
+  [PASS] every unit has an ownership history
+  [PASS] every owner holds at least one unit at some point
+  [PASS] ownership periods are contiguous: each ends the day the next begins
+  [PASS] only the last period is open-ended, and every period has length
+  [PASS] the owner changes at each transfer, and the first period starts before the window opens
+  [PASS] 13% of units change owner inside the window (planted for the owner dimension)
+  [PASS] every transfer date lies inside the window
+  [PASS] every trade has at least 2 vendors
+  [PASS] vendor ratings are A, B or C; vendor codes are unique
+  [PASS] 17 vendors changed rating inside the window (SCD2 test data for dim_vendor)
+  [PASS] 30 subcategories each have an initial policy, equal to etl/reference_data.py
+  [PASS] 6 maintenance categories
+  [PASS] 4 subcategories tighten their SLA inside the window (SCD2 test data)
+  [PASS] holidays are unique dates in order, inside the dim_date range
+  [PASS] a holiday has a name exactly when it is public; every other row is a Ramadan day
+  [PASS] Independence Day is listed every year; Pakistan Day 2025 falls in Ramadan and is both
+  [PASS] 4 Ramadan periods of 29 to 30 days are listed (116 days)
+  [PASS] holiday and policy dates are real Excel dates, not text
+Determinism and independence
+  [PASS] same seed: identical hashes for every master-data file, workbook included
+  [PASS] same seed: the workbook is byte-identical (no save-time stamp)
+  [PASS] a different seed changes the buildings, units, tenants and workbook
+  [PASS] fixed reference tables do not depend on the seed
+  [PASS] the manifest marks the workbook as hashed by content
+  [PASS] both profiles generate in under a minute (small 0.1s, full 0.2s)
+  [PASS] the allocation helper always sums to the total and honours the minimum
+======================================================================
+ RESULT: 129/129 checks passed
+======================================================================

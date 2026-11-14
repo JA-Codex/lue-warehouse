@@ -1,0 +1,38 @@
+$ python etl/generate_data.py --profile full --seed 3004; python scripts/db_load_source.py
+
+-- Row counts in lue_source.src_pms (plan: counts match the configuration)
+   table_name    | rows 
+-----------------+------
+ buildings       |   40
+ units           | 1800
+ tenants         | 3800
+ charge_types    |    6
+ payment_methods |    6
+(5 rows)
+
+
+-- Every unit belongs to a building and a city (units without a building must be 0)
+ units_without_building 
+------------------------
+                      0
+(1 row)
+
+
+-- Buildings and units per city
+    city    | buildings | units 
+------------+-----------+-------
+ Lahore     |        16 |   752
+ Karachi    |        10 |   427
+ Islamabad  |         8 |   370
+ Faisalabad |         6 |   251
+(4 rows)
+
+
+-- Unit mix
+ unit_type | units | avg_sqft 
+-----------+-------+----------
+ Apartment |  1430 |      961
+ Shop      |   203 |      502
+ Office    |   167 |     1002
+(3 rows)
+

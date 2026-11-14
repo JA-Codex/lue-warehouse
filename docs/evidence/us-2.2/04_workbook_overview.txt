@@ -1,0 +1,32 @@
+s2/registers.xlsx (full profile, seed 3004): one sheet per register
+
+sheet 'owners': 900 rows
+    owner_code | owner_name | owner_type
+    OW-0001 | Bushra Akhtar | Individual
+    OW-0002 | Laiba Nawaz | Individual
+    OW-0003 | Kiran Baig | Individual
+
+sheet 'ownership': 2076 rows
+    building_code | unit_no | owner_code | valid_from | valid_to
+    DHL01 | A-001 | OW-0177 | 2022-04-20 | 
+    DHL01 | A-002 | OW-0112 | 2016-08-16 | 
+    DHL01 | A-003 | OW-0234 | 2017-09-14 | 2025-01-08
+
+sheet 'vendors': 140 rows
+    vendor_code | vendor_name | trade | rating | phone | previous_rating | rating_changed_on
+    V-001 | Sheikh Plumbing Works | Plumbing | B | 0313-7372509 | C | 2026-02-22
+    V-002 | Iqbal Plumbing Services | Plumbing | A | 0312-7670024 |  | 
+    V-003 | Memon Plumbing Associates | Plumbing | C | 0302-3054466 | B | 2024-03-25
+
+sheet 'sla_policy': 34 rows
+    subcategory_code | subcategory_name | category_name | default_sla_hours | valid_from
+    CIV-CRACK | Cracks or plaster | Civil | 120 | 2023-01-01
+    CIV-DOOR | Door or window | Civil | 72 | 2023-01-01
+    CIV-FLOOR | Flooring or tiles | Civil | 120 | 2023-01-01
+
+sheet 'holidays': 173 rows
+    holiday_date | holiday_name | is_public_holiday | is_ramadan
+    2023-07-01 | Eid ul-Adha | True | False
+    2023-07-28 | Ashura | True | False
+    2023-07-29 | Ashura | True | False
+

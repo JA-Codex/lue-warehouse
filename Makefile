@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate reports db-setup db-deploy db-load-ref db-smoke db-test db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -26,8 +26,9 @@ manifest: ## docs/phase1 must still match MANIFEST.sha256 (frozen baseline)
 contract: ## sql/10_ddl must match the frozen Phase 1 DDL (US-1.2)
 	$(PYTHON) scripts/check_contract.py
 
-gen-test: ## Generator acceptance tests, no database needed (US-2.1)
+gen-test: ## Generator acceptance tests, no database needed (US-2.1, US-2.2)
 	$(PYTHON) scripts/test_generator.py
+	$(PYTHON) scripts/test_master_data.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 (US-2.1)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004)
@@ -44,10 +45,14 @@ db-deploy: ## Deploy sql/10_ddl as lue_etl; safe to re-run (US-1.2)
 db-load-ref: ## Load dim_date and the static dimensions; safe to re-run (US-1.4)
 	$(PYTHON) scripts/db_load_reference.py
 
-db-test: ## Database acceptance tests (US-1.1 to US-1.5)
+db-load-source: ## Load the generated S1 master data into lue_source.src_pms; safe to re-run (US-2.2)
+	$(PYTHON) scripts/db_load_source.py
+
+db-test: ## Database acceptance tests (US-1.1 to US-1.5, US-2.2)
 	$(PYTHON) scripts/test_db_setup.py
 	$(PYTHON) scripts/test_dimensions.py
 	$(PYTHON) scripts/test_facts.py
+	$(PYTHON) scripts/test_source_load.py
 	$(PYTHON) scripts/test_reference.py
 	$(PYTHON) scripts/test_smoke.py
 

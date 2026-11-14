@@ -8,5 +8,5 @@
 | `04_windows_run.txt` | The same two commands on a Windows machine: the same content hash and 39/39 checks passed |
 
 Produced on Linux with Python 3.13 and NumPy 2.5.3. The content hash for `--profile small --seed 3004` is
-`67c361e826115383461b85b9160a9f0630c365625b3175bfc8d1c47d60fd1f68`. Confirmed on Windows (see `04_windows_run.txt`). If a
+`67c361e826115383461b85b9160a9f0630c365625b3175bfc8d1c47d60fd1f68` (framework only; every stage added later changes it). Confirmed on Windows (see `04_windows_run.txt`). If a
 teammate's value ever differs, compare the NumPy versions first (see `data/run_info.json`).

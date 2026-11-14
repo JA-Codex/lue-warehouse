@@ -27,6 +27,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | Story | Title | Owner (plan) | Status | Done on | Log | Evidence |
 |---|---|---|---|---|---|---|
 | US-2.1 | Build the generator framework, configuration and seeding | Ahmad Waqar | Done | 2026-11-14 | [US-2.1](US-2.1.md) | [evidence](../evidence/us-2.1/) |
+| US-2.2 | Generate master data and registers | Hanan | Done | 2026-11-14 | [US-2.2](US-2.2.md) | [evidence](../evidence/us-2.2/) |
 
 ## Later epics
 
@@ -40,5 +41,7 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-07 | Repository is public, because GitHub Free does not enforce branch rules on private repositories | [US-0.3](US-0.3.md) |
 | 2026-11-07 | A teammate review before merging is optional and not enforced; the `ci` check and the pull request are enforced | [US-0.3](US-0.3.md) |
 | 2026-11-10 | The static reference dimensions have 6 charge types (not the plan's 4), following the Phase 1 pack; settlement days are our assumption | [US-1.4](US-1.4.md) |
+| 2026-11-14 | S1 source tables keep primary keys only, no foreign keys: the defects US-2.6 plants (orphans, invoices before the tenant) could not exist otherwise | [US-2.2](US-2.2.md) |
+| 2026-11-14 | Ownership `valid_to` is exclusive and empty for the current owner; workbooks are hashed by content, not bytes | [US-2.2](US-2.2.md) |
 | 2026-11-14 | Generator stages get one seeded NumPy generator each, derived from the run's seed and the stage name, instead of one shared generator passed in order | [US-2.1](US-2.1.md) |
 | 2026-11-09 | `dim_request_flags` keeps no special members, as in the Phase 1 pack; plan US-1.4's "plus the Unknown member" cannot fit (three NOT NULL flags, all 8 combinations unique) | [US-1.2](US-1.2.md) |

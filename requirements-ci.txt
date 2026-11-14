@@ -2,3 +2,4 @@
 ruff>=0.5
 pglast>=6
 numpy>=1.26
+openpyxl>=3.1
