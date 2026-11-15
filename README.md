@@ -13,7 +13,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Repository, branch rules, CI | US-0.3 (Done) |
 | Local environment and `.env.example` | US-0.4 (Done) |
 | Database (E1): schemas, 13 dimensions, 6 facts, audit tables, reference data | US-1.1 to US-1.5 (Done) |
-| Data generator (E2): framework, master data and registers | US-2.1, US-2.2 (Done); US-2.3 to US-2.6 pending |
+| Data generator (E2): framework, master data, tickets, incentives, weather | US-2.1, US-2.2, US-2.5 (Done); US-2.3, US-2.4, US-2.6 pending |
 | Ingestion, staging, dimensions, facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
@@ -119,7 +119,9 @@ make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39 checks, US-2.2: 129 checks)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.5: 67 + 54)
+make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
+make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2)
 make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4), 12 (US-1.5) and 30 (US-2.2) PASS lines
 ```
@@ -205,6 +207,19 @@ The partial unique indexes enforce uniqueness, like the primary keys, so they be
 | `dim_request_flags` | 8 | every combination of the three flags; no special members (as in the pack) |
 
 The same members are in `etl/reference_data.py`, which the data generator uses for the source system S1 codes. `scripts/test_reference.py` fails if the two ever differ.
+
+### Weather data (S5, US-2.5)
+
+`data/weather_cache.json` is real daily weather (maximum temperature, rainfall) for Lahore, Karachi, Islamabad and
+Faisalabad, 2023-07-01 to 2026-06-30, from the [Open-Meteo](https://open-meteo.com/) historical API (CC BY 4.0,
+"Weather data by Open-Meteo.com"). It is downloaded once with `python etl/refresh_weather.py` and committed
+(decision D12): nothing else uses the network, so nobody else needs internet access.
+
+The download makes 16 small requests (4 cities x 4 periods) with a pause between them, retries rate limits and
+network errors, keeps finished requests in `data/.weather_parts/` so a stopped run resumes, and writes the cache only
+when every part is complete and valid. If your network blocks the API, run `python etl/refresh_weather.py
+--print-urls`, save each link from a browser into one folder, then `python etl/refresh_weather.py --import-dir
+<folder>`. Check the cache any time with `make weather-check`.
 
 ## Change control for the frozen Phase 1 pack
 

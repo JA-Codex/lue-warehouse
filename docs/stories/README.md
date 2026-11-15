@@ -28,6 +28,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 |---|---|---|---|---|---|---|
 | US-2.1 | Build the generator framework, configuration and seeding | Ahmad Waqar | Done | 2026-11-14 | [US-2.1](US-2.1.md) | [evidence](../evidence/us-2.1/) |
 | US-2.2 | Generate master data and registers | Hanan | Done | 2026-11-14 | [US-2.2](US-2.2.md) | [evidence](../evidence/us-2.2/) |
+| US-2.5 | Generate tickets, incentives and weather | Eesha (done by Hanan) | Done | 2026-11-16 | [US-2.5](US-2.5.md) | [evidence](../evidence/us-2.5/) |
 
 ## Later epics
 
@@ -45,3 +46,5 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-14 | Ownership `valid_to` is exclusive and empty for the current owner; workbooks are hashed by content, not bytes | [US-2.2](US-2.2.md) |
 | 2026-11-14 | Generator stages get one seeded NumPy generator each, derived from the run's seed and the stage name, instead of one shared generator passed in order | [US-2.1](US-2.1.md) |
 | 2026-11-09 | `dim_request_flags` keeps no special members, as in the Phase 1 pack; plan US-1.4's "plus the Unknown member" cannot fit (three NOT NULL flags, all 8 combinations unique) | [US-1.2](US-1.2.md) |
+| 2026-11-16 | S5 weather is real Open-Meteo data, downloaded once in 16 small requests with retries and resume, and committed; nothing else uses the network | [US-2.5](US-2.5.md) |
+| 2026-11-16 | S4 tickets carry no tenant: the fact takes the tenant from the lease active on the raised date (-2 if vacant), so US-2.5 needs only US-2.2 | [US-2.5](US-2.5.md) |

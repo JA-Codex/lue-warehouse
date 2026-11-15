@@ -1,0 +1,23 @@
+US-2.5 determinism and independence (Python 3.11.18, numpy 2.4.6)
+
+--- small profile, seed 3004, run a
+stages        framework_probe, master_data, tickets_incentives
+content hash  6a08f8a02f40ca12e883d4e1133197c6ce486d074fd1c93ecc0feba5300bdd3d
+--- small profile, seed 3004, run b
+stages        framework_probe, master_data, tickets_incentives
+content hash  6a08f8a02f40ca12e883d4e1133197c6ce486d074fd1c93ecc0feba5300bdd3d
+--- small profile, seed 3005
+content hash  46f5ea1355755030d3098d7370fc825d4f4c54c4dfc7b82af37dda86a0de0bae
+--- full profile, seed 3004
+files         10
+content hash  62c2d560d5f82003d80404ef9a55a99a08b87823092f1a79dd27b765ac4b85b5
+
+SHA-256 of the US-2.5 files (small, seed 3004):
+  1edbfad27ef04b19111ed60cff459a4a72c8e4b4f7675a79710a8c377cb29c5e  s4/tickets.json
+  4b18079660bda2e711ee51ce7f1a7e4011c66a8b2da27a9482e8aa85eef562a3  s6/offers.csv
+  3f49bd8392d8dc442a334e2d20dbc5d9005ba9134df97e86acc33ba86b4bd89e  s6/incentive_log.csv
+
+The 7 US-2.2 master files are byte-identical to main (021eed7) for both profiles:
+  small: 7 of 7 identical; full: 7 of 7 identical (compared through run_manifest.json)
+The 3 US-2.5 files are identical with and without the US-2.3/2.4 stages, and the 114 US-2.3/2.4
+files are identical with and without US-2.5 (merge rehearsal with origin/user-story-2.4).

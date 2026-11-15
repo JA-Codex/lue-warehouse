@@ -1,0 +1,19 @@
+US-2.5: merge rehearsal with the unmerged US-2.3 and US-2.4 work (origin/user-story-2.4, which contains US-2.3)
+
+git merge e2-2.5-tickets-weather into a copy of origin/user-story-2.4:
+  CONFLICT Makefile                  gen-test list: keep both sides (6 test scripts)
+  CONFLICT etl/generate_data.py      GENERATOR_VERSION: keep "2.5"
+                                     STAGE_ORDER: keep the US-2.5 version (it already lists all five stages)
+                                     stage imports: gen_leases, gen_master, gen_payments, gen_tickets
+  (docs/stories/README.md and README.md will also need "keep both rows")
+  Auto-merged cleanly: etl/generator_config.py, scripts/test_source_load.py, everything else.
+
+After resolving, on Python 3.11 with requirements-ci.txt (what CI runs), with a weather cache present:
+  ruff: All checks passed!         sql: 14 files, 0 failures        manifest: 54 files, 0 problems
+  contract: 24 tables, 0 problems
+  test_generator 39/39   test_master_data 129/129   test_leases 114/114   test_payments 80/80
+  test_tickets 67/67     test_weather 52/52
+  stages: framework_probe, master_data, leases_invoices, payments, tickets_incentives
+
+Independence: the 3 US-2.5 files are byte-identical with and without the US-2.3/2.4 stages, and the 114
+US-2.3/2.4 files are byte-identical with and without US-2.5.

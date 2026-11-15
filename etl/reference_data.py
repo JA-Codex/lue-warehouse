@@ -192,3 +192,20 @@ def _build_holidays() -> list[tuple[date, str | None, bool, bool]]:
 
 
 HOLIDAYS = _build_holidays()
+
+
+# ----------------------------------------------------------------------------------------------
+# Added in US-2.5. The S5 weather cities (the four cities of etl/gen_master.CITIES, same order)
+# with the coordinates sent to the Open-Meteo historical API, and the two daily variables the
+# pack uses (dim_weather.max_temp_c and rainfall_mm). Coordinates are city centres; Open-Meteo
+# snaps them to its nearest grid cell and reports that cell's position in the response.
+# ----------------------------------------------------------------------------------------------
+WEATHER_CITIES = [
+    ("Lahore", 31.5204, 74.3587),
+    ("Karachi", 24.8607, 67.0011),
+    ("Islamabad", 33.6844, 73.0479),
+    ("Faisalabad", 31.4504, 73.1350),
+]
+WEATHER_DAILY_VARIABLES = ("temperature_2m_max", "precipitation_sum")
+WEATHER_UNITS = {"temperature_2m_max": "°C", "precipitation_sum": "mm"}
+WEATHER_TIMEZONE = "Asia/Karachi"  # PKT, decision D13: days are Pakistan calendar days

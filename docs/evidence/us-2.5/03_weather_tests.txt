@@ -1,0 +1,99 @@
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 65434)
+Traceback (most recent call last):
+  File "C:\Users\Personal\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Personal\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Personal\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+  File "C:\Users\Personal\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 436, in handle
+    self.handle_one_request()
+  File "C:\Users\Personal\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 424, in handle_one_request
+    method()
+  File "C:\Users\Personal\Documents\lue-warehouse\scripts\test_weather.py", line 193, in do_GET
+    self.wfile.write(raw.encode())
+  File "C:\Users\Personal\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+======================================================================
+ US-2.5 weather tests: download, failure handling and the cache
+======================================================================
+Request plan (stays far below the free API's limits)
+  [PASS] 16 requests: 4 cities x 4 periods
+  [PASS] each city's periods cover the window exactly (1096 days, no overlap)
+  [PASS] no request spans more than one calendar year (a light request weight)
+  [PASS] requests ask for max temperature and rainfall, in Pakistan time (D13)
+  [PASS] defaults pause between requests and wait over a minute after a minute limit
+A clean download
+  [PASS] 16 requests, exit code 0
+  [PASS] the cache covers every city and every day
+  [PASS] 4384 city-days, each exactly once (the S5 grain: city + date)
+  [PASS] the cache records the source and its licence
+  [PASS] each city keeps Open-Meteo's own fields and units
+  [PASS] the file stays readable: 120 lines, one per daily series
+  [PASS] UTF-8 with \n line ends (identical on Windows and Linux)
+  [PASS] all 16 parts are kept for resuming
+  [PASS] no temporary file is left behind
+Resume and rerun
+  [PASS] a rerun with all parts saved makes 0 requests
+  [PASS] and rebuilds the same cache content
+  [PASS] --fresh downloads all 16 again and gets the same content
+Rate limits (HTTP 429)
+  [PASS] two 'minutely limit' answers in a row: waits, retries, completes
+  [PASS] the log says what happened and that it retried
+  [PASS] a Retry-After header is obeyed (waited exactly 7 s)
+  [PASS] an 'hourly limit' answer stops at once with a clear message (no pointless retries)
+  [PASS] it stopped on the 6th request, without retrying it
+  [PASS] the existing cache is untouched by the failed run
+  [PASS] the 5 finished parts are kept
+  [PASS] the next run resumes: only the 11 missing parts are requested
+  [PASS] a 'daily limit' answer stops and says to try tomorrow
+Network and server failures
+  [PASS] two server errors (HTTP 502): retried, then completes
+  [PASS] a request that times out: retried, then completes
+  [PASS] an answer cut off in the middle: retried, then completes
+  [PASS] a server that keeps failing: gives up after --retries attempts with the reason
+  [PASS] waits grow between attempts
+  [PASS] and writes no cache
+  [PASS] no server at all: a clear network error
+Certificate problems (seen on a Windows laptop: 'certificate has expired')
+  [PASS] one certificate list refuses: the other is tried and the download works
+  [PASS] both lists refuse: stops with advice (clock, then browser route)
+  [PASS] other network errors are retried, not hidden by the certificate fallback
+  [PASS] certifi's list is tried first when installed, then the operating system's (here: certifi, system)
+Bad answers are never kept
+  [PASS] HTTP 400 stops at once and shows the API's reason
+  [PASS] a day missing from the answer: rejected (daily.time does not cover the period: 1 day(s) missing, firs)
+  [PASS] right number of days, but one repeated and one missing: rejected (daily.time does not cover the period: 1 day(s) missing, firs)
+  [PASS] temperature in the wrong unit: rejected (temperature_2m_max is in '°F', expected '°C')
+  [PASS] an impossible value (412 C): rejected (temperature_2m_max on 2024-01-04 is 412.0, outside the plaus)
+  [PASS] the wrong time zone: rejected (timezone is 'GMT', expected 'Asia/Karachi'; utc_offset_secon)
+  [PASS] an error body with HTTP 200 is not mistaken for data
+Missing values (the API's own nulls)
+  [PASS] nulls are kept and counted (2), not invented: DQ quarantines them (dictionary)
+  [PASS] --check passes and notes them; --check --strict fails
+Offline route for blocked networks (--print-urls, --import-dir)
+  [PASS] --print-urls lists 16 links
+  [PASS] --import-dir builds the same cache from saved files
+  [PASS] a missing file is named, and the existing cache is not changed
+--check catches a damaged cache
+  [PASS] a city missing: --check fails
+  [PASS] a day missing: --check fails
+  [PASS] not JSON: --check fails
+Nothing else uses the network (D12)
+  [PASS] only etl/refresh_weather.py imports a network library
+The committed cache (data/weather_cache.json)
+         city          days       first        last  null temp  null rain  max temp  max rain
+         Lahore        1096  2023-07-01  2026-06-30          0          0      46.5      93.9
+         Karachi       1096  2023-07-01  2026-06-30          0          0      41.6      64.4
+         Islamabad     1096  2023-07-01  2026-06-30          0          0      44.3      68.2
+         Faisalabad    1096  2023-07-01  2026-06-30          0          0      46.9      39.8
+         window 2023-07-01 to 2026-06-30: 1096 days x 4 cities = 4384 city-days expected
+  [PASS] the committed cache covers every city and every day of the window
+  [PASS] it holds the four cities in the reference order
+  [PASS] it records the real API request links
+======================================================================
+ RESULT: 56/56 checks passed
+======================================================================

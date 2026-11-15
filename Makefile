@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate weather weather-check reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -26,12 +26,20 @@ manifest: ## docs/phase1 must still match MANIFEST.sha256 (frozen baseline)
 contract: ## sql/10_ddl must match the frozen Phase 1 DDL (US-1.2)
 	$(PYTHON) scripts/check_contract.py
 
-gen-test: ## Generator acceptance tests, no database needed (US-2.1, US-2.2)
+gen-test: ## Generator acceptance tests, no database needed (US-2.1, US-2.2, US-2.5)
 	$(PYTHON) scripts/test_generator.py
 	$(PYTHON) scripts/test_master_data.py
+	$(PYTHON) scripts/test_tickets.py
+	$(PYTHON) scripts/test_weather.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 (US-2.1)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004)
+
+weather: ## Download the S5 weather once into data/weather_cache.json; resumes if stopped (US-2.5)
+	$(PYTHON) etl/refresh_weather.py
+
+weather-check: ## Check data/weather_cache.json covers every city and day; no network (US-2.5)
+	$(PYTHON) etl/refresh_weather.py --check
 
 reports: ## Stub: generate the report PDFs (E9, E14)
 	@echo "reports: not implemented yet"

@@ -57,6 +57,7 @@ class Profile:
     target_invoice_lines: int
     target_payments: int
     target_tickets: int
+    target_incentive_offers: int  # S6 incentive log rows: offers posted on units (US-2.5)
     defect_rates: dict[str, float] = field(default_factory=lambda: dict(DEFECT_RATES))
 
     @property
@@ -92,6 +93,7 @@ PROFILES = {
         target_invoice_lines=650,
         target_payments=250,
         target_tickets=40,
+        target_incentive_offers=12,
     ),
     # About 40 buildings, 1,800 units, 36 months (plan E2, US-2.3 to US-2.5).
     "full": Profile(
@@ -108,6 +110,7 @@ PROFILES = {
         target_invoice_lines=130_000,
         target_payments=60_000,
         target_tickets=6000,
+        target_incentive_offers=600,
     ),
 }
 
@@ -139,6 +142,8 @@ def validate(profile: Profile) -> list[str]:
     for name in ("target_invoice_lines", "target_payments", "target_tickets"):
         if getattr(profile, name) < 1:
             problems.append(f"{name} must be at least 1")
+    if not 0 <= profile.target_incentive_offers <= 2 * profile.units:
+        problems.append("target_incentive_offers must be from 0 to twice the number of units")
     for defect, rate in profile.defect_rates.items():
         if not 0 <= rate <= MAX_DEFECT_RATE:
             problems.append(f"defect rate {defect}={rate} is outside 0 to {MAX_DEFECT_RATE}")

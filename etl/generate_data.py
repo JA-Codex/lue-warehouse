@@ -58,7 +58,7 @@ from etl.generator_config import (  # noqa: E402
     get_profile,
 )
 
-GENERATOR_VERSION = "2.2"
+GENERATOR_VERSION = "2.5"
 SOURCES = ("s1", "s2", "s3", "s4", "s5", "s6")
 # Folders and files the generator owns inside --out. Nothing else in --out is ever touched
 # (in particular data/weather_cache.json, which is committed, decision D12).
@@ -241,7 +241,17 @@ class Stage:
     func: Callable[[Context], None]
 
 
-STAGES: dict[str, Stage] = {}  # insertion order is run order (dependency order)
+STAGES: dict[str, Stage] = {}
+# Run order. Import order cannot be trusted (stage modules import each other and this module, so the
+# order in which they register depends on how the program was started); each later story adds its
+# stage name here. A stage that is not listed runs after the listed ones, in registration order.
+STAGE_ORDER = (
+    "framework_probe",
+    "master_data",
+    "leases_invoices",
+    "payments",
+    "tickets_incentives",
+)
 _current_stage: dict[str, str | None] = {"name": None}
 
 
@@ -339,7 +349,10 @@ def run(profile: Profile, seed: int, out: Path) -> dict:
     ctx = Context(profile, seed, out)
     ran = []
     try:
-        for st in list(STAGES.values()):
+        for st in sorted(
+            STAGES.values(),
+            key=lambda s: STAGE_ORDER.index(s.name) if s.name in STAGE_ORDER else len(STAGE_ORDER),
+        ):
             _current_stage["name"] = st.name
             st.func(ctx)
             ran.append(st.name)
@@ -417,9 +430,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# Stage modules register themselves when imported. Import order is run order (dependency order).
-# Each later story adds its module here, after the ones it depends on.
-from etl import gen_master  # noqa: E402,F401  US-2.2 master data and registers
+# Stage modules register themselves when imported; STAGE_ORDER above says in which order they run.
+# Each later story adds its module here and its stage name to STAGE_ORDER.
+from etl import gen_master, gen_tickets  # noqa: E402,F401  US-2.2 master data, US-2.5 tickets
 
 if __name__ == "__main__":
     # Run through the importable module, so stages register in the one registry that run() reads

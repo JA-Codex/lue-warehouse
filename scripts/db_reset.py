@@ -13,7 +13,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db_setup import ROOT, SETUP_DIR, WAREHOUSE_DB, connect, load_settings, run_sql_file  # noqa: E402
+from db_setup import (  # noqa: E402
+    ROOT,
+    SETUP_DIR,
+    WAREHOUSE_DB,
+    connect,
+    load_settings,
+    run_sql_file,
+)
 
 SCRIPTS = Path(__file__).resolve().parent
 FOLLOW_UP = ["db_setup.py", "db_deploy.py", "db_load_reference.py", "test_smoke.py"]

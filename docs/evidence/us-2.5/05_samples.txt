@@ -1,0 +1,100 @@
+S4 s4/tickets.json (full profile, seed 3004): export header
+{
+  "system": "LUE tenant app",
+  "exported_at": "2026-06-30T23:59:59",
+  "window_start": "2023-07-01",
+  "window_end": "2026-06-30",
+  "ticket_count": 6000
+}
+
+A verified ticket:
+{
+  "ticket_id": "MR-2023-00012",
+  "building_code": "PCH01",
+  "unit_no": "A-603",
+  "category": "Electrical",
+  "subcategory_code": "ELE-OUT",
+  "subcategory": "Power outage",
+  "priority": "Emergency",
+  "is_emergency": true,
+  "is_recurring": false,
+  "is_tenant_caused": false,
+  "reported_via": "Tenant app",
+  "description": "Power outage in the entrance",
+  "vendor_code": "V-054",
+  "estimate": 1500,
+  "final_cost": 1400,
+  "status": "Verified",
+  "status_history": [
+    {
+      "status": "Raised",
+      "at": "2023-07-02T22:19:00"
+    },
+    {
+      "status": "Assigned",
+      "at": "2023-07-02T23:24:00",
+      "vendor_code": "V-054"
+    },
+    {
+      "status": "Resolved",
+      "at": "2023-07-03T04:02:00"
+    },
+    {
+      "status": "Verified",
+      "at": "2023-07-06T19:03:00"
+    }
+  ]
+}
+
+A ticket still open at the export moment (the fact maps its missing dates to -2):
+{
+  "ticket_id": "MR-2026-00964",
+  "building_code": "F1001",
+  "unit_no": "A-203",
+  "category": "Civil",
+  "subcategory_code": "CIV-PAINT",
+  "subcategory": "Painting",
+  "priority": "Normal",
+  "is_emergency": false,
+  "is_recurring": false,
+  "is_tenant_caused": false,
+  "reported_via": "Tenant app",
+  "description": "Painting in the kitchen",
+  "vendor_code": "V-101",
+  "estimate": 8800,
+  "final_cost": null,
+  "status": "Assigned",
+  "status_history": [
+    {
+      "status": "Raised",
+      "at": "2026-06-26T21:22:00"
+    },
+    {
+      "status": "Assigned",
+      "at": "2026-06-27T07:05:00",
+      "vendor_code": "V-101"
+    }
+  ]
+}
+
+S6 s6/offers.csv:
+offer_code,offer_type,description,discount_pct,rent_free_days
+RF15,Rent-free days,Half a month rent-free on a new lease,0.00,15
+RF30,Rent-free days,First month rent-free on an 11-month lease,0.00,30
+RF60,Rent-free days,Two months rent-free on a 24-month commercial lease,0.00,60
+DISC10,Discount,10% off the monthly rent for the first 3 months,10.00,0
+DISC15,Discount,15% off the monthly rent for the first 6 months,15.00,0
+DISC25,Discount,25% off the first month's rent,25.00,0
+FREEMAINT,Free maintenance,No maintenance charges for the first 6 months,0.00,0
+
+S6 s6/incentive_log.csv (first 8 of 600 rows):
+building_code,unit_no,offer_code,start_date,end_date
+GLB02,A-002,FREEMAINT,2023-07-01,2023-09-28
+BLA02,B-405,RF60,2023-07-03,2023-07-23
+CNT01,A-001,RF60,2023-07-05,2023-07-25
+DGR01,A-503,RF30,2023-07-06,2023-10-03
+MDT02,A-003,RF60,2023-07-08,2023-07-21
+G1101,A-703,DISC10,2023-07-10,2023-07-30
+PCH03,A-204,FREEMAINT,2023-07-10,2023-07-23
+BHD01,A-204,RF30,2023-07-14,2023-07-27
+
