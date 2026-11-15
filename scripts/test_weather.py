@@ -412,6 +412,87 @@ def main() -> int:
         except rw.WeatherError as exc:
             check("network problem" in str(exc), "no server at all: a clear network error")
 
+        print("Certificate problems (seen on a Windows laptop: 'certificate has expired')")
+        real_open, real_contexts = rw.urllib.request.urlopen, rw.ssl_contexts
+        first, second = object(), object()
+        good = json.dumps(
+            api.body(
+                {
+                    "latitude": ["31.5204"],
+                    "longitude": ["74.3587"],
+                    "start_date": [parts[0].start.isoformat()],
+                    "end_date": [parts[0].end.isoformat()],
+                    "timezone": ["Asia/Karachi"],
+                },
+                "ok",
+            )[1]
+        ).encode()
+
+        class Answer(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        def fake_open(refuse, other_error=False):
+            used = []
+
+            def urlopen(request, timeout=None, context=None):
+                used.append(context)
+                if context in refuse:
+                    if other_error:
+                        raise rw.urllib.error.URLError(ConnectionResetError("reset"))
+                    raise rw.urllib.error.URLError(
+                        rw.ssl.SSLCertVerificationError("certificate has expired")
+                    )
+                return Answer(good)
+
+            return urlopen, used
+
+        try:
+            rw.ssl_contexts = lambda: [("certifi", first), ("system", second)]
+            rw.urllib.request.urlopen, used = fake_open({first})
+            data = rw.fetch_part(
+                parts[0], settings(api), log=lambda *_: None, sleep=lambda *_: None
+            )
+            check(
+                used == [first, second] and data["daily"]["time"][0] == "2023-07-01",
+                "one certificate list refuses: the other is tried and the download works",
+            )
+            rw.urllib.request.urlopen, used = fake_open({first, second})
+            try:
+                rw.fetch_part(parts[0], settings(api), log=lambda *_: None, sleep=lambda *_: None)
+                check(False, "both lists refuse: stops with advice (clock, then browser route)")
+            except rw.StopNow as exc:
+                text = str(exc)
+                check(
+                    "date and time" in text
+                    and "--print-urls" in text
+                    and "certifi and system" in text
+                    and used == [first, second],
+                    "both lists refuse: stops with advice (clock, then browser route)",
+                )
+            rw.urllib.request.urlopen, used = fake_open({first}, other_error=True)
+            try:
+                rw.fetch_part(
+                    parts[0], settings(api, retries=2), log=lambda *_: None, sleep=lambda *_: None
+                )
+            except rw.WeatherError:
+                pass
+            check(
+                used == [first, first],
+                "other network errors are retried, not hidden by the certificate fallback",
+            )
+        finally:
+            rw.urllib.request.urlopen, rw.ssl_contexts = real_open, real_contexts
+        names = [n for n, _ in rw.ssl_contexts()]
+        check(
+            names[-1] == "system" and set(names) <= {"certifi", "system"},
+            "certifi's list is tried first when installed, then the operating system's "
+            f"(here: {', '.join(names)})",
+        )
+
         print("Bad answers are never kept")
         api.reset(["bad400"])
         tmp = tmp_root / "bad400"

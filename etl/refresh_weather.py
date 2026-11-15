@@ -218,18 +218,45 @@ def _retry_after(headers, default: float) -> float:
     return seconds if 0 <= seconds < 86_400 else default
 
 
+def ssl_contexts() -> list[tuple[str, ssl.SSLContext]]:
+    """Certificate lists to try, in order: certifi's (the up-to-date list that `requests` uses,
+    installed with it), then the operating system's. On Windows, Python uses the Windows list,
+    which can be out of date and then reports a valid certificate as expired or unknown."""
+    contexts = []
+    try:
+        import certifi
+
+        contexts.append(("certifi", ssl.create_default_context(cafile=certifi.where())))
+    except (ImportError, OSError, ssl.SSLError):
+        pass
+    contexts.append(("system", ssl.create_default_context()))
+    return contexts
+
+
+def open_url(request, timeout: float, contexts):
+    """urlopen with the first certificate list that verifies the server; raise the last error."""
+    last = None
+    for _name, context in contexts:
+        try:
+            return urllib.request.urlopen(request, timeout=timeout, context=context)
+        except urllib.error.URLError as exc:
+            if not isinstance(getattr(exc, "reason", None), ssl.SSLCertVerificationError):
+                raise
+            last = exc  # try the next certificate list
+    raise last
+
+
 def fetch_part(part: Part, s: Settings, log=print, sleep=time.sleep) -> dict:
     """Download and validate one part; raise StopNow or WeatherError when it cannot be done."""
     url = part.url(s.base_url)
     wait = s.backoff
     last_problem = ""
+    contexts = ssl_contexts()
     for attempt in range(1, s.retries + 1):
         request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         retry_after = None
         try:
-            with urllib.request.urlopen(
-                request, timeout=s.timeout, context=ssl.create_default_context()
-            ) as response:
+            with open_url(request, s.timeout, contexts) as response:
                 body = response.read()
             try:
                 data = json.loads(body.decode("utf-8"))
@@ -262,9 +289,14 @@ def fetch_part(part: Part, s: Settings, log=print, sleep=time.sleep) -> dict:
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
             detail = getattr(exc, "reason", exc)
             if isinstance(detail, ssl.SSLCertVerificationError):
+                now = datetime.now().strftime("%Y-%m-%d %H:%M")
+                tried = " and ".join(name for name, _ in contexts)
                 raise StopNow(
-                    f"the secure connection was refused ({detail}). Your network may be "
-                    "intercepting HTTPS. Use --print-urls and a browser instead (see --help)."
+                    f"the server's certificate could not be verified with the {tried} "
+                    f"certificate lists ({detail}). First check this computer's date and time "
+                    f"(it says {now}): a wrong clock makes valid certificates look expired. If "
+                    "the clock is right, your network or antivirus may be intercepting HTTPS: "
+                    "use --print-urls and a browser instead (see --help)."
                 ) from None
             last_problem = f"network problem: {detail}"
         if attempt == s.retries:

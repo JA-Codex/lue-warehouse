@@ -22,7 +22,7 @@ processes have data.
 2. **S4 tickets and S6 incentives:** `etl/gen_tickets.py`, stage `tickets_incentives`: `s4/tickets.json` (6,000 tickets
    on the full profile, each with a nested status history), `s6/offers.csv` (the incentive catalogue) and
    `s6/incentive_log.csv` (600 offers posted on units).
-3. **Tests:** `scripts/test_weather.py` (52 checks, against a local stand-in for the API, so no internet is needed and CI
+3. **Tests:** `scripts/test_weather.py` (54 checks, against a local stand-in for the API, so no internet is needed and CI
    can run it) and `scripts/test_tickets.py` (67 checks). Both are in `make gen-test`, so CI runs them.
 4. **Config:** `etl/generator_config.py` gained `target_incentive_offers`. `etl/reference_data.py` gained the weather
    cities and variables. `etl/generate_data.py` gained the stage-order list (the same code as the US-2.4 branch).
@@ -36,6 +36,7 @@ processes have data.
 | Download stopped halfway | Each finished request is kept in `data/.weather_parts/` (not committed); the next run resumes |
 | Bad answer (missing or repeated day, wrong unit or time zone, impossible value, cut-off JSON) | Rejected and retried; never written |
 | Failure while writing | The cache is replaced in one atomic step, only when all 16 parts are valid |
+| A certificate refused ("certificate has expired", seen on a Windows laptop: Python there uses the Windows certificate list, which can be out of date) | Tries certifi's up-to-date list (installed with `requests`) first, then the system's. If both refuse, stops and says to check the clock, then the browser route |
 | The network blocks the API | `--print-urls` gives the 16 links; save them from a browser; `--import-dir` builds the cache |
 | Teammates and CI without internet | Nobody else calls the API: the generator, the tests and the pipeline read only the committed cache |
 | Missing values (null) from the API | Kept as null and counted by `--check`; the data dictionary sends them to quarantine (DQ) |
@@ -89,7 +90,7 @@ processes have data.
 ## How to re-check it
 
     python scripts/test_tickets.py              # expect 67/67
-    python scripts/test_weather.py              # expect 52/52 (needs the committed cache for the last 3)
+    python scripts/test_weather.py              # expect 54/54 (needs the committed cache for the last 3)
     python etl/refresh_weather.py --check       # or: make weather-check
 
 ## Open items and follow-ups
