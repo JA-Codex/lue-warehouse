@@ -1,0 +1,41 @@
+Proof that the acceptance tests can fail: deliberately broken copies of the generated small-profile files,
+run through run_checks() of scripts/test_leases.py. None of these changes is in the repository.
+
+  Unmodified data: 54/54 checks pass
+
+  Mutant: two leases of one unit overlap in time               -> 1 failing, 53/54 pass
+        FAIL "ACCEPTANCE: zero overlapping leases per unit"
+  Mutant: one rent line billed 1 rupee too much                -> 2 failing, 52/54 pass
+        FAIL "tax is 16% on commercial rent and service charge and nothing else; amounts are positive"
+        FAIL "ACCEPTANCE: the rent billed on a lease's invoices equals its monthly rent times the months billed"
+  Mutant: a lease names a tenant that does not exist           -> 4 failing, 50/54 pass
+        FAIL "every lease names an existing unit and an existing tenant"
+        FAIL "every opening lease belongs to a tenant whose record was created before the window opened"
+        FAIL "a renewal is the same unit and tenant and starts the day after the lease it renews"
+  Mutant: a TERM event is not on the lease end date            -> 2 failing, 52/54 pass
+        FAIL "events are in date order and all inside the window"
+        FAIL "SIGN is before move-in and after the tenant record; RENEW and NOTICE are before the end date; TERM is on "
+  Mutant: an extra invoice for a lease month already billed    -> 5 failing, 49/54 pass
+        FAIL "213 invoices with unique numbers, in order"
+        FAIL "every invoice names an existing lease; its number carries the month and the lease sequence"
+        FAIL "every lease is invoiced once for every month it runs inside the window, and no other"
+  Mutant: a lease starts on the 2nd of a month                 -> 3 failing, 51/54 pass
+        FAIL "the sequence in a lease number runs 1..N in order of (start_date, unit_id)"
+        FAIL "every lease starts on the 1st of a month and ends on the last day of a month"
+        FAIL "a renewal is the same unit and tenant and starts the day after the lease it renews"
+  Mutant: a new lease has no SIGN event                        -> 2 failing, 52/54 pass
+        FAIL "32 events, event_id runs 1..N"
+        FAIL "each lease has the events its life implies: SIGN for a new tenant, RENEW for a renewal, NOTICE and TERM f"
+  Mutant: tax charged on a utility line                        -> 1 failing, 53/54 pass
+        FAIL "tax is 16% on commercial rent and service charge and nothing else; amounts are positive"
+  Mutant: an invoice number 18 characters long                 -> 4 failing, 38/42 pass
+        FAIL "every text value fits its column width in the source ERD (invoice numbers: 16)"
+        FAIL "212 invoices with unique numbers, in order"
+        FAIL "invoice numbers look like INV-2026-03-0831 (16 characters, the width of the column)"
+  Mutant: a renewal passes to a different tenant               -> 2 failing, 52/54 pass
+        FAIL "a renewal is the same unit and tenant and starts the day after the lease it renews"
+        FAIL "no individual holds two leases at once; corporate tenants hold at most 4"
+  Mutant: one invoice missing from a lease                     -> 3 failing, 46/49 pass
+        FAIL "every lease is invoiced once for every month it runs inside the window, and no other"
+        FAIL "every invoice has lines numbered 1.., line 1 is its one RENT line"
+        FAIL "checks crashed: KeyError"

@@ -1,0 +1,64 @@
+Overlap check (plan US-2.3 evidence). Full profile, seed 3004, PostgreSQL 16.2, loaded with scripts/db_load_source.py.
+
+SELECT count(*) AS overlapping_lease_pairs
+FROM src_pms.leases a
+JOIN src_pms.leases b
+  ON a.unit_id = b.unit_id AND a.lease_number < b.lease_number
+ AND a.start_date <= b.end_date AND b.start_date <= a.end_date;
+
+ overlapping_lease_pairs 
+-------------------------
+                       0
+(1 row)
+
+Row counts:
+       t       | count  
+---------------+--------
+ leases        |   5770
+ lease_events  |   8826
+ invoices      |  53482
+ invoice_lines | 126596
+(4 rows)
+
+Leases by type, review and status:
+ lease_type  | rent_review_type  |   status   | count 
+-------------+-------------------+------------+-------
+ Commercial  | Annual escalation | Active     |    59
+ Commercial  | Annual escalation | Renewed    |   135
+ Commercial  | Annual escalation | Terminated |   109
+ Commercial  | Fixed             | Active     |   273
+ Commercial  | Fixed             | Renewed    |   137
+ Commercial  | Fixed             | Terminated |   121
+ Residential | Fixed             | Active     |  1133
+ Residential | Fixed             | Renewed    |  1755
+ Residential | Fixed             | Terminated |  2048
+(9 rows)
+
+Events by code:
+ event_code | count 
+------------+-------
+ NOTICE     |  2278
+ RENEW      |  2027
+ SIGN       |  2243
+ TERM       |  2278
+(4 rows)
+
+Active leases on the 1st of every sixth month (target 1500):
+    day     | active_leases 
+------------+---------------
+ 2023-07-01 |          1500
+ 2024-01-01 |          1431
+ 2024-07-01 |          1564
+ 2025-01-01 |          1470
+ 2025-07-01 |          1490
+ 2026-01-01 |          1518
+(6 rows)
+
+Invoice lines by charge code:
+ charge_code | count | avg_billed_pkr 
+-------------+-------+----------------
+ RENT        | 53482 |          83024
+ SERVICE     | 48762 |          13413
+ UTILITY     | 24352 |           9164
+(3 rows)
+

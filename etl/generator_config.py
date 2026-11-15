@@ -89,7 +89,7 @@ PROFILES = {
         window_start=date(2026, 4, 1),
         window_end=WINDOW_END,
         target_active_leases=75,
-        target_invoice_lines=650,
+        target_invoice_lines=530,
         target_payments=250,
         target_tickets=40,
     ),

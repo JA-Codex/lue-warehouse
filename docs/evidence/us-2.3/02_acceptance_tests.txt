@@ -1,0 +1,123 @@
+======================================================================
+ US-2.3 acceptance tests: leases, lease events, invoices and lines
+======================================================================
+Small profile (2 buildings, 90 units)
+  [PASS] the leases_invoices stage ran
+  [PASS] s1/leases.csv: columns equal src_pms.leases in the Phase 1 source ERD
+  [PASS] s1/lease_events.csv: columns equal src_pms.lease_events in the Phase 1 source ERD
+  [PASS] s1/invoices.csv: columns equal src_pms.invoices in the Phase 1 source ERD
+  [PASS] s1/invoice_lines.csv: columns equal src_pms.invoice_lines in the Phase 1 source ERD
+  [PASS] every text value fits its column width in the source ERD (invoice numbers: 16)
+  [PASS] money columns are written with exactly two decimals and fit NUMERIC(12,2)
+  [PASS] 86 leases with unique numbers
+  [PASS] lease numbers look like L-2025-00831 and carry the start year
+  [PASS] the sequence in a lease number runs 1..N in order of (start_date, unit_id)
+  [PASS] every lease names an existing unit and an existing tenant
+  [PASS] apartments are let on Residential leases; offices and shops on Commercial leases
+  [PASS] every lease starts on the 1st of a month and ends on the last day of a month
+  [PASS] residential leases run 11 months; commercial leases 12, 24 or 36
+  [PASS] rent review is 'Annual escalation' for 12-month commercial leases and 'Fixed' otherwise
+  [PASS] monthly rent is positive and a multiple of 500 rupees
+  [PASS] rents look like Lahore, Karachi, Islamabad and Faisalabad: median residential PKR 89,000, commercial PKR 139,000
+  [PASS] ACCEPTANCE: zero overlapping leases per unit
+  [PASS] no lease starts after the window closes (2026-06-30); leases keep starting inside it
+  [PASS] the window opens with exactly 75 leases running (the opening leases migrated at go-live)
+  [PASS] every opening lease belongs to a tenant whose record was created before the window opened
+  [PASS] every lease that starts inside the window starts on or after its tenant's record
+  [PASS] about 75 leases are active at any time (average 71, within 12%)
+  [PASS] active leases never drop below 85% of target (low 67)
+  [PASS] every previous_lease_number names an existing lease
+  [PASS] a renewal is the same unit and tenant and starts the day after the lease it renews
+  [PASS] a renewal escalates the rent (at least 2 percent)
+  [PASS] a lease is Renewed exactly when one renewal follows it, and only one
+  [PASS] a lease is Active exactly when it runs on to the end of the window; the others are resolved
+  [PASS] 42% of resolved leases were renewed (the rest are terminations)
+  [PASS] no individual holds two leases at once; corporate tenants hold at most 4
+  [PASS] 62% of tenant records belong to a lease (the rest are applicants who never signed)
+  [PASS] 33 events, event_id runs 1..N
+  [PASS] event codes are SIGN, RENEW, NOTICE or TERM; every event names an existing lease
+  [PASS] events are in date order and all inside the window
+  [PASS] no lease has the same event twice
+  [PASS] each lease has the events its life implies: SIGN for a new tenant, RENEW for a renewal, NOTICE and TERM for a termination, nothing for an opening or active lease
+  [PASS] SIGN is before move-in and after the tenant record; RENEW and NOTICE are before the end date; TERM is on the end date
+  [PASS] no lease event is dated before its tenant's record
+  [PASS] 212 invoices with unique numbers, in order
+  [PASS] invoice numbers look like INV-2026-03-0831 (16 characters, the width of the column)
+  [PASS] every invoice names an existing lease; its number carries the month and the lease sequence
+  [PASS] invoices are issued on the 1st and due on the 10th; status is Issued until payments (US-2.4)
+  [PASS] every lease is invoiced once for every month it runs inside the window, and no other
+  [PASS] no invoice is dated before its tenant's record
+  [PASS] 497 invoice lines, (invoice_number, line_no) unique
+  [PASS] every invoice has lines numbered 1.., line 1 is its one RENT line
+  [PASS] charge codes are RENT, SERVICE and UTILITY from charge_types ({'RENT': 212, 'SERVICE': 194, 'UTILITY': 91})
+  [PASS] net_amount = billed_amount + tax_amount - discount_amount on every line (discount is 0)
+  [PASS] tax is 16% on commercial rent and service charge and nothing else; amounts are positive
+  [PASS] ACCEPTANCE: the rent billed on a lease's invoices equals its monthly rent times the months billed
+  [PASS] service charge on 92% of invoices (most), utility on 43% (occasional)
+  [PASS] 497 invoice lines against a target of 530 (within 20%)
+  [PASS] build_billing() rebuilds exactly the leases and lines in the files
+Full profile (40 buildings, 1800 units)
+  [PASS] the leases_invoices stage ran
+  [PASS] s1/leases.csv: columns equal src_pms.leases in the Phase 1 source ERD
+  [PASS] s1/lease_events.csv: columns equal src_pms.lease_events in the Phase 1 source ERD
+  [PASS] s1/invoices.csv: columns equal src_pms.invoices in the Phase 1 source ERD
+  [PASS] s1/invoice_lines.csv: columns equal src_pms.invoice_lines in the Phase 1 source ERD
+  [PASS] every text value fits its column width in the source ERD (invoice numbers: 16)
+  [PASS] money columns are written with exactly two decimals and fit NUMERIC(12,2)
+  [PASS] 5770 leases with unique numbers
+  [PASS] lease numbers look like L-2025-00831 and carry the start year
+  [PASS] the sequence in a lease number runs 1..N in order of (start_date, unit_id)
+  [PASS] every lease names an existing unit and an existing tenant
+  [PASS] apartments are let on Residential leases; offices and shops on Commercial leases
+  [PASS] every lease starts on the 1st of a month and ends on the last day of a month
+  [PASS] residential leases run 11 months; commercial leases 12, 24 or 36
+  [PASS] rent review is 'Annual escalation' for 12-month commercial leases and 'Fixed' otherwise
+  [PASS] monthly rent is positive and a multiple of 500 rupees
+  [PASS] rents look like Lahore, Karachi, Islamabad and Faisalabad: median residential PKR 70,000, commercial PKR 75,000
+  [PASS] ACCEPTANCE: zero overlapping leases per unit
+  [PASS] no lease starts after the window closes (2026-06-30); leases keep starting inside it
+  [PASS] the window opens with exactly 1500 leases running (the opening leases migrated at go-live)
+  [PASS] every opening lease belongs to a tenant whose record was created before the window opened
+  [PASS] every lease that starts inside the window starts on or after its tenant's record
+  [PASS] about 1500 leases are active at any time (average 1486, within 6%)
+  [PASS] active leases never drop below 85% of target (low 1400)
+  [PASS] every previous_lease_number names an existing lease
+  [PASS] a renewal is the same unit and tenant and starts the day after the lease it renews
+  [PASS] a renewal escalates the rent (at least 2 percent)
+  [PASS] a lease is Renewed exactly when one renewal follows it, and only one
+  [PASS] a lease is Active exactly when it runs on to the end of the window; the others are resolved
+  [PASS] 47% of resolved leases were renewed (the rest are terminations)
+  [PASS] no individual holds two leases at once; corporate tenants hold at most 4
+  [PASS] 88% of tenant records belong to a lease (the rest are applicants who never signed)
+  [PASS] 8826 events, event_id runs 1..N
+  [PASS] event codes are SIGN, RENEW, NOTICE or TERM; every event names an existing lease
+  [PASS] events are in date order and all inside the window
+  [PASS] no lease has the same event twice
+  [PASS] each lease has the events its life implies: SIGN for a new tenant, RENEW for a renewal, NOTICE and TERM for a termination, nothing for an opening or active lease
+  [PASS] SIGN is before move-in and after the tenant record; RENEW and NOTICE are before the end date; TERM is on the end date
+  [PASS] no lease event is dated before its tenant's record
+  [PASS] 53482 invoices with unique numbers, in order
+  [PASS] invoice numbers look like INV-2026-03-0831 (16 characters, the width of the column)
+  [PASS] every invoice names an existing lease; its number carries the month and the lease sequence
+  [PASS] invoices are issued on the 1st and due on the 10th; status is Issued until payments (US-2.4)
+  [PASS] every lease is invoiced once for every month it runs inside the window, and no other
+  [PASS] no invoice is dated before its tenant's record
+  [PASS] 126596 invoice lines, (invoice_number, line_no) unique
+  [PASS] every invoice has lines numbered 1.., line 1 is its one RENT line
+  [PASS] charge codes are RENT, SERVICE and UTILITY from charge_types ({'RENT': 53482, 'SERVICE': 48762, 'UTILITY': 24352})
+  [PASS] net_amount = billed_amount + tax_amount - discount_amount on every line (discount is 0)
+  [PASS] tax is 16% on commercial rent and service charge and nothing else; amounts are positive
+  [PASS] ACCEPTANCE: the rent billed on a lease's invoices equals its monthly rent times the months billed
+  [PASS] service charge on 91% of invoices (most), utility on 46% (occasional)
+  [PASS] 126,596 invoice lines against a target of 130,000 (within 8%)
+  [PASS] ACCEPTANCE: seasonal move-in peak: June to August average 259 new tenants a month against 163 in the other months (1.6x)
+  [PASS] build_billing() rebuilds exactly the leases and lines in the files
+Determinism and independence
+  [PASS] same seed: identical hashes for the four lease and billing files
+  [PASS] a different seed changes all four files
+  [PASS] the master data files are unaffected by this stage
+  [PASS] both profiles generate in under a minute (small 0.1s, full 1.6s)
+  [PASS] month arithmetic and money formatting helpers
+======================================================================
+ RESULT: 114/114 checks passed
+======================================================================

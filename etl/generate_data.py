@@ -58,7 +58,7 @@ from etl.generator_config import (  # noqa: E402
     get_profile,
 )
 
-GENERATOR_VERSION = "2.2"
+GENERATOR_VERSION = "2.3"
 SOURCES = ("s1", "s2", "s3", "s4", "s5", "s6")
 # Folders and files the generator owns inside --out. Nothing else in --out is ever touched
 # (in particular data/weather_cache.json, which is committed, decision D12).
@@ -419,7 +419,7 @@ def main(argv: list[str] | None = None) -> int:
 
 # Stage modules register themselves when imported. Import order is run order (dependency order).
 # Each later story adds its module here, after the ones it depends on.
-from etl import gen_master  # noqa: E402,F401  US-2.2 master data and registers
+from etl import gen_leases, gen_master  # noqa: E402,F401  US-2.2 master data, US-2.3 leases
 
 if __name__ == "__main__":
     # Run through the importable module, so stages register in the one registry that run() reads
