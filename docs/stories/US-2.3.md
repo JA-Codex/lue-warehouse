@@ -83,9 +83,9 @@ Small profile: 86 leases, 212 invoices, 497 lines (target 530).
   ratio is 2.4 lines per lease-month.
 - **New content hash:** `--profile small --seed 3004` is now `a9cac42a...ec811db`. The US-2.1 and US-2.2 files are
   byte-identical to before (`7e1030ea...ffbf7089` without this stage).
-- **Stage order in the manifest can differ.** `leases_invoices` rebuilds its own master data, so it does not depend
-  on `master_data` running first. If a test imports `etl.gen_master` before `etl.generate_data`, the manifest lists
-  the stages in the other order; the files and hash are the same.
+- **Stage order is now explicit.** Registration order depends on how the program is started (running
+  `etl/generate_data.py` re-imports the module), which a second dependent stage made visible. `STAGE_ORDER` in
+  `etl/generate_data.py` now lists the run order; each later story adds its stage name there.
 - **Verified on PostgreSQL 16.2 with real psycopg2** (embedded server), not a stand-in. `test_dimensions.py` and
   `test_facts.py` could not run there because that build has no libxml; they are untouched by this story.
 
@@ -107,7 +107,7 @@ Small profile: 86 leases, 212 invoices, 497 lines (target 530).
     python scripts/test_generator.py                            # expect 39/39
     python scripts/test_master_data.py                          # expect 129/129
     make generate PROFILE=full && make db-load-source
-    python scripts/test_source_load.py                          # expect 54/54
+    python scripts/test_source_load.py                          # 54/54 when this story closed (66 after US-2.4)
 
 ## Open items and follow-ups
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the S1 tables and load the generated data into lue_source.src_pms (US-2.2, US-2.3).
+"""Create the S1 tables and load the generated data into lue_source.src_pms (US-2.2 to US-2.4).
 
     python etl/generate_data.py
     python scripts/db_load_source.py [--data data]
@@ -9,7 +9,7 @@ the generator has files for (data/s1/*.csv) with those files. It all happens in 
 so it loads completely or not at all. Safe to re-run: a second run gives the same rows.
 Run scripts/db_setup.py first (US-1.1).
 
-Later stories add their tables to TABLES (payments) in load order.
+Later stories add their tables to TABLES in load order.
 """
 
 import argparse
@@ -39,6 +39,8 @@ TABLES = [
     "lease_events",
     "invoices",
     "invoice_lines",
+    "payments",
+    "payment_allocations",
 ]
 
 

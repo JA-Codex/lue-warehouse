@@ -1,0 +1,89 @@
+======================================================================
+ US-2.4 acceptance tests: payments, allocations and settlements
+======================================================================
+Small profile (2 buildings, 90 units)
+  [PASS] the payments stage ran after the leases stage
+  [PASS] s1/payments.csv: columns equal src_pms.payments in the Phase 1 source ERD
+  [PASS] s1/payment_allocations.csv: columns equal src_pms.payment_allocations in the Phase 1 source ERD
+  [PASS] every text value fits its column width in the source ERD
+  [PASS] amounts have two decimals; paid_at is a timestamp
+  [PASS] 226 payments with unique references
+  [PASS] references run PAY-0000001.. in order of paid_at
+  [PASS] every payment names an existing tenant and a payment method
+  [PASS] every payment is dated inside the window (2026-04-01 to 2026-06-30)
+  [PASS] no payment is dated before its tenant's record
+  [PASS] Cleared payments are positive; Bounced payments are negative reversals
+  [PASS] 0 bounced cheques: each reverses one earlier cheque of the same tenant for the same amount, 3 to 7 days later
+  [PASS] bounced cheques are 0.0% of cheques
+  [PASS] all six payment methods are used ({'BANK': 59, 'JAZZ': 21, 'CASH': 49, 'CHEQUE': 22, 'EASY': 33, 'RAAST': 42})
+  [PASS] 473 allocations, key unique
+  [PASS] every allocation names an existing payment and an existing invoice line
+  [PASS] a payment's amount is exactly the sum of its allocations (negative for a reversal)
+  [PASS] each payment pays one invoice, and an invoice of the tenant who paid
+  [PASS] no payment is dated before the invoice it pays was issued
+  [PASS] ACCEPTANCE: no invoice line is ever paid more than its net amount (after reversals)
+  [PASS] one payment is split across several invoice lines ({1: 48, 2: 109, 3: 69})
+  [PASS] invoice status: Paid when fully allocated, Partial when part-paid, Overdue when unpaid
+  [PASS] collection rate 94.5% of billed; 190 Paid, 17 Partial, 5 Overdue invoices
+  [PASS] 226 payments against a target of 230 (within 25%)
+  [PASS] build_payments() rebuilds exactly the payments in the files
+  [PASS] all five behaviours are present ({'on_time': 66, 'partial_payer': 13, 'occasionally_late': 24, 'chronically_late': 11, 'defaulter': 6})
+  [PASS] 101 settlement files, one per channel per day
+  [PASS] files are named settlement_<channel>_<date>.csv with the four channels
+  [PASS] every settlement file has the columns settlement_id, payment_reference, transaction_date, settlement_date, gross_amount, fee_amount, net_amount
+  [PASS] 152 settlements; each is in the file of its settlement date; channel + settlement_id is unique
+  [PASS] every settlement matches one electronic payment: same channel, same gross amount, net = gross - fee, one settlement per payment
+  [PASS] cash and cheque payments never appear in the settlement files
+  [PASS] 3 of 155 electronic payments (1.9%) have no settlement: the unmatched share
+  [PASS] settlements fall at most three days after the window closes
+Full profile (40 buildings, 1800 units)
+  [PASS] the payments stage ran after the leases stage
+  [PASS] s1/payments.csv: columns equal src_pms.payments in the Phase 1 source ERD
+  [PASS] s1/payment_allocations.csv: columns equal src_pms.payment_allocations in the Phase 1 source ERD
+  [PASS] every text value fits its column width in the source ERD
+  [PASS] amounts have two decimals; paid_at is a timestamp
+  [PASS] 58672 payments with unique references
+  [PASS] references run PAY-0000001.. in order of paid_at
+  [PASS] every payment names an existing tenant and a payment method
+  [PASS] every payment is dated inside the window (2023-07-01 to 2026-06-30)
+  [PASS] no payment is dated before its tenant's record
+  [PASS] Cleared payments are positive; Bounced payments are negative reversals
+  [PASS] 420 bounced cheques: each reverses one earlier cheque of the same tenant for the same amount, 3 to 7 days later
+  [PASS] bounced cheques are 4.3% of cheques
+  [PASS] all six payment methods are used ({'EASY': 5563, 'CHEQUE': 9685, 'RAAST': 8051, 'JAZZ': 5405, 'BANK': 16996, 'CASH': 12552})
+  [PASS] 124735 allocations, key unique
+  [PASS] every allocation names an existing payment and an existing invoice line
+  [PASS] a payment's amount is exactly the sum of its allocations (negative for a reversal)
+  [PASS] each payment pays one invoice, and an invoice of the tenant who paid
+  [PASS] no payment is dated before the invoice it pays was issued
+  [PASS] ACCEPTANCE: no invoice line is ever paid more than its net amount (after reversals)
+  [PASS] one payment is split across several invoice lines ({1: 11933, 2: 27415, 3: 19324})
+  [PASS] invoice status: Paid when fully allocated, Partial when part-paid, Overdue when unpaid
+  [PASS] collection rate 95.4% of billed; 49681 Paid, 1866 Partial, 1935 Overdue invoices
+  [PASS] 58,672 payments against a target of 60,000 (within 10%)
+  [PASS] build_payments() rebuilds exactly the payments in the files
+  [PASS] all five behaviours are present ({'on_time': 2164, 'partial_payer': 361, 'occasionally_late': 692, 'defaulter': 190, 'chronically_late': 393})
+  [PASS] on_time tenants pay by the due date (median -2 days)
+  [PASS] occasionally_late tenants are late in 20% of months, never beyond 30 days
+  [PASS] chronically_late tenants are late every time (median 12 days, 90th percentile 31)
+  [PASS] partial_payer tenants pay in two parts on 64% of invoices they pay
+  [PASS] arrears by behaviour: defaulters 67%, partial payers 13%, chronically late 1%, on time 0.2%
+  [PASS] corporate tenants are more often on time (70% against 55%)
+  [PASS] 3888 settlement files, one per channel per day
+  [PASS] files are named settlement_<channel>_<date>.csv with the four channels
+  [PASS] every settlement file has the columns settlement_id, payment_reference, transaction_date, settlement_date, gross_amount, fee_amount, net_amount
+  [PASS] 35312 settlements; each is in the file of its settlement date; channel + settlement_id is unique
+  [PASS] every settlement matches one electronic payment: same channel, same gross amount, net = gross - fee, one settlement per payment
+  [PASS] cash and cheque payments never appear in the settlement files
+  [PASS] 703 of 36015 electronic payments (2.0%) have no settlement: the unmatched share
+  [PASS] settlement lag by channel: raast 0.05 days, bank 1.35 days, jazzcash 1.50 days, easypaisa 1.65 days
+  [PASS] settlements fall at most three days after the window closes
+Determinism and independence
+  [PASS] same seed: identical hashes for the payment files and all 101 settlement files
+  [PASS] a different seed changes the payments
+  [PASS] leases, lease events, invoice lines and tenants are produced by earlier stages unchanged
+  [PASS] both profiles generate in under a minute (small 0.1s, full 6.6s)
+  [PASS] fee schedule and allocation order helpers
+======================================================================
+ RESULT: 80/80 checks passed
+======================================================================

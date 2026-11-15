@@ -1,0 +1,30 @@
+US-2.4 evidence: determinism of the payment files (profile small)
+
+file                      seed 3004, run 1    seed 3004, run 2    seed 3005           (first 16 hex digits of SHA-256)
+s1/payments.csv           6b29923ea5c6829d    6b29923ea5c6829d    d4ea60e3247ee932    
+s1/payment_allocations.csv 3a3468ebed54537a    3a3468ebed54537a    aca3cf676c12f5f9    
+s1/invoices.csv           067c854a85204339    067c854a85204339    6f05310bee933905    
+
+S3 settlement files (seed 3004): 101; all identical between the two runs: True
+S3 settlement files, seed 3004 against seed 3005: 101 of 101 differ
+
+content hash, seed 3004, run 1: cbdb041c1a01ee87ac3d69ab7f07b3a8abbd0c935377ac5143908c44acb7872f
+content hash, seed 3004, run 2: cbdb041c1a01ee87ac3d69ab7f07b3a8abbd0c935377ac5143908c44acb7872f
+content hash, seed 3005       : 3d14c831b85843740ffa3d7b59c77f98789ce3dfa36e4efd129378eb6f544e60
+same seed identical: True | different seed differs: True
+
+Files before and after this story (stage removed from the registry = state after US-2.3):
+  _framework/rng_probe.csv    unchanged
+  s1/buildings.csv            unchanged
+  s1/charge_types.csv         unchanged
+  s1/invoice_lines.csv        unchanged
+  s1/invoices.csv             CHANGED (invoice status is set by payments)
+  s1/lease_events.csv         unchanged
+  s1/leases.csv               unchanged
+  s1/payment_methods.csv      unchanged
+  s1/tenants.csv              unchanged
+  s1/units.csv                unchanged
+  s2/registers.xlsx           unchanged
+  new files: 103 (payments, payment_allocations and the S3 settlement files)
+  content hash after US-2.3: a9cac42af9703345859100dc241cc7c3c06d214e055f87b92900bdbc5ec811db
+  content hash after US-2.4: cbdb041c1a01ee87ac3d69ab7f07b3a8abbd0c935377ac5143908c44acb7872f

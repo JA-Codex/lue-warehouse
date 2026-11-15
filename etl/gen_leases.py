@@ -58,8 +58,8 @@ unit_id).
 MAX_CORPORATE_LEASES.
 * Every invoice and every lease event is dated on or after its tenant's record
 (`tenants.updated_at`).
-* invoices.status is 'Issued' for every invoice. US-2.4 settles invoices, so it decides Paid,
-Partial or Overdue.
+* invoices.status is 'Issued' when this stage writes it. US-2.4 settles the invoices and
+  rewrites the file, so it decides Paid, Partial or Overdue.
 * Money is whole rupees in the S1 columns with two decimals ('85000.00'); tax is exact because 16
 percent of
   a whole-rupee amount is a whole number of paisa.

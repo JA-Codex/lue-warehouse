@@ -390,9 +390,9 @@ def run_checks(label: str, profile: cfg.Profile, out: Path, model) -> None:
     check(
         all(d(r["invoice_date"]).day == 1 for r in invoices)
         and all(d(r["due_date"]) == d(r["invoice_date"]).replace(day=gl.DUE_DAY) for r in invoices)
-        and {r["status"] for r in invoices} == {"Issued"},
-        f"invoices are issued on the 1st and due on the {gl.DUE_DAY}th; status is Issued "
-        f"until payments (US-2.4)",
+        and {r["status"] for r in invoices} <= {"Paid", "Partial", "Overdue"},
+        f"invoices are issued on the 1st and due on the {gl.DUE_DAY}th; status is Paid, "
+        f"Partial or Overdue (set by US-2.4)",
     )
     billed_months = defaultdict(list)
     for r in invoices:

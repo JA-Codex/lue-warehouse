@@ -90,7 +90,7 @@ PROFILES = {
         window_end=WINDOW_END,
         target_active_leases=75,
         target_invoice_lines=530,
-        target_payments=250,
+        target_payments=230,
         target_tickets=40,
     ),
     # About 40 buildings, 1,800 units, 36 months (plan E2, US-2.3 to US-2.5).

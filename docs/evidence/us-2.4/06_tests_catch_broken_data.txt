@@ -1,0 +1,38 @@
+Proof that the acceptance tests can fail: deliberately broken copies of the generated small-profile files,
+run through run_checks() of scripts/test_payments.py. None of these changes is in the repository.
+
+  Unmodified data: 34/34 checks pass
+
+  Mutant: a line paid 5 rupees more than its net amount            -> 3 failing, 31/34 pass
+        FAIL "ACCEPTANCE: no invoice line is ever paid more than its net amount (after reversals)"
+        FAIL "invoice status: Paid when fully allocated, Partial when part-paid, Overdue when unpaid"
+        FAIL "every settlement matches one electronic payment: same channel, same gross amount, net = gross - fee, one set"
+  Mutant: a payment amount differs from its allocations            -> 2 failing, 32/34 pass
+        FAIL "a payment's amount is exactly the sum of its allocations (negative for a reversal)"
+        FAIL "every settlement matches one electronic payment: same channel, same gross amount, net = gross - fee, one set"
+  Mutant: a reversal is 1 rupee off the cheque it undoes           -> 4 failing, 30/34 pass
+        FAIL "Cleared payments are positive; Bounced payments are negative reversals"
+        FAIL "1 bounced cheques: each reverses one earlier cheque of the same tenant for the same amount, 3 to 7 days late"
+        FAIL "a payment's amount is exactly the sum of its allocations (negative for a reversal)"
+  Mutant: a cash payment appears in a settlement file              -> 2 failing, 32/34 pass
+        FAIL "every settlement matches one electronic payment: same channel, same gross amount, net = gross - fee, one set"
+        FAIL "cash and cheque payments never appear in the settlement files"
+  Mutant: a settlement gross differs from the payment              -> 1 failing, 33/34 pass
+        FAIL "every settlement matches one electronic payment: same channel, same gross amount, net = gross - fee, one set"
+  Mutant: a Paid invoice marked Overdue                            -> 1 failing, 33/34 pass
+        FAIL "invoice status: Paid when fully allocated, Partial when part-paid, Overdue when unpaid"
+  Mutant: a payment dated before its invoice was issued            -> 4 failing, 30/34 pass
+        FAIL "references run PAY-0000001.. in order of paid_at"
+        FAIL "every payment is dated inside the window (2026-04-01 to 2026-06-30)"
+        FAIL "no payment is dated before the invoice it pays was issued"
+  Mutant: two settlements with the same id in one file             -> 1 failing, 33/34 pass
+        FAIL "152 settlements; each is in the file of its settlement date; channel + settlement_id is unique"
+  Mutant: a gap in the payment references                          -> 3 failing, 14/17 pass
+        FAIL "references run PAY-0000001.. in order of paid_at"
+        FAIL "every allocation names an existing payment and an existing invoice line"
+        FAIL "checks crashed: KeyError"
+  Mutant: a settlement file with a channel that does not exist     -> 2 failing, 29/31 pass
+        FAIL "files are named settlement_<channel>_<date>.csv with the four channels"
+        FAIL "checks crashed: KeyError"
+  Mutant: a payment made by a tenant who does not own the invoice  -> 1 failing, 33/34 pass
+        FAIL "each payment pays one invoice, and an invoice of the tenant who paid"
