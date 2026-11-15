@@ -58,7 +58,7 @@ from etl.generator_config import (  # noqa: E402
     get_profile,
 )
 
-GENERATOR_VERSION = "2.4"
+GENERATOR_VERSION = "2.5"
 SOURCES = ("s1", "s2", "s3", "s4", "s5", "s6")
 # Folders and files the generator owns inside --out. Nothing else in --out is ever touched
 # (in particular data/weather_cache.json, which is committed, decision D12).
@@ -245,7 +245,13 @@ STAGES: dict[str, Stage] = {}
 # Run order. Import order cannot be trusted (stage modules import each other and this module, so the
 # order in which they register depends on how the program was started); each later story adds its
 # stage name here. A stage that is not listed runs after the listed ones, in registration order.
-STAGE_ORDER = ("framework_probe", "master_data", "leases_invoices", "payments")
+STAGE_ORDER = (
+    "framework_probe",
+    "master_data",
+    "leases_invoices",
+    "payments",
+    "tickets_incentives",
+)
 _current_stage: dict[str, str | None] = {"name": None}
 
 
@@ -426,7 +432,12 @@ def main(argv: list[str] | None = None) -> int:
 
 # Stage modules register themselves when imported; STAGE_ORDER above says in which order they run.
 # Each later story adds its module here and its stage name to STAGE_ORDER.
-from etl import gen_leases, gen_master, gen_payments  # noqa: E402,F401  US-2.2 to US-2.4
+from etl import (  # noqa: E402,F401  US-2.2 to US-2.5
+    gen_leases,
+    gen_master,
+    gen_payments,
+    gen_tickets,
+)
 
 if __name__ == "__main__":
     # Run through the importable module, so stages register in the one registry that run() reads

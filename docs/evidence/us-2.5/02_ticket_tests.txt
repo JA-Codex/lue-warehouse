@@ -1,0 +1,81 @@
+======================================================================
+ US-2.5 acceptance tests: maintenance tickets and incentives
+======================================================================
+Small profile: 90 units, 3 months
+  [PASS] the tickets_incentives stage ran, after master_data
+  S4 tickets (s4/tickets.json)
+  [PASS] 40 tickets, as the config asks
+  [PASS] UTF-8 JSON with \n line ends
+  [PASS] ticket ids are unique MR-<year>-<5 digits>, at most 14 characters
+  [PASS] ids follow the raised time, and carry the year raised
+  [PASS] the sequence restarts at 00001 each year, with no gaps
+  [PASS] every ticket references a real unit (building_code + unit_no)
+  [PASS] every ticket references a real subcategory and its category
+  [PASS] every assigned ticket references a real vendor
+  [PASS] the vendor's trade serves the ticket's category
+  [PASS] codes fit the warehouse columns (Phase 1 widths)
+  [PASS] status history starts with Raised and runs Raised, Assigned, Resolved, Verified
+  [PASS] status times strictly increase and lie inside the window
+  [PASS] vendor and estimate appear with Assigned, final cost with Resolved
+  [PASS] statuses fit request_status (12 characters)
+  [PASS] flags are true/false; costs are positive whole rupees (no floats, rule 4)
+  [PASS] is_emergency is true exactly when the priority is Emergency
+  [PASS] is_recurring is exactly 'same unit and problem within 90 days before'
+  [PASS] 10% of tickets are recurring
+  [PASS] no ticket predates its unit's record; geyser repairs only in apartments
+  S6 incentives (s6/offers.csv, s6/incentive_log.csv)
+  [PASS] 7 offers, unique codes
+  [PASS] offer codes, types and descriptions fit dim_incentive
+  [PASS] types are the dictionary's three; discount 0-50, rent-free 0-60, matching the type
+  [PASS] 12 incentive log rows, as the config asks
+  [PASS] every row references a real unit and a real offer
+  [PASS] every incentive window lies inside the data window
+  [PASS] the S6 grain (building + unit + offer + start) is unique
+  [PASS] no unit has two offers at the same time (coverage key stays unique)
+  [PASS] each offer suits its unit type (no two-month rent-free on a flat)
+Full profile: 1800 units, 36 months
+  [PASS] the tickets_incentives stage ran, after master_data
+  S4 tickets (s4/tickets.json)
+  [PASS] 6000 tickets, as the config asks
+  [PASS] UTF-8 JSON with \n line ends
+  [PASS] ticket ids are unique MR-<year>-<5 digits>, at most 14 characters
+  [PASS] ids follow the raised time, and carry the year raised
+  [PASS] the sequence restarts at 00001 each year, with no gaps
+  [PASS] every ticket references a real unit (building_code + unit_no)
+  [PASS] every ticket references a real subcategory and its category
+  [PASS] every assigned ticket references a real vendor
+  [PASS] the vendor's trade serves the ticket's category
+  [PASS] codes fit the warehouse columns (Phase 1 widths)
+  [PASS] status history starts with Raised and runs Raised, Assigned, Resolved, Verified
+  [PASS] status times strictly increase and lie inside the window
+  [PASS] vendor and estimate appear with Assigned, final cost with Resolved
+  [PASS] statuses fit request_status (12 characters)
+  [PASS] flags are true/false; costs are positive whole rupees (no floats, rule 4)
+  [PASS] is_emergency is true exactly when the priority is Emergency
+  [PASS] is_recurring is exactly 'same unit and problem within 90 days before'
+  [PASS] 11% of tickets are recurring
+  [PASS] no ticket predates its unit's record; geyser repairs only in apartments
+  S6 incentives (s6/offers.csv, s6/incentive_log.csv)
+  [PASS] 7 offers, unique codes
+  [PASS] offer codes, types and descriptions fit dim_incentive
+  [PASS] types are the dictionary's three; discount 0-50, rent-free 0-60, matching the type
+  [PASS] 600 incentive log rows, as the config asks
+  [PASS] every row references a real unit and a real offer
+  [PASS] every incentive window lies inside the data window
+  [PASS] the S6 grain (building + unit + offer + start) is unique
+  [PASS] no unit has two offers at the same time (coverage key stays unique)
+  [PASS] each offer suits its unit type (no two-month rent-free on a flat)
+Realism (full profile)
+  [PASS] 25% of resolved tickets breach the SLA in force
+  [PASS] 12 tickets are still open at the export moment (the fact's -2 'not yet happened' dates get exercised)
+  [PASS] most tickets are verified (5735)
+  [PASS] AC tickets peak in summer (415 in Jun-Aug, 113 in Dec-Feb)
+  [PASS] emergencies are assigned faster (median 1.5 h vs 18.1 h)
+Reproducibility and independence
+  [PASS] same seed: byte-identical tickets and incentive files
+  [PASS] a different seed gives different tickets
+  [PASS] the generator never reads (or deletes) the weather cache: output is the same
+  [PASS] gen_tickets.py has no dependency on the weather download
+======================================================================
+ RESULT: 67/67 checks passed
+======================================================================

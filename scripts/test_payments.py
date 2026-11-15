@@ -45,7 +45,12 @@ def load_model():
         "phase1_model", ROOT / "docs" / "phase1" / "tools" / "model.py"
     )
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # No __pycache__ inside the frozen pack: it would make the manifest check fail (extra file).
+    dont_write, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = dont_write
     return module
 
 

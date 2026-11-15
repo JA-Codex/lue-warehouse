@@ -1,0 +1,7 @@
+  city          days       first        last  null temp  null rain  max temp  max rain
+  Lahore        1096  2023-07-01  2026-06-30          0          0      46.5      93.9
+  Karachi       1096  2023-07-01  2026-06-30          0          0      41.6      64.4
+  Islamabad     1096  2023-07-01  2026-06-30          0          0      44.3      68.2
+  Faisalabad    1096  2023-07-01  2026-06-30          0          0      46.9      39.8
+  window 2023-07-01 to 2026-06-30: 1096 days x 4 cities = 4384 city-days expected
+RESULT: PASS: the cache covers every city and every day
