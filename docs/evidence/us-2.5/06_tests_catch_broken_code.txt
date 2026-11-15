@@ -1,0 +1,28 @@
+US-2.5: the tests fail when the code is broken (mutation testing)
+
+Each line is one deliberate bug put into the code, the test run against it, and the check that failed.
+The code was restored after each one. A bug no check caught led to a new test (marked "added").
+
+etl/refresh_weather.py (scripts/test_weather.py)
+  treat HTTP 429 like 400 (no retry on rate limits)  -> "two 'minutely limit' answers in a row: waits, retries, completes"
+  write the cache directly, not atomically          -> "the cache covers every city and every day" (and a crash)
+  skip the check that every requested day is there  -> NOT caught at first: a short answer was still rejected by the
+                                                        value-count check. Added the case "right number of days, but
+                                                        one repeated and one missing", which only the day check
+                                                        catches; it now fails.
+  ignore the Retry-After header                      -> "a Retry-After header is obeyed (waited exactly 7 s)"
+  never resume (always download again)               -> "a rerun with all parts saved makes 0 requests"
+                                                        and "the next run resumes: only the 11 missing parts are requested"
+
+etl/gen_tickets.py (scripts/test_tickets.py)
+  pick vendors from any trade                        -> "the vendor's trade serves the ticket's category"
+  allow two offers at once on one unit               -> "no unit has two offers at the same time (coverage key stays unique)"
+  recurring window of 30 days instead of 90          -> "is_recurring is exactly 'same unit and problem within 90 days before'"
+  lose one ticket                                    -> "39 tickets, as the config asks" / "5999 tickets, as the config asks"
+  final cost before the ticket is resolved           -> "vendor and estimate appear with Assigned, final cost with Resolved"
+  assignment before the ticket was raised            -> "status times strictly increase and lie inside the window"
+  unit codes without the building prefix             -> "every ticket references a real unit (building_code + unit_no)"
+                                                        (first a crash in the test; the test was hardened to a clean FAIL)
+  an incentive running past the window end           -> "every incentive window lies inside the data window"
+  one extra first-time ticket                        -> no change in the output (the generator tops up repeat tickets to
+                                                        the exact target), so nothing to catch: an equivalent change
