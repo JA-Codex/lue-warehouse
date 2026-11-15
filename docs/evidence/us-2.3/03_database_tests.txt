@@ -1,0 +1,65 @@
+======================================================================
+ US-2.2 and US-2.3 database tests: S1 data in lue_source.src_pms
+======================================================================
+Tables and columns (the Phase 1 source ERD)
+  [PASS] src_pms.buildings: columns and types equal the ERD
+  [PASS] src_pms.buildings: the primary key is building_code
+  [PASS] src_pms.units: columns and types equal the ERD
+  [PASS] src_pms.units: the primary key is unit_id
+  [PASS] src_pms.tenants: columns and types equal the ERD
+  [PASS] src_pms.tenants: the primary key is tenant_code
+  [PASS] src_pms.charge_types: columns and types equal the ERD
+  [PASS] src_pms.charge_types: the primary key is charge_code
+  [PASS] src_pms.payment_methods: columns and types equal the ERD
+  [PASS] src_pms.payment_methods: the primary key is method_code
+  [PASS] src_pms.leases: columns and types equal the ERD
+  [PASS] src_pms.leases: the primary key is lease_number
+  [PASS] src_pms.lease_events: columns and types equal the ERD
+  [PASS] src_pms.lease_events: the primary key is event_id
+  [PASS] src_pms.invoices: columns and types equal the ERD
+  [PASS] src_pms.invoices: the primary key is invoice_number
+  [PASS] src_pms.invoice_lines: columns and types equal the ERD
+  [PASS] src_pms.invoice_lines: the primary key is invoice_number, line_no
+Row counts match the generated profile
+  [PASS] 40 buildings = 40
+  [PASS] 1800 units = 1800
+  [PASS] 3800 tenants = 3800
+  [PASS] 6 charge types, 6 payment methods
+  [PASS] src_pms.buildings has the 40 rows of its CSV file
+  [PASS] src_pms.units has the 1800 rows of its CSV file
+  [PASS] src_pms.tenants has the 3800 rows of its CSV file
+  [PASS] src_pms.charge_types has the 6 rows of its CSV file
+  [PASS] src_pms.payment_methods has the 6 rows of its CSV file
+  [PASS] src_pms.leases has the 5770 rows of its CSV file
+  [PASS] src_pms.lease_events has the 8826 rows of its CSV file
+  [PASS] src_pms.invoices has the 53482 rows of its CSV file
+  [PASS] src_pms.invoice_lines has the 126596 rows of its CSV file
+Units, buildings and cities
+  [PASS] every unit belongs to a building (0 units without one)
+  [PASS] every unit therefore has a city and a locality
+  [PASS] 4 distinct cities
+  [PASS] (building_code, unit_no) is unique
+  [PASS] every building has units
+  [PASS] area > 0, unit type is one of three, bedrooms fit the type, updated_at is filled
+  [PASS] building class A, B or C; year built 1980 to 2023
+Tenants and reference tables
+  [PASS] every tenant has a name, a phone and a creation time from go-live onwards
+  [PASS] tenant type and contact channel use the pack's values
+  [PASS] src_pms.charge_types equals etl/reference_data.py
+  [PASS] src_pms.payment_methods equals etl/reference_data.py
+Leases, lease events and invoices (US-2.3)
+  [PASS] ACCEPTANCE: zero overlapping leases per unit (self-join on date ranges)
+  [PASS] every lease has an existing unit and tenant (0 orphans)
+  [PASS] every renewal follows its previous lease: same unit, same tenant, next day
+  [PASS] rent > 0, end after start, lease type and status use the documented values
+  [PASS] every lease event names an existing lease and a known event code
+  [PASS] no lease event is dated before its tenant's record
+  [PASS] every invoice names an existing lease and falls inside its term
+  [PASS] no invoice is dated before its tenant's record
+  [PASS] one invoice per lease per month
+  [PASS] every line has an invoice and a charge type; net = billed + tax - discount
+  [PASS] ACCEPTANCE: rent billed = monthly rent x months billed, for every lease
+  [PASS] discounts are 0 and every invoice is Issued until payments exist (US-2.4)
+======================================================================
+ RESULT: 54/54 checks passed
+======================================================================

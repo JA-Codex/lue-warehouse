@@ -1,0 +1,40 @@
+S3 settlement files, full profile, seed 3004
+
+files: 3888
+
+per channel:
+   1072 bank
+    903 easypaisa
+    933 jazzcash
+    980 raast
+
+/tmp/g3/s3/settlement_bank_2026-03-10.csv (first rows):
+settlement_id,payment_reference,transaction_date,settlement_date,gross_amount,fee_amount,net_amount
+BNK202603100001,PAY-0052535,2026-03-07,2026-03-10,78030.00,25.00,78005.00
+BNK202603100002,PAY-0052674,2026-03-07,2026-03-10,54550.00,25.00,54525.00
+BNK202603100003,PAY-0052691,2026-03-08,2026-03-10,141470.00,25.00,141445.00
+BNK202603100004,PAY-0052704,2026-03-08,2026-03-10,39000.00,25.00,38975.00
+BNK202603100005,PAY-0052709,2026-03-08,2026-03-10,190792.00,25.00,190767.00
+
+/tmp/g3/s3/settlement_jazzcash_2026-03-10.csv (first rows):
+settlement_id,payment_reference,transaction_date,settlement_date,gross_amount,fee_amount,net_amount
+JZC202603100001,PAY-0052534,2026-03-07,2026-03-10,254450.00,2544.50,251905.50
+JZC202603100002,PAY-0052665,2026-03-07,2026-03-10,131430.00,1314.30,130115.70
+JZC202603100003,PAY-0052714,2026-03-08,2026-03-10,36750.00,367.50,36382.50
+
+S1 payments (first rows):
+payment_reference,tenant_code,paid_at,method_code,amount,status,reversal_of
+PAY-0000001,T-1264,2023-07-01 08:20:52,EASY,199490.00,Cleared,
+PAY-0000002,T-0998,2023-07-01 12:02:10,CHEQUE,29650.00,Cleared,
+PAY-0000003,T-0218,2023-07-02 01:40:16,RAAST,227750.00,Cleared,
+PAY-0000004,T-0802,2023-07-02 08:34:07,EASY,51450.00,Cleared,
+
+A bounced cheque and its reversal:
+PAY-0000539,T-0056,2023-07-08 09:07:16,CHEQUE,-26332.00,Bounced,PAY-0000044
+PAY-0000044,T-0056,2023-07-04 09:28:57,CHEQUE,26332.00,Cleared,
+
+Allocations of one payment split across lines:
+payment_reference,invoice_number,line_no,allocated_amount
+PAY-0000001,INV-2023-07-0577,1,156500.00
+PAY-0000001,INV-2023-07-0577,2,23450.00
+PAY-0000001,INV-2023-07-0577,3,19540.00

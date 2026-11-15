@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the S1 tables and load the generated master data into lue_source.src_pms (US-2.2).
+"""Create the S1 tables and load the generated data into lue_source.src_pms (US-2.2 to US-2.4).
 
     python etl/generate_data.py
     python scripts/db_load_source.py [--data data]
@@ -9,7 +9,7 @@ the generator has files for (data/s1/*.csv) with those files. It all happens in 
 so it loads completely or not at all. Safe to re-run: a second run gives the same rows.
 Run scripts/db_setup.py first (US-1.1).
 
-Later stories add their tables to TABLES (leases, invoices, payments) in load order.
+Later stories add their tables to TABLES in load order.
 """
 
 import argparse
@@ -29,7 +29,19 @@ from db_setup import (  # noqa: E402
 SOURCE_SCHEMA = "src_pms"
 DDL_DIR = ROOT / "sql" / "05_source"
 # Tables loaded from data/s1/<table>.csv, in load order (parents before children).
-TABLES = ["buildings", "units", "tenants", "charge_types", "payment_methods"]
+TABLES = [
+    "buildings",
+    "units",
+    "tenants",
+    "charge_types",
+    "payment_methods",
+    "leases",
+    "lease_events",
+    "invoices",
+    "invoice_lines",
+    "payments",
+    "payment_allocations",
+]
 
 
 def truncate_sql(tables: list[str]) -> str:
@@ -72,7 +84,7 @@ def main() -> int:
 
     s = load_settings()
     print("=" * 70)
-    print(f" LUE Warehouse - load S1 master data into {SOURCE_DB}.{SOURCE_SCHEMA} as {ETL_ROLE}")
+    print(f" LUE Warehouse - load S1 data into {SOURCE_DB}.{SOURCE_SCHEMA} as {ETL_ROLE}")
     print("=" * 70)
     try:
         conn = psycopg2.connect(
@@ -113,7 +125,7 @@ def main() -> int:
     for table, n in counts:
         print(f"[OK]   {SOURCE_SCHEMA}.{table:<16} {n:>6} rows")
     print("=" * 70)
-    print(" RESULT: S1 MASTER DATA LOADED. Check it with: python scripts/test_source_load.py")
+    print(" RESULT: S1 DATA LOADED. Check it with: python scripts/test_source_load.py")
     print("=" * 70)
     return 0
 

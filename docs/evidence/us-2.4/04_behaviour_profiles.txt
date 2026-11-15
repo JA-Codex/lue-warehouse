@@ -1,0 +1,29 @@
+Behaviour profiles, full profile, seed 3004. Days late = first payment date minus due date (negative = early).
+
+behaviour           tenants invoices  paid on/before due  median   p90  never paid  arrears
+on_time                1869    30842               100%      -2     0       0.0%     0.2%
+occasionally_late       620     9668                80%      -1     6       0.1%     0.2%
+chronically_late        350     5169                 0%      12    31       0.9%     1.4%
+partial_payer           323     5067                35%       2     7       0.0%    12.7%
+defaulter               175     2736                66%      -1    78      65.9%    66.9%
+
+Payment methods (cleared payments):
+  BANK      16996  29%
+  CASH      12552  22%
+  CHEQUE     9685  17%
+  RAAST      8051  14%
+  EASY       5563  10%
+  JAZZ       5405  9%
+
+Payments 58,672 (58,252 cleared, 420 bounced-cheque reversals); allocation rows 124,735
+Billed PKR 5,540,041,862; allocated PKR 5,282,730,546; collection rate 95.4%
+Invoice status: {'Paid': 49681, 'Partial': 1866, 'Overdue': 1935}
+
+Settlement lag in days (settlement date minus paid date), by channel:
+  raast       7898 settlements, mean 0.05 days, distribution {0: 7483, 1: 415}
+  bank       16659 settlements, mean 1.35 days, distribution {1: 11654, 2: 4105, 3: 900}
+  jazzcash    5288 settlements, mean 1.50 days, distribution {1: 3181, 2: 1586, 3: 521}
+  easypaisa   5467 settlements, mean 1.65 days, distribution {1: 2739, 2: 1926, 3: 802}
+
+Electronic payments 36,015; with a settlement 35,312; unmatched 703 (2.0%)
+Settlement files 3,888 (one per channel per day)

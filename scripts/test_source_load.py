@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Database tests for US-2.2: is the S1 master data in lue_source.src_pms and is it right?
+"""Database tests for US-2.2 to US-2.4: is the S1 data in lue_source.src_pms and is it right?
 
     python scripts/test_source_load.py [--data data]
 
@@ -77,7 +77,7 @@ def main() -> int:
 
     s = load_settings()
     print("=" * 70)
-    print(" US-2.2 database tests: S1 master data in lue_source.src_pms")
+    print(" US-2.2 to US-2.4 database tests: S1 data in lue_source.src_pms")
     print("=" * 70)
     manifest_path = args.data / "run_manifest.json"
     if not manifest_path.is_file():
@@ -238,6 +238,219 @@ def main() -> int:
             sorted(tuple(r) for r in cur.fetchall())
             == sorted((c, nme) for c, nme, _g, _d in PAYMENT_METHODS),
             "src_pms.payment_methods equals etl/reference_data.py",
+        )
+
+        print("Leases, lease events and invoices (US-2.3)")
+        src = SOURCE_SCHEMA
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.leases a JOIN {src}.leases b "
+                "ON a.unit_id = b.unit_id AND a.lease_number < b.lease_number "
+                "AND a.start_date <= b.end_date AND b.start_date <= a.end_date",
+            )
+            == 0,
+            "ACCEPTANCE: zero overlapping leases per unit (self-join on date ranges)",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.leases l "
+                f"LEFT JOIN {src}.units u USING (unit_id) "
+                f"LEFT JOIN {src}.tenants t USING (tenant_code) "
+                "WHERE u.unit_id IS NULL OR t.tenant_code IS NULL",
+            )
+            == 0,
+            "every lease has an existing unit and tenant (0 orphans)",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.leases l "
+                f"LEFT JOIN {src}.leases p ON p.lease_number = l.previous_lease_number "
+                "WHERE l.previous_lease_number IS NOT NULL AND (p.lease_number IS NULL "
+                "OR p.unit_id <> l.unit_id OR p.tenant_code <> l.tenant_code "
+                "OR l.start_date <> p.end_date + 1)",
+            )
+            == 0,
+            "every renewal follows its previous lease: same unit, same tenant, next day",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.leases WHERE monthly_rent <= 0 "
+                "OR end_date <= start_date OR lease_type NOT IN ('Residential', 'Commercial') "
+                "OR status NOT IN ('Active', 'Renewed', 'Terminated')",
+            )
+            == 0,
+            "rent > 0, end after start, lease type and status use the documented values",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.lease_events e "
+                f"LEFT JOIN {src}.leases l USING (lease_number) WHERE l.lease_number IS NULL "
+                "OR e.event_code NOT IN ('SIGN', 'RENEW', 'NOTICE', 'TERM')",
+            )
+            == 0,
+            "every lease event names an existing lease and a known event code",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.lease_events e "
+                f"JOIN {src}.leases l USING (lease_number) "
+                f"JOIN {src}.tenants t USING (tenant_code) "
+                "WHERE e.event_date < t.updated_at::date",
+            )
+            == 0,
+            "no lease event is dated before its tenant's record",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.invoices i "
+                f"LEFT JOIN {src}.leases l USING (lease_number) WHERE l.lease_number IS NULL "
+                "OR i.invoice_date < l.start_date OR i.invoice_date > l.end_date",
+            )
+            == 0,
+            "every invoice names an existing lease and falls inside its term",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.invoices i "
+                f"JOIN {src}.leases l USING (lease_number) "
+                f"JOIN {src}.tenants t USING (tenant_code) "
+                "WHERE i.invoice_date < t.updated_at::date",
+            )
+            == 0,
+            "no invoice is dated before its tenant's record",
+        )
+        check(
+            scalar(
+                cur,
+                "SELECT count(*) FROM (SELECT lease_number, date_trunc('month', invoice_date) "
+                f"FROM {src}.invoices GROUP BY 1, 2 HAVING count(*) > 1) d",
+            )
+            == 0,
+            "one invoice per lease per month",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.invoice_lines x "
+                f"LEFT JOIN {src}.invoices i USING (invoice_number) "
+                f"LEFT JOIN {src}.charge_types c ON c.charge_code = x.charge_code "
+                "WHERE i.invoice_number IS NULL OR c.charge_code IS NULL "
+                "OR x.net_amount <> x.billed_amount + x.tax_amount - x.discount_amount",
+            )
+            == 0,
+            "every line has an invoice and a charge type; net = billed + tax - discount",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM (SELECT l.lease_number FROM {src}.leases l "
+                f"JOIN {src}.invoices i USING (lease_number) "
+                f"JOIN {src}.invoice_lines x USING (invoice_number) "
+                "WHERE x.charge_code = 'RENT' GROUP BY l.lease_number, l.monthly_rent "
+                "HAVING sum(x.billed_amount) <> l.monthly_rent * count(*)) d",
+            )
+            == 0,
+            "ACCEPTANCE: rent billed = monthly rent x months billed, for every lease",
+        )
+        check(
+            scalar(cur, f"SELECT count(*) FROM {src}.invoice_lines WHERE discount_amount <> 0") == 0
+            and scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.invoices "
+                "WHERE status NOT IN ('Paid', 'Partial', 'Overdue')",
+            )
+            == 0,
+            "discounts are 0 and every invoice is Paid, Partial or Overdue (US-2.4)",
+        )
+
+        print("Payments and allocations (US-2.4)")
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.payments p LEFT JOIN {src}.tenants t USING "
+                f"(tenant_code) "
+                f"LEFT JOIN {src}.payment_methods m USING (method_code) "
+                "WHERE t.tenant_code IS NULL OR m.method_code IS NULL "
+                "OR p.status NOT IN ('Cleared', 'Bounced') OR p.amount = 0 "
+                "OR (p.amount < 0) <> (p.status = 'Bounced') "
+                "OR (p.reversal_of IS NOT NULL) <> (p.status = 'Bounced')",
+            )
+            == 0,
+            "every payment has a tenant and a method; Bounced = negative = has reversal_of",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.payments r LEFT JOIN {src}.payments o "
+                "ON o.payment_reference = r.reversal_of "
+                "WHERE r.reversal_of IS NOT NULL AND (o.payment_reference IS NULL "
+                "OR o.tenant_code <> r.tenant_code OR o.amount <> -r.amount "
+                "OR o.status <> 'Cleared' OR o.method_code <> 'CHEQUE' "
+                "OR r.paid_at::date - o.paid_at::date NOT BETWEEN 3 AND 7)",
+            )
+            == 0,
+            "every reversal undoes one cheque of the same tenant for the same amount, 3 "
+            "to 7 days later",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.payments p LEFT JOIN "
+                f"(SELECT payment_reference, sum(allocated_amount) s "
+                f"FROM {src}.payment_allocations GROUP BY 1) a USING (payment_reference) "
+                "WHERE a.s IS DISTINCT FROM p.amount",
+            )
+            == 0,
+            "a payment's amount equals the sum of its allocations",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.payment_allocations a "
+                f"LEFT JOIN {src}.invoice_lines l USING (invoice_number, line_no) "
+                f"LEFT JOIN {src}.payments p USING (payment_reference) "
+                f"LEFT JOIN {src}.invoices i USING (invoice_number) "
+                f"LEFT JOIN {src}.leases s ON s.lease_number = i.lease_number "
+                "WHERE l.invoice_number IS NULL OR p.payment_reference IS NULL "
+                "OR p.tenant_code <> s.tenant_code OR p.paid_at::date < i.invoice_date",
+            )
+            == 0,
+            "every allocation names a real invoice line of the paying tenant, paid after "
+            "it was issued",
+        )
+        check(
+            scalar(
+                cur,
+                "SELECT count(*) FROM (SELECT l.invoice_number, l.line_no FROM "
+                f"{src}.invoice_lines l JOIN {src}.payment_allocations a USING "
+                f"(invoice_number, line_no) "
+                "GROUP BY l.invoice_number, l.line_no, l.net_amount "
+                "HAVING sum(a.allocated_amount) > l.net_amount OR sum(a.allocated_amount) < 0) d",
+            )
+            == 0,
+            "ACCEPTANCE: no invoice line is paid more than its net amount",
+        )
+        check(
+            scalar(
+                cur,
+                f"SELECT count(*) FROM {src}.invoices i JOIN (SELECT invoice_number, "
+                f"sum(net_amount) t "
+                f"FROM {src}.invoice_lines GROUP BY 1) l USING (invoice_number) "
+                f"LEFT JOIN (SELECT invoice_number, sum(allocated_amount) p "
+                f"FROM {src}.payment_allocations GROUP BY 1) a USING (invoice_number) "
+                "WHERE i.status <> CASE WHEN coalesce(a.p, 0) = l.t THEN 'Paid' "
+                "WHEN coalesce(a.p, 0) > 0 THEN 'Partial' ELSE 'Overdue' END",
+            )
+            == 0,
+            "invoice status agrees with the allocations: Paid, Partial or Overdue",
         )
     finally:
         cur.close()

@@ -432,7 +432,12 @@ def main(argv: list[str] | None = None) -> int:
 
 # Stage modules register themselves when imported; STAGE_ORDER above says in which order they run.
 # Each later story adds its module here and its stage name to STAGE_ORDER.
-from etl import gen_master, gen_tickets  # noqa: E402,F401  US-2.2 master data, US-2.5 tickets
+from etl import (  # noqa: E402,F401  US-2.2 to US-2.5
+    gen_leases,
+    gen_master,
+    gen_payments,
+    gen_tickets,
+)
 
 if __name__ == "__main__":
     # Run through the importable module, so stages register in the one registry that run() reads

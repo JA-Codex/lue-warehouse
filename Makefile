@@ -26,9 +26,11 @@ manifest: ## docs/phase1 must still match MANIFEST.sha256 (frozen baseline)
 contract: ## sql/10_ddl must match the frozen Phase 1 DDL (US-1.2)
 	$(PYTHON) scripts/check_contract.py
 
-gen-test: ## Generator acceptance tests, no database needed (US-2.1, US-2.2, US-2.5)
+gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.5)
 	$(PYTHON) scripts/test_generator.py
 	$(PYTHON) scripts/test_master_data.py
+	$(PYTHON) scripts/test_leases.py
+	$(PYTHON) scripts/test_payments.py
 	$(PYTHON) scripts/test_tickets.py
 	$(PYTHON) scripts/test_weather.py
 
@@ -53,10 +55,10 @@ db-deploy: ## Deploy sql/10_ddl as lue_etl; safe to re-run (US-1.2)
 db-load-ref: ## Load dim_date and the static dimensions; safe to re-run (US-1.4)
 	$(PYTHON) scripts/db_load_reference.py
 
-db-load-source: ## Load the generated S1 master data into lue_source.src_pms; safe to re-run (US-2.2)
+db-load-source: ## Load the generated S1 data into lue_source.src_pms; safe to re-run (US-2.2 to US-2.4)
 	$(PYTHON) scripts/db_load_source.py
 
-db-test: ## Database acceptance tests (US-1.1 to US-1.5, US-2.2)
+db-test: ## Database acceptance tests (US-1.1 to US-1.5, US-2.2 to US-2.4)
 	$(PYTHON) scripts/test_db_setup.py
 	$(PYTHON) scripts/test_dimensions.py
 	$(PYTHON) scripts/test_facts.py

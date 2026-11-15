@@ -1,0 +1,24 @@
+US-2.3 evidence: determinism of the lease and billing files (profile small)
+
+file                  seed 3004, run 1    seed 3004, run 2    seed 3005           (first 16 hex digits of SHA-256)
+s1/leases.csv         d8195bdcc5bbbba5    d8195bdcc5bbbba5    3da0afa62db067af    
+s1/lease_events.csv   87d62273fe89bc91    87d62273fe89bc91    79ab2ee862c5b1b6    
+s1/invoices.csv       8af44058b55c24f2    8af44058b55c24f2    f0c6fe90d639647b    
+s1/invoice_lines.csv  16e35b18357b1b7b    16e35b18357b1b7b    00e9f3ea306f1de2    
+
+content hash, seed 3004, run 1: a9cac42af9703345859100dc241cc7c3c06d214e055f87b92900bdbc5ec811db
+content hash, seed 3004, run 2: a9cac42af9703345859100dc241cc7c3c06d214e055f87b92900bdbc5ec811db
+content hash, seed 3005       : fb28ac3d9a0283c6eb4f66f9bc5b270e3d47315f3cd909d6459aee47404bf639
+same seed identical: True | different seed differs: True
+
+US-2.1 and US-2.2 files before and after this story (stage removed from the registry = state before the story):
+  _framework/rng_probe.csv  unchanged
+  s1/buildings.csv          unchanged
+  s1/charge_types.csv       unchanged
+  s1/payment_methods.csv    unchanged
+  s1/tenants.csv            unchanged
+  s1/units.csv              unchanged
+  s2/registers.xlsx         unchanged
+  all unchanged: True
+  content hash before this story : 7e1030ea22c78fc1b4954f2b35627f82960a8df24fcc78c419efb859ffbf7089
+  content hash after this story  : a9cac42af9703345859100dc241cc7c3c06d214e055f87b92900bdbc5ec811db
