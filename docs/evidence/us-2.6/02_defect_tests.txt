@@ -1,0 +1,98 @@
+python scripts/test_defects.py
+
+======================================================================
+ US-2.6 acceptance tests: planted defects, answer key, patterns
+======================================================================
+Small profile (2 buildings, 90 units)
+  The answer key
+  [PASS] the defects_answer_key stage runs last
+  [PASS] defects_answer_key.csv has the documented columns
+  [PASS] 43 defects, numbered D-00001 onwards without a gap
+  [PASS] one defect per record: no record appears twice in the key
+  [PASS] all 12 defect types of the configuration are planted
+  [PASS] each row carries its type's expected handling and rule
+  [PASS] expected handling is reject, warn, repair or accept
+  [PASS] summary.csv counts every (type, source, table) of the key
+  [PASS] totals.csv: 43 defects, 25 to reject
+  S1: every change is in the key, every key row is a change
+  [PASS] S1: the changed rows are exactly the key's S1 rows (no more, no fewer)
+  [PASS] S1: each change is the named defect in the named column, nothing else
+  [PASS] 1 late-arriving tenants moved, unchanged, from s1/tenants.csv to s1/late_arriving/tenants.csv; every other tenant row is untouched
+  [PASS] every lease and payment of a late tenant is keyed (4 rows, flagged warn)
+  [PASS] 2 tenant changes in s1/changes/tenants.csv: one tracked attribute and updated_at each, dated inside the window after the record existed (SCD2 test data)
+  [PASS] mid-lease rent changes: exactly the 2 keyed rent lines bill more than the lease rent (and the tenants were billed and paid that)
+  [PASS] S1 still loads into src_pms: every value fits its ERD type and width, primary keys stay unique and filled
+  S3 settlement files
+  [PASS] S3: the changed lines are exactly the key's S3 rows
+  [PASS] S3: duplicates are exact copies, late lines arrive 5 to 20 days later, unmatched lines name no real payment
+  [PASS] S3 natural key (channel + settlement_id) is unique except the planted duplicates
+  S4 tickets
+  [PASS] S4: the changed tickets are exactly the key's S4 rows
+  [PASS] S4: each changed ticket shows the named defect (copies, removed or unknown unit, text, a number as text, a 1970 raise time)
+  S6 incentive log
+  [PASS] S6: the 0 keyed rows are the only changes, each the named defect
+  Counts follow the configured rates
+  [PASS] every (type, table) count is round(rate x rows), at least 1 in a table of 20+ rows
+  expectations.json
+  [PASS] US-5.2 numbers: 2 unmatched settlements, 3 unsettled electronic payments (as before US-2.6)
+  [PASS] US-6.5 inferred tenants, US-6.2 SCD2 versions and the rent lines match the files
+  [PASS] quarantine and warning counts per check add up to the key (US-4.4)
+  [PASS] planted_patterns.json names a real building, vendor and city, as etl/patterns.py chose
+  [PASS] planted_patterns.md is written next to the answer key
+  [PASS] the manifest records the weather cache the rain-driven leaks were read from
+Full profile (40 buildings, 1800 units)
+  The answer key
+  [PASS] the defects_answer_key stage runs last
+  [PASS] defects_answer_key.csv has the documented columns
+  [PASS] 8,507 defects, numbered D-00001 onwards without a gap
+  [PASS] one defect per record: no record appears twice in the key
+  [PASS] all 12 defect types of the configuration are planted
+  [PASS] each row carries its type's expected handling and rule
+  [PASS] expected handling is reject, warn, repair or accept
+  [PASS] summary.csv counts every (type, source, table) of the key
+  [PASS] totals.csv: 8,507 defects, 5,636 to reject
+  S1: every change is in the key, every key row is a change
+  [PASS] S1: the changed rows are exactly the key's S1 rows (no more, no fewer)
+  [PASS] S1: each change is the named defect in the named column, nothing else
+  [PASS] 38 late-arriving tenants moved, unchanged, from s1/tenants.csv to s1/late_arriving/tenants.csv; every other tenant row is untouched
+  [PASS] every lease and payment of a late tenant is keyed (632 rows, flagged warn)
+  [PASS] 76 tenant changes in s1/changes/tenants.csv: one tracked attribute and updated_at each, dated inside the window after the record existed (SCD2 test data)
+  [PASS] mid-lease rent changes: exactly the 587 keyed rent lines bill more than the lease rent (and the tenants were billed and paid that)
+  [PASS] S1 still loads into src_pms: every value fits its ERD type and width, primary keys stay unique and filled
+  S3 settlement files
+  [PASS] S3: the changed lines are exactly the key's S3 rows
+  [PASS] S3: duplicates are exact copies, late lines arrive 5 to 20 days later, unmatched lines name no real payment
+  [PASS] S3 natural key (channel + settlement_id) is unique except the planted duplicates
+  S4 tickets
+  [PASS] S4: the changed tickets are exactly the key's S4 rows
+  [PASS] S4: each changed ticket shows the named defect (copies, removed or unknown unit, text, a number as text, a 1970 raise time)
+  S6 incentive log
+  [PASS] S6: the 50 keyed rows are the only changes, each the named defect
+  Counts follow the configured rates
+  [PASS] every (type, table) count is round(rate x rows), at least 1 in a table of 20+ rows
+  expectations.json
+  [PASS] US-5.2 numbers: 541 unmatched settlements, 722 unsettled electronic payments (as before US-2.6)
+  [PASS] US-6.5 inferred tenants, US-6.2 SCD2 versions and the rent lines match the files
+  [PASS] quarantine and warning counts per check add up to the key (US-4.4)
+  [PASS] planted_patterns.json names a real building, vendor and city, as etl/patterns.py chose
+  [PASS] planted_patterns.md is written next to the answer key
+  [PASS] the manifest records the weather cache the rain-driven leaks were read from
+Clean control batch (every rate 0, US-4.4)
+  [PASS] no defect is planted: the answer key, the late tenants and the changes are empty
+  [PASS] the clean batch has the tickets, offers and tenants of the run before US-2.6
+  [PASS] its expectations: 0 defects, 0 unmatched settlements (only the unsettled payments)
+Reproducibility and configurable rates
+  [PASS] same seed: byte-identical answer key and totals (plan acceptance)
+  [PASS] a different seed plants different defects
+  [PASS] doubling one rate doubles that defect (66 -> 133 exact duplicates) and leaves every other count alone
+  [PASS] without the committed weather cache the generator stops with a clear message
+Planted patterns (scripts/check_patterns.py, pandas, clean full profile)
+  [PASS] 1 High-arrears building: ratio 4.53; unpaid 21.5% in GLB03 vs 4.7% elsewhere
+  [PASS] 2 Slow vendor: ratio 2.00; V-001 1.35 of SLA (38 jobs, 84% late) vs 0.67 (26%)
+  [PASS] 3 Seasonal move-ins: ratio 1.43; 86.2 move-ins a peak month vs 60.3 other months
+  [PASS] 4 Incentive shortens vacancy: ratio 0.43; 58 days with an offer (535) vs 135 without (1570)
+  [PASS] 5 Rain-driven leak tickets: ratio 6.35; 2.18 per 1,000 unit-days on 394 rainy city-days vs 0.34 on the others
+  [PASS] 6 Renewal churn: ratio 0.54; 27% renew in Karachi vs 51% elsewhere
+======================================================================
+ RESULT: 71/71 checks passed
+======================================================================

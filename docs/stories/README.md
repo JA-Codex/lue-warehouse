@@ -31,6 +31,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-2.3 | Generate leases, lease events and invoices | Ahmad Waqar | Done | 2026-11-15 | [US-2.3](US-2.3.md) | [evidence](../evidence/us-2.3/) |
 | US-2.4 | Generate payments and settlements | Ahmad Waqar | Done | 2026-11-15 | [US-2.4](US-2.4.md) | [evidence](../evidence/us-2.4/) |
 | US-2.5 | Generate tickets, incentives and weather | Eesha (done by Hanan) | Done | 2026-11-16 | [US-2.5](US-2.5.md) | [evidence](../evidence/us-2.5/) |
+| US-2.6 | Inject defects, plant patterns, write the answer key | Ahmad Waqar (done by Hanan) | Done | 2026-11-16 | [US-2.6](US-2.6.md) | [evidence](../evidence/us-2.6/) |
 
 ## Later epics
 
@@ -54,3 +55,8 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-09 | `dim_request_flags` keeps no special members, as in the Phase 1 pack; plan US-1.4's "plus the Unknown member" cannot fit (three NOT NULL flags, all 8 combinations unique) | [US-1.2](US-1.2.md) |
 | 2026-11-16 | S5 weather is real Open-Meteo data, downloaded once in 16 small requests with retries and resume, and committed; nothing else uses the network | [US-2.5](US-2.5.md) |
 | 2026-11-16 | S4 tickets carry no tenant: the fact takes the tenant from the lease active on the raised date (-2 if vacant), so US-2.5 needs only US-2.2 | [US-2.5](US-2.5.md) |
+| 2026-11-16 | Defects go only on records nothing points to, one per record, so each rejected record fails exactly one check and nothing cascades; S1 keeps its types and keys (it must load into `src_pms`) | [US-2.6](US-2.6.md) |
+| 2026-11-16 | Expected handling has a fourth value, `accept`, for tenant attribute changes (a new SCD2 version, not a finding) | [US-2.6](US-2.6.md) |
+| 2026-11-16 | Late tenants and tenant changes are the next S1 extract (`s1/late_arriving/`, `s1/changes/`), not loaded by `db_load_source.py` | [US-2.6](US-2.6.md) |
+| 2026-11-16 | Incentive offers are posted on vacant units (planted pattern 4); the generator reads the committed weather cache for rain-driven leaks | [US-2.6](US-2.6.md) |
+| 2026-11-16 | `--clean` gives the clean control batch; the US-2.2 to US-2.5 tests and the S1 database test run on it | [US-2.6](US-2.6.md) |

@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate weather weather-check reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -26,16 +26,20 @@ manifest: ## docs/phase1 must still match MANIFEST.sha256 (frozen baseline)
 contract: ## sql/10_ddl must match the frozen Phase 1 DDL (US-1.2)
 	$(PYTHON) scripts/check_contract.py
 
-gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.5)
+gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_generator.py
 	$(PYTHON) scripts/test_master_data.py
 	$(PYTHON) scripts/test_leases.py
 	$(PYTHON) scripts/test_payments.py
 	$(PYTHON) scripts/test_tickets.py
 	$(PYTHON) scripts/test_weather.py
+	$(PYTHON) scripts/test_defects.py
 
-generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 (US-2.1)
-	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004)
+generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
+	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
+
+patterns: ## Measure the six planted patterns in data/ with pandas (US-2.6; use PROFILE=full CLEAN=1 data)
+	$(PYTHON) scripts/check_patterns.py
 
 weather: ## Download the S5 weather once into data/weather_cache.json; resumes if stopped (US-2.5)
 	$(PYTHON) etl/refresh_weather.py
@@ -58,7 +62,7 @@ db-load-ref: ## Load dim_date and the static dimensions; safe to re-run (US-1.4)
 db-load-source: ## Load the generated S1 data into lue_source.src_pms; safe to re-run (US-2.2 to US-2.4)
 	$(PYTHON) scripts/db_load_source.py
 
-db-test: ## Database acceptance tests (US-1.1 to US-1.5, US-2.2 to US-2.4)
+db-test: ## Database acceptance tests (US-1.1 to US-1.5, US-2.2 to US-2.4; load a CLEAN=1 generation)
 	$(PYTHON) scripts/test_db_setup.py
 	$(PYTHON) scripts/test_dimensions.py
 	$(PYTHON) scripts/test_facts.py

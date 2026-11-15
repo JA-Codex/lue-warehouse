@@ -29,6 +29,13 @@ import etl.gen_payments as gp  # noqa: E402
 import etl.generate_data as gd  # noqa: E402
 from etl import generator_config as cfg  # noqa: E402
 
+
+def clean_profile(name: str):
+    """The clean control batch (every defect rate 0). These checks prove the clean contract; the
+    defects US-2.6 plants on top are checked by scripts/test_defects.py against the answer key."""
+    return cfg.clean_profile(cfg.get_profile(name))
+
+
 results: list[bool] = []
 failures: list[str] = []
 
@@ -468,18 +475,18 @@ def main() -> int:
         for name in ("small", "full"):
             started = time.perf_counter()
             runs[name] = (
-                gd.run(cfg.get_profile(name), 3004, tmp / name),
+                gd.run(clean_profile(name), 3004, tmp / name),
                 time.perf_counter() - started,
             )
         for name in ("small", "full"):
             try:
-                run_checks(name.capitalize(), cfg.get_profile(name), tmp / name, model)
+                run_checks(name.capitalize(), clean_profile(name), tmp / name, model)
             except Exception as exc:  # a broken output must fail the test, not crash it
                 check(False, f"{name}: the checks could not finish ({type(exc).__name__}: {exc})")
 
         print("Determinism and independence")
-        again = gd.run(cfg.get_profile("small"), 3004, tmp / "again")
-        other = gd.run(cfg.get_profile("small"), 3005, tmp / "other")
+        again = gd.run(clean_profile("small"), 3004, tmp / "again")
+        other = gd.run(clean_profile("small"), 3005, tmp / "other")
         mine = ["s1/payments.csv", "s1/payment_allocations.csv", "s1/invoices.csv"]
         s3 = sorted(k for k in again["files"] if k.startswith("s3/"))
         check(

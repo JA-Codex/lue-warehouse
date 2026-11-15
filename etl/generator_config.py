@@ -9,7 +9,7 @@ The volume targets are what the later stories (US-2.2 to US-2.6) must hit. US-2.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date
 
 DEFAULT_SEED = 3004  # the course code; any non-negative integer works
@@ -57,7 +57,7 @@ class Profile:
     target_invoice_lines: int
     target_payments: int
     target_tickets: int
-    target_incentive_offers: int  # S6 incentive log rows: offers posted on units (US-2.5)
+    target_incentive_offers: int  # S6 offers posted on vacant units, about (US-2.5, US-2.6)
     defect_rates: dict[str, float] = field(default_factory=lambda: dict(DEFECT_RATES))
 
     @property
@@ -93,7 +93,7 @@ PROFILES = {
         target_invoice_lines=530,
         target_payments=230,
         target_tickets=40,
-        target_incentive_offers=12,
+        target_incentive_offers=5,
     ),
     # About 40 buildings, 1,800 units, 36 months (plan E2, US-2.3 to US-2.5).
     "full": Profile(
@@ -110,7 +110,7 @@ PROFILES = {
         target_invoice_lines=130_000,
         target_payments=60_000,
         target_tickets=6000,
-        target_incentive_offers=600,
+        target_incentive_offers=650,
     ),
 }
 
@@ -148,6 +148,11 @@ def validate(profile: Profile) -> list[str]:
         if not 0 <= rate <= MAX_DEFECT_RATE:
             problems.append(f"defect rate {defect}={rate} is outside 0 to {MAX_DEFECT_RATE}")
     return problems
+
+
+def clean_profile(profile: Profile) -> Profile:
+    """The same profile with every defect rate 0: the clean control batch (US-2.6, US-4.4)."""
+    return replace(profile, defect_rates={k: 0.0 for k in profile.defect_rates})
 
 
 def get_profile(name: str) -> Profile:

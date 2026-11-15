@@ -1,0 +1,54 @@
+PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1), as lue_etl through the project scripts
+
+1. A generation WITH the planted defects loads into src_pms (types, widths and keys still fit)
+   python etl/generate_data.py --profile full && python scripts/db_load_source.py
+   defects       planted (answer_key/)
+   stages        framework_probe, master_data, leases_invoices, payments, tickets_incentives, defects_answer_key
+   content hash  138eae0c1bb7a482a5ab8e3a5b1f1214632de98f04a2f29ef7803a9f50bcc5fb
+   [OK]   sql/05_source/01_src_pms_master.sql
+   [OK]   sql/05_source/02_src_pms_leases.sql
+   [OK]   sql/05_source/03_src_pms_payments.sql
+   [OK]   src_pms.buildings            40 rows
+   [OK]   src_pms.units              1800 rows
+   [OK]   src_pms.tenants            3762 rows
+   [OK]   src_pms.charge_types          6 rows
+   [OK]   src_pms.payment_methods       6 rows
+   [OK]   src_pms.leases             5883 rows
+   [OK]   src_pms.lease_events       9195 rows
+   [OK]   src_pms.invoices          54774 rows
+   [OK]   src_pms.invoice_lines    129885 rows
+   [OK]   src_pms.payments          59679 rows
+   [OK]   src_pms.payment_allocations 126852 rows
+    RESULT: S1 DATA LOADED. Check it with: python scripts/test_source_load.py
+
+2. The database sees exactly what the answer key says (SQL count | answer key count)
+   inconsistent_text                buildings                 1 | 1
+   inconsistent_text                units                    54 | 54
+   late_arriving_tenant_reference   leases                   62 | 62
+   late_arriving_tenant_reference   payments                570 | 570
+   mid_lease_rent_change            invoice_lines           587 | 587
+   null_required_value              lease_events            184 | 184
+   null_required_value              payment_allocations    2537 | 2537
+   orphan_reference                 lease_events            138 | 138
+   orphan_reference                 payment_allocations    1903 | 1903
+   out_of_range_date                lease_events             92 | 92
+   tenant_attribute_change          tenants                   - | 76  (in s1/changes/tenants.csv, not loaded)
+
+3. The US-2.2 to US-2.4 clean-contract test refuses data with planted defects, and says why
+     [FAIL] data holds the planted defects of US-2.6; these checks need the
+            clean control batch. Run, then test again:
+              python etl/generate_data.py --clean
+              python scripts/db_load_source.py
+    RESULT: FAILED (data is not a clean control batch)
+
+4. The clean control batch passes every database suite
+   python etl/generate_data.py --profile full --clean && python scripts/db_load_source.py
+   defects       none (clean control batch)
+   stages        framework_probe, master_data, leases_invoices, payments, tickets_incentives, defects_answer_key
+    RESULT: S1 DATA LOADED. Check it with: python scripts/test_source_load.py
+   test_db_setup       RESULT: 22/22 checks passed
+   test_dimensions     RESULT: 28/28 checks passed
+   test_facts          RESULT: 24/24 checks passed
+   test_source_load    RESULT: 66/66 checks passed
+   test_reference      RESULT: 32/32 checks passed
+   test_smoke          RESULT: 12/12 checks passed

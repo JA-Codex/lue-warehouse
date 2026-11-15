@@ -282,9 +282,12 @@ def run_checks(label: str, profile: cfg.Profile, out: Path, model) -> dict:
         "types are the dictionary's three; discount 0-50, rent-free 0-60, matching the type",
     )
     log = read_csv(out / "s6" / "incentive_log.csv")
+    # Since US-2.6 the offers come from the lease simulation (posted on vacant units), so the
+    # count is about the target, not exactly it.
+    tolerance = 0.15 if profile.name == "full" else 1.0
     check(
-        len(log) == profile.target_incentive_offers,
-        f"{len(log)} incentive log rows, as the config asks",
+        len(log) >= 1 and abs(len(log) / profile.target_incentive_offers - 1) <= tolerance,
+        f"{len(log)} incentive log rows, about the {profile.target_incentive_offers} asked for",
     )
     check(
         all((r["building_code"], r["unit_no"]) in units and r["offer_code"] in codes for r in log),
@@ -312,6 +315,20 @@ def run_checks(label: str, profile: cfg.Profile, out: Path, model) -> dict:
         ),
         "each offer suits its unit type (no two-month rent-free on a flat)",
     )
+    # US-2.6: an offer is posted on a VACANT unit and ends by the next move-in.
+    unit_id = {k: int(u["unit_id"]) for k, u in units.items()}
+    let = defaultdict(list)
+    for r in read_csv(out / "s1" / "leases.csv"):
+        let[int(r["unit_id"])].append((as_date(r["start_date"]), as_date(r["end_date"])))
+    leases_of = [let[unit_id[(r["building_code"], r["unit_no"])]] for r in log]
+    check(
+        all(
+            not any(ls <= e and s <= le for ls, le in held)
+            for held, (s, e) in zip(leases_of, spans, strict=True)
+        ),
+        f"every offer runs while its unit is vacant (no lease overlaps it; "
+        f"{sum(map(len, leases_of))} leases compared)",
+    )
     return stats
 
 
@@ -322,7 +339,9 @@ def main() -> int:
     model = load_model()
     with tempfile.TemporaryDirectory(prefix="lue_tickets_") as tmp_name:
         tmp = Path(tmp_name)
-        small, full = cfg.get_profile("small"), cfg.get_profile("full")
+        # The clean control batch: US-2.6 plants its defects on top (scripts/test_defects.py).
+        small = cfg.clean_profile(cfg.get_profile("small"))
+        full = cfg.clean_profile(cfg.get_profile("full"))
         gd.run(small, cfg.DEFAULT_SEED, tmp / "small")
         run_checks("Small", small, tmp / "small", model)
         gd.run(full, cfg.DEFAULT_SEED, tmp / "full")
@@ -387,13 +406,17 @@ def main() -> int:
         check(
             m_cached["content_hash"] == m_plain["content_hash"]
             and (tmp / "cached" / "weather_cache.json").exists(),
-            "the generator never reads (or deletes) the weather cache: output is the same",
+            "a weather_cache.json inside --out is neither read nor deleted: output is the same",
         )
-        text = (ROOT / "etl" / "gen_tickets.py").read_text(encoding="utf-8")
+        # Since US-2.6 the rain-driven leaks read the COMMITTED cache (etl/patterns.py), never the
+        # network: no download code is reachable from the generator.
+        code = "".join(
+            (ROOT / "etl" / f).read_text(encoding="utf-8").split('"""', 2)[2]
+            for f in ("gen_tickets.py", "patterns.py")
+        )
         check(
-            "weather_cache" not in text.split('"""', 2)[2]
-            and "refresh_weather" not in text.split('"""', 2)[2],
-            "gen_tickets.py has no dependency on the weather download",
+            all(word not in code for word in ("urlopen", "urllib", "download(", "fetch_part")),
+            "the generator never downloads: tickets read only the committed weather cache",
         )
 
     print("=" * 70)

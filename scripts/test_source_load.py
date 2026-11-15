@@ -3,9 +3,11 @@
 
     python scripts/test_source_load.py [--data data]
 
-Run python etl/generate_data.py and python scripts/db_load_source.py first. Connects as lue_etl and
-changes nothing. The expected row counts come from data/run_manifest.json (the profile that was
-generated), the expected columns and types from the frozen Phase 1 source ERD.
+Run python etl/generate_data.py --clean and python scripts/db_load_source.py first: the clean
+control batch (since US-2.6 a plain generation carries planted defects; test_defects.py checks
+those). Connects as lue_etl and changes nothing. The expected row counts come from
+data/run_manifest.json (the profile that was generated), the expected columns and types from the
+frozen Phase 1 source ERD.
 """
 
 import argparse
@@ -85,6 +87,16 @@ def main() -> int:
         print(" RESULT: FAILED")
         return 1
     profile = json.loads(manifest_path.read_text(encoding="utf-8"))["profile"]
+    if any(float(rate) for rate in profile.get("defect_rates", {}).values()):
+        # Since US-2.6 a normal generation carries the planted defects (orphans, missing values,
+        # late tenants), which these clean-contract checks would rightly report. They are tested
+        # against the answer key by scripts/test_defects.py instead.
+        print(f"  [FAIL] {args.data} holds the planted defects of US-2.6; these checks need the")
+        print("         clean control batch. Run, then test again:")
+        print("           python etl/generate_data.py --clean")
+        print("           python scripts/db_load_source.py")
+        print(" RESULT: FAILED (data is not a clean control batch)")
+        return 1
     try:
         conn = psycopg2.connect(
             host=s.get("PGHOST", "localhost"),

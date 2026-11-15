@@ -55,10 +55,11 @@ from etl.generator_config import (  # noqa: E402
     DEFAULT_SEED,
     PROFILES,
     Profile,
+    clean_profile,
     get_profile,
 )
 
-GENERATOR_VERSION = "2.5"
+GENERATOR_VERSION = "2.6"
 SOURCES = ("s1", "s2", "s3", "s4", "s5", "s6")
 # Folders and files the generator owns inside --out. Nothing else in --out is ever touched
 # (in particular data/weather_cache.json, which is committed, decision D12).
@@ -251,6 +252,7 @@ STAGE_ORDER = (
     "leases_invoices",
     "payments",
     "tickets_incentives",
+    "defects_answer_key",  # last: it plants the defects in the files the others wrote (US-2.6)
 )
 _current_stage: dict[str, str | None] = {"name": None}
 
@@ -340,6 +342,11 @@ def _openpyxl_version() -> str:
         return "not installed"
 
 
+def _input_hashes() -> dict[str, str]:
+    cache = ROOT / "data" / "weather_cache.json"
+    return {"data/weather_cache.json": sha256_file(cache) if cache.is_file() else "missing"}
+
+
 def run(profile: Profile, seed: int, out: Path) -> dict:
     """Generate everything for one profile and seed into `out`; return the manifest."""
     if not isinstance(seed, int) or isinstance(seed, bool) or not 0 <= seed <= MAX_SEED:
@@ -368,6 +375,9 @@ def run(profile: Profile, seed: int, out: Path) -> dict:
         "files": files,
         "logical_hash_files": sorted(ctx.logical_hashes),
         "content_hash": content_hash(files),
+        # What the output depends on besides (profile, seed): the committed weather cache (US-2.6
+        # reads it for the rain-driven leak tickets). Not part of content_hash.
+        "inputs": _input_hashes(),
     }
     (out / MANIFEST_FILE).write_bytes(
         (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
@@ -407,6 +417,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--profile", choices=sorted(PROFILES), default=DEFAULT_PROFILE)
     p.add_argument("--seed", type=seed_arg, default=DEFAULT_SEED, help="random seed (non-negative)")
     p.add_argument("--out", type=Path, default=ROOT / "data", help="output folder")
+    p.add_argument(
+        "--clean",
+        action="store_true",
+        help="clean control batch: every defect rate 0, so no planted defect (US-2.6, US-4.4)",
+    )
     return p
 
 
@@ -414,6 +429,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         profile = get_profile(args.profile)
+        if args.clean:
+            profile = clean_profile(profile)
         manifest = run(profile, args.seed, args.out)
     except (GeneratorError, ValueError) as exc:
         print(f"generate_data: {exc}", file=sys.stderr)
@@ -423,6 +440,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{profile.months} months)"
     )
     print(f"seed          {manifest['seed']}")
+    defects = any(float(v) for v in profile.defect_rates.values())
+    print(f"defects       {'planted (answer_key/)' if defects else 'none (clean control batch)'}")
     print(f"output        {args.out}  (folders: {', '.join(SOURCES)}, answer_key)")
     print(f"stages        {', '.join(manifest['stages'])}")
     print(f"files         {len(manifest['files'])}")
@@ -432,7 +451,8 @@ def main(argv: list[str] | None = None) -> int:
 
 # Stage modules register themselves when imported; STAGE_ORDER above says in which order they run.
 # Each later story adds its module here and its stage name to STAGE_ORDER.
-from etl import (  # noqa: E402,F401  US-2.2 to US-2.5
+from etl import (  # noqa: E402,F401  US-2.2 to US-2.6
+    gen_defects,
     gen_leases,
     gen_master,
     gen_payments,

@@ -1,0 +1,67 @@
+US-2.6 answer key, full profile, seed 3004 (python etl/generate_data.py --profile full)
+Python 3.11.18, NumPy 2.4.6
+
+== answer_key/totals.csv
+defect_type,expected_handling,count
+conflicting_duplicate,warn,60
+duplicate_settlement_line,reject,361
+exact_duplicate,reject,66
+inconsistent_text,repair,254
+late_arriving_payment,warn,721
+late_arriving_tenant_reference,warn,632
+mid_lease_rent_change,warn,587
+null_required_value,reject,2854
+orphan_reference,reject,2131
+orphan_reference,warn,541
+out_of_range_date,reject,158
+tenant_attribute_change,accept,76
+wrong_data_type,reject,66
+all,reject,5636
+all,all,8507
+
+== answer_key/summary.csv
+defect_type,source,table,expected_handling,expected_rule,count
+conflicting_duplicate,S4,tickets,warn,DQ-03,60
+duplicate_settlement_line,S3,settlements,reject,DQ-03,361
+exact_duplicate,S4,tickets,reject,DQ-03,60
+exact_duplicate,S6,incentive_log,reject,DQ-03,6
+inconsistent_text,S1,buildings,repair,US-5.1,1
+inconsistent_text,S1,units,repair,US-5.1,54
+inconsistent_text,S4,tickets,repair,US-5.1,180
+inconsistent_text,S6,incentive_log,repair,US-5.1,19
+late_arriving_payment,S3,settlements,warn,US-5.2,721
+late_arriving_tenant_reference,S1,leases,warn,DQ-05,62
+late_arriving_tenant_reference,S1,payments,warn,DQ-05,570
+mid_lease_rent_change,S1,invoice_lines,warn,DQ-04,587
+null_required_value,S1,lease_events,reject,DQ-01,184
+null_required_value,S1,payment_allocations,reject,DQ-01,2537
+null_required_value,S4,tickets,reject,DQ-01,120
+null_required_value,S6,incentive_log,reject,DQ-01,13
+orphan_reference,S1,lease_events,reject,DQ-05,138
+orphan_reference,S1,payment_allocations,reject,DQ-05,1903
+orphan_reference,S3,settlements,warn,US-5.2,541
+orphan_reference,S4,tickets,reject,DQ-05,90
+out_of_range_date,S1,lease_events,reject,DQ-06,92
+out_of_range_date,S4,tickets,reject,DQ-06,60
+out_of_range_date,S6,incentive_log,reject,DQ-06,6
+tenant_attribute_change,S1,tenants,accept,US-6.2,76
+wrong_data_type,S4,tickets,reject,DQ-02,60
+wrong_data_type,S6,incentive_log,reject,DQ-02,6
+
+== small profile: answer_key/totals.csv
+defect_type,expected_handling,count
+conflicting_duplicate,warn,1
+duplicate_settlement_line,reject,1
+exact_duplicate,reject,1
+inconsistent_text,repair,4
+late_arriving_payment,warn,3
+late_arriving_tenant_reference,warn,4
+mid_lease_rent_change,warn,2
+null_required_value,reject,11
+orphan_reference,reject,9
+orphan_reference,warn,2
+out_of_range_date,reject,2
+tenant_attribute_change,accept,2
+wrong_data_type,reject,1
+all,reject,25
+all,all,43

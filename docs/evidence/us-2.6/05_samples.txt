@@ -1,0 +1,127 @@
+Samples from the full profile, seed 3004 (python etl/generate_data.py --profile full)
+
+== answer_key/defects_answer_key.csv: the first row of each (type, source, table), as CSV
+defect_id,source,table,record_id,column,defect_type,expected_handling,expected_rule,detail
+D-07828,S4,tickets,MR-2023-00129,status,conflicting_duplicate,warn,DQ-03,an older copy with status Resolved (latest: Verified); keep the copy with the latest status time
+D-06205,S3,settlements,bank:BNK202307080030,settlement_id,duplicate_settlement_line,reject,DQ-03,line repeated in settlement_bank_2023-07-08.csv
+D-07888,S4,tickets,MR-2023-00103,ticket_id,exact_duplicate,reject,DQ-03,the same ticket exported twice
+D-08458,S6,incentive_log,CLF02|A-503|RF30|2025-08-05,,exact_duplicate,reject,DQ-03,the same row logged twice
+D-00001,S1,buildings,GLB02,city,inconsistent_text,repair,US-5.1,'Lahore' written as 'lahore'
+D-06151,S1,units,1018,unit_type,inconsistent_text,repair,US-5.1,'Apartment' written as ' apartment '
+D-07948,S4,tickets,MR-2023-00032,priority,inconsistent_text,repair,US-5.1,'Emergency' written as 'EMERGENCY'
+D-08464,S6,incentive_log,BHD01|A-603|RF15|2024-12-08,start_date,inconsistent_text,repair,US-5.1,2024-12-08 written as 08/12/2024 (day first)
+D-06566,S3,settlements,bank:BNK202307070017,settlement_date,late_arriving_payment,warn,US-5.2,"paid 2023-07-06, due in settlement_bank_2023-07-07.csv, reported in settlement_bank_2023-07-14.csv"
+D-01003,S1,leases,L-2022-00175,tenant_code,late_arriving_tenant_reference,warn,DQ-05,tenant T-0085 is not in this extract (s1/late_arriving/tenants.csv)
+D-05505,S1,payments,PAY-0000031,tenant_code,late_arriving_tenant_reference,warn,DQ-05,tenant T-0244 is not in this extract (s1/late_arriving/tenants.csv)
+D-00002,S1,invoice_lines,INV-2023-08-0444|1,billed_amount,mid_lease_rent_change,warn,DQ-04,"lease L-2022-00444 signed at 107500, billed 113000 from 2023-08"
+D-00589,S1,lease_events,1042,event_date,null_required_value,reject,DQ-01,2023-10-05 removed
+D-01065,S1,payment_allocations,PAY-0000006|INV-2023-07-1426|1,allocated_amount,null_required_value,reject,DQ-01,38000.00 removed
+D-08128,S4,tickets,MR-2023-00001,unit_no,null_required_value,reject,DQ-01,MDT02 A-302: unit removed
+D-08483,S6,incentive_log,BLA02|A-005|DISC15|2023-07-08,offer_code,null_required_value,reject,DQ-01,offer code removed
+D-00773,S1,lease_events,1017,lease_number,orphan_reference,reject,DQ-05,L-2023-01874 written as L-1999-01874 (no such lease)
+D-03602,S1,payment_allocations,PAY-0000003|INV-2023-07-0818|2,invoice_number,orphan_reference,reject,DQ-05,INV-2023-07-0818 written as INV-2099-07-0818 (no such invoice)
+D-07287,S3,settlements,bank:BNK202307060014,payment_reference,orphan_reference,warn,US-5.2,PAY-9000001 is not a payment of the source system (unmatched)
+D-08248,S4,tickets,MR-2023-00037,unit_no,orphan_reference,reject,DQ-05,BLA02 B-003 written as Z-003 (no such unit)
+D-00911,S1,lease_events,1085,event_date,out_of_range_date,reject,DQ-06,2023-10-12 written as 2015-10-12
+D-08338,S4,tickets,MR-2023-00089,status_history[Raised].at,out_of_range_date,reject,DQ-06,2023-07-18T09:36:00 written as 1970-01-01T09:36:00
+D-08496,S6,incentive_log,CLF01|A-203|DISC10|2026-02-02,start_date|end_date,out_of_range_date,reject,DQ-06,both dates written 10 years early
+D-06075,S1,tenants,T-0040,employer_sector,tenant_attribute_change,accept,US-6.2,'Healthcare' -> 'Construction' from 2025-05-03 14:10:49 (s1/changes/tenants.csv)
+D-08398,S4,tickets,MR-2023-00027,estimate,wrong_data_type,reject,DQ-02,"8300 written as the text 'Rs. 8,300'"
+D-08502,S6,incentive_log,CLF02|A-103|DISC10|2025-12-02,end_date,wrong_data_type,reject,DQ-02,2025-12-15 written as 'TBD' (not a date)
+
+== answer_key/expectations.json (late_tenant_codes shortened)
+{
+  "defect_rates": {
+    "conflicting_duplicate": "0.010",
+    "duplicate_settlement_line": "0.010",
+    "exact_duplicate": "0.010",
+    "inconsistent_text": "0.030",
+    "late_arriving_payment": "0.020",
+    "late_arriving_tenant_reference": "0.010",
+    "mid_lease_rent_change": "0.020",
+    "null_required_value": "0.020",
+    "orphan_reference": "0.015",
+    "out_of_range_date": "0.010",
+    "tenant_attribute_change": "0.020",
+    "wrong_data_type": "0.010"
+  },
+  "inferred_tenants_us_6_5": 38,
+  "late_tenant_codes": [
+    "T-0010",
+    "T-0085",
+    "T-0135",
+    "T-0137",
+    "T-0244",
+    "..."
+  ],
+  "matching_us_5_2": {
+    "settlement_lines": 36967,
+    "unmatched_settlement_references": 541,
+    "unmatched_settlements": 541,
+    "unsettled_electronic_payments": 722
+  },
+  "mid_lease_rent_change_lines": 587,
+  "profile": "full",
+  "quarantine_by_check": {
+    "S1.lease_events.DQ-01": 184,
+    "S1.lease_events.DQ-05": 138,
+    "S1.lease_events.DQ-06": 92,
+    "S1.payment_allocations.DQ-01": 2537,
+    "S1.payment_allocations.DQ-05": 1903,
+    "S3.settlements.DQ-03": 361,
+    "S4.tickets.DQ-01": 120,
+    "S4.tickets.DQ-02": 60,
+    "S4.tickets.DQ-03": 60,
+    "S4.tickets.DQ-05": 90,
+    "S4.tickets.DQ-06": 60,
+    "S6.incentive_log.DQ-01": 13,
+    "S6.incentive_log.DQ-02": 6,
+    "S6.incentive_log.DQ-03": 6,
+    "S6.incentive_log.DQ-06": 6
+  },
+  "records_with_a_defect": 8507,
+  "tenant_scd2_versions_us_6_2": 76,
+  "warnings_by_check": {
+    "S1.invoice_lines.DQ-04": 587,
+    "S1.leases.DQ-05": 62,
+    "S1.payments.DQ-05": 570,
+    "S3.settlements.US-5.2": 1262,
+    "S4.tickets.DQ-03": 60
+  }
+}
+
+== answer_key/planted_patterns.md
+# Planted business patterns
+
+Profile `full`. Written by `etl/gen_defects.py` (US-2.6) from
+`etl/patterns.py`.
+The patterns are part of the clean data: a clean control batch has them too. Measure them
+with `python scripts/check_patterns.py --data <the generated folder>`.
+
+| # | Pattern | Where | Expected effect |
+|---|---|---|---|
+| 1 | High-arrears building | building `GLB03` | overdue share of billed rent at least 2.0 times the rest of the portfolio's |
+| 2 | Slow vendor | vendor `V-001` (Plumbing) | median resolve time over SLA at least 1.6 times that of the other vendors of the trade |
+| 3 | Seasonal move-ins | months 6, 7, 8 | a peak month has at least 1.3 times the new-tenant move-ins of an average other month |
+| 4 | Incentive shortens vacancy | offers in `s6/incentive_log.csv` | mean vacancy with an offer at most 0.75 of the mean vacancy without one |
+| 5 | Rain-driven leak tickets | PLB-LEAK, CIV-SEEP, CIV-ROOF after 10.0 mm of rain or more | leak tickets per unit-day at least 3.0 times higher on a rainy day or the day after than on other days |
+| 6 | Renewal churn | city `Karachi` | renewal rate at most 0.75 of the other cities' rate |
+
+The small profile (2 buildings, 3 months) is too small to measure most effects; the
+thresholds apply to the full profile.
+
+== s1/changes/tenants.csv: 76 rows, the first 3
+tenant_code,full_name,tenant_type,employer_sector,phone,contact_channel,updated_at
+T-0040,Asad Zaidi,Individual,Construction,0300-7828150,Phone,2025-05-03 14:10:49
+T-0044,Bushra Jutt,Individual,Telecom,0323-6668692,Phone,2025-08-30 05:59:24
+T-0089,Farooq Enterprises,Corporate,Legal and Consulting,0322-6543217,Email,2025-05-17 09:52:48
+
+== s1/late_arriving/tenants.csv: 38 rows, the first 3
+tenant_code,full_name,tenant_type,employer_sector,phone,contact_channel,updated_at
+T-0010,Anwar Associates,Corporate,Banking,0322-7271678,Phone,2023-06-15 10:55:08
+T-0085,Usman Hashmi,Individual,IT and Software,0321-2401661,WhatsApp,2023-06-16 06:36:52
+T-0135,Khalid Ghafoor,Individual,Legal and Consulting,0331-9261573,Phone,2023-06-16 19:45:13
+
+== s4/tickets.json: the two copies of MR-2023-00129 (conflicting duplicate)
+{"ticket_id": "MR-2023-00129", "status": "Verified", "vendor_code": "V-080", "estimate": 7000, "final_cost": 5900} ['Raised', 'Assigned', 'Resolved', 'Verified']
+{"ticket_id": "MR-2023-00129", "status": "Resolved", "vendor_code": "V-080", "estimate": 7000, "final_cost": 5900} ['Raised', 'Assigned', 'Resolved']
