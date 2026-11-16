@@ -1,0 +1,43 @@
+# E4 data quality rule catalogue (US-4.1). The engine (etl/quality/engine.py) runs these rules on
+# the bronze tables in the order DQ-01, DQ-02, ... DQ-06, and within a check in the order written
+# here. Add, change or remove a rule here: no code changes. scripts/test_quality_contract.py
+# checks this file (in CI); scripts/test_quality.py runs every rule on a known bad and a known
+# good row.
+#
+# Fields of a rule
+#   id        unique, at most 40 characters, e.g. "S1-LEV-01"
+#   check     DQ-01 NULL, DQ-02 Data type, DQ-03 Duplicate, DQ-04 Business rule, DQ-05 Referential,
+#             DQ-06 Range (DQ-07 reconciliation runs in E8)
+#   table     the bronze table (lue_staging.brz_*)
+#   type      what is checked, see below
+#   severity  reject (the row goes to lue_audit.quarantine and later rules skip it)
+#             or warn (a finding in lue_audit.dq_result; the row goes on to staging)
+#   message   the start of the reason; the engine adds the column and its value
+#   where     optional SQL filter on the row (alias b): only these rows are checked
+#
+# Types
+#   required         columns: NULL or empty (blanks only) is a failure
+#   numeric          columns: a non-empty value that is not a number (12, -12.50)
+#   integer          columns: a non-empty value that is not a whole number
+#   date             columns: a non-empty value that is not a date (YYYY-MM-DD or DD/MM/YYYY)
+#   timestamp        columns: a non-empty value that is not a timestamp (YYYY-MM-DD HH:MM[:SS])
+#   boolean          columns: a non-empty value that is not true or false
+#   in_list          columns, values: a non-empty value not in the list
+#   duplicate_exact  key: rows of one batch with the same key and the same values; the first
+#                    (by source_row, else row_id) is kept, the others fail (decision D15)
+#   duplicate_conflict  key: rows of one batch with the same key and different values; all of
+#                    them fail (use severity warn: staging keeps the latest, D15)
+#   reference        columns, ref_table, ref_columns: the values must exist in the other table
+#   date_range       columns, min, max (ISO dates, inclusive); timestamps compare by their day
+#   number_range     columns, min, max; abs = true compares the absolute value
+#   condition        sql: a boolean SQL expression on the row (alias b) that is TRUE for a bad
+#                    row; show: the columns to quote in the reason
+#
+# Testing a rule (scripts/test_quality.py). A good row: a real bronze row that passes every rule
+# (fixture_where narrows which rows may be used). A bad row: the good row with one change, made
+# by type (an empty value, "not-a-value", a value outside the range, a copy for a duplicate ...)
+# or given in bad = { column = "value" } (required for type condition).
+#
+# Values in bronze are text exactly as the source gave them, so the rules use the safe casts
+# lue_audit.try_numeric, try_date and try_timestamp (NULL instead of an error).
+

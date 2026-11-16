@@ -74,7 +74,7 @@ def main() -> int:
 
     print("S1: src_pms (frozen source ERD) -> bronze")
     ok = all(
-        brz[t] == [c[1] for c in erd[src]] + META + ["row_hash"]
+        brz[t] == [c[1] for c in erd[src]] + META + ["row_hash", "row_id"]
         for src, t in s1_pms.TABLES.items()
     )
     check(ok, "the 9 S1 bronze tables have the source columns in order, then the metadata")
@@ -85,7 +85,7 @@ def main() -> int:
         out = Path(tmp)
         gd.run(cfg.get_profile("small"), cfg.DEFAULT_SEED, out)
         print("Files written by the generator -> the ingestors' expected columns -> bronze")
-        tail = META + ["source_file", "source_row"]
+        tail = META + ["source_file", "source_row", "row_id"]
         import openpyxl
 
         book = openpyxl.load_workbook(out / "s2" / "registers.xlsx", read_only=True)
