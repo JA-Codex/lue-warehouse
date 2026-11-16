@@ -3,8 +3,8 @@
 
     python scripts/db_deploy.py
 
-Runs every file in sql/10_ddl/ in name order, as lue_etl in lue_warehouse, so lue_etl owns
-every object.
+Runs every file in sql/10_ddl/ and then sql/20_staging/ (the bronze tables, US-3.2 to US-3.4) in
+name order, as lue_etl in lue_warehouse, so lue_etl owns every object.
 Run scripts/db_setup.py first (US-1.1). Safe to re-run: the files use IF NOT EXISTS and ON CONFLICT.
 """
 
@@ -20,7 +20,7 @@ from db_setup import (  # noqa: E402
     run_sql_file,
 )
 
-DDL_DIR = ROOT / "sql" / "10_ddl"
+DDL_DIRS = [ROOT / "sql" / "10_ddl", ROOT / "sql" / "20_staging"]
 
 
 def main() -> int:
@@ -31,7 +31,7 @@ def main() -> int:
         return 1
 
     s = load_settings()
-    files = sorted(DDL_DIR.glob("*.sql"))
+    files = [f for d in DDL_DIRS for f in sorted(d.glob("*.sql"))]
     print("=" * 70)
     print(f" LUE Warehouse - deploy {len(files)} DDL file(s) as {ETL_ROLE} to {WAREHOUSE_DB}")
     print("=" * 70)

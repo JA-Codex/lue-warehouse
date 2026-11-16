@@ -1,0 +1,19 @@
+lue_audit.etl_run_log: the forced-failure run of test_ingest.py and a normal run of all six sources
+ run_id |         step          | status  | rows_read | rows_inserted | rows_rejected |     started_at      |      ended_at       
+--------+-----------------------+---------+-----------+---------------+---------------+---------------------+---------------------
+    275 | test_after_failure    | Success |         0 |             0 |             0 | 2026-11-16 23:22:14 | 2026-11-16 23:22:14
+    275 | test_forced_failure   | Failed  |         5 |             0 |             0 | 2026-11-16 23:22:14 | 2026-11-16 23:22:14
+    290 | ingest_s1_pms         | Success |    391870 |        391870 |             0 | 2026-11-16 23:23:01 | 2026-11-16 23:23:07
+    290 | ingest_s2_registers   | Success |      3323 |          3323 |             0 | 2026-11-16 23:23:07 | 2026-11-16 23:23:07
+    290 | ingest_s3_settlements | Success |     36967 |         36967 |             0 | 2026-11-16 23:23:07 | 2026-11-16 23:23:17
+    290 | ingest_s4_tickets     | Success |     30200 |         30200 |             0 | 2026-11-16 23:23:17 | 2026-11-16 23:23:17
+    290 | ingest_s5_weather     | Success |      4384 |          4384 |             0 | 2026-11-16 23:23:17 | 2026-11-16 23:23:17
+    290 | ingest_s6_incentives  | Success |       662 |           662 |             0 | 2026-11-16 23:23:17 | 2026-11-16 23:23:17
+(8 rows)
+
+Rows left in bronze by the failed step (5 were written before the error):
+ rows_from_failed_step 
+-----------------------
+                     0
+(1 row)
+

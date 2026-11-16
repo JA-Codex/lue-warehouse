@@ -1,0 +1,11 @@
+python scripts/test_ingest.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+US-3.1 The framework
+  [PASS] 20 bronze tables, each with batch_id, source_system and loaded_at NOT NULL
+  [PASS] a failed load leaves no partial rows in bronze (5 written, 0 kept)
+  [PASS] the failure is in etl_run_log: status Failed, 5 rows read, 0 inserted, end time set
+  [PASS] the next source of the same run still runs (one transaction per source)
+  [PASS] the structured log (logs/ingest.log) records step, source, status and the error
+  [PASS] a wrong password stops with a clear message, not a traceback
+
+Whole suite: RESULT: 39/39 checks passed

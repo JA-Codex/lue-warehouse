@@ -1,0 +1,7 @@
+logs/ingest.log (structured key=value lines), the forced failure and the step after it:
+ERROR step=test_forced_failure source=S6 status=Failed error="RuntimeError: forced failure after 5 rows were written"
+INFO step=test_forced_failure source=S6 status=Failed rows_read=5 rows_written=0 rows_rejected=0 seconds=0.0
+INFO step=test_after_failure source=S6 status=Success rows_read=0 rows_written=0 rows_rejected=0 seconds=0.0
+
+A normal step:
+INFO step=ingest_s3_settlements source=S3 status=Success rows_read=36967 rows_written=36967 rows_rejected=0 seconds=9.3
