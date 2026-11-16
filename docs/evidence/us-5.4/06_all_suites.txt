@@ -1,0 +1,36 @@
+Run on 2026-11-17, Python 3.11, PostgreSQL 16, full profile seed 3004.
+make test (what CI runs): exit code 0 , 174 s
+  ruff check etl scripts
+  All checks passed!
+  RESULT: PASS
+  RESULT: PASS
+   RESULT: 39/39 checks passed
+   RESULT: 129/129 checks passed
+   RESULT: 114/114 checks passed
+   RESULT: 80/80 checks passed
+   RESULT: 69/69 checks passed
+   RESULT: 56/56 checks passed
+   RESULT: 71/71 checks passed
+   RESULT: 17/17 checks passed
+   RESULT: 20/20 checks passed
+   RESULT: 36/36 checks passed
+
+Database suites on PostgreSQL 16 (full profile; the clean control batch for the US-2.2 to US-2.4 test, then the batch with defects for E3, E4 and E5):
+  db_reset exit 0
+  test_db_setup
+ RESULT: 22/22 checks passed
+  test_dimensions
+ RESULT: 28/28 checks passed
+  test_facts
+ RESULT: 24/24 checks passed
+  test_reference
+ RESULT: 32/32 checks passed
+  test_smoke
+ RESULT: 12/12 checks passed
+  test_source_load (clean control batch)
+ RESULT: 66/66 checks passed
+  test_ingest
+ RESULT: 39/39 checks passed
+  test_quality
+ RESULT: 25/25 checks passed
+  test_staging        RESULT: 35/35 checks passed

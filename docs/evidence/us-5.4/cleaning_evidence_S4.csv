@@ -1,0 +1,35 @@
+run_id,source_system,stg_table,issue,column_name,rows_affected,sample_before,sample_after
+55,S4,stg_ticket,conflicts_resolved,*,60,MR-2023-00129,
+55,S4,stg_ticket,deleted,*,0,,
+55,S4,stg_ticket,derived_values_changed,*,5670,,
+55,S4,stg_ticket,duplicates_removed,*,60,,
+55,S4,stg_ticket,inserted,*,5670,,
+55,S4,stg_ticket,key_not_usable,*,0,,
+55,S4,stg_ticket,rejected_by_dq,*,390,,
+55,S4,stg_ticket,rows_read,*,6120,,
+55,S4,stg_ticket,rows_repaired,*,180,,
+55,S4,stg_ticket,superseded,*,60,,
+55,S4,stg_ticket,unchanged,*,0,,
+55,S4,stg_ticket,updated,*,0,,
+55,S4,stg_ticket,case_or_spelling,category,42, other ,Other
+55,S4,stg_ticket,case_or_spelling,priority,74,EMERGENCY,Emergency
+55,S4,stg_ticket,repaired,category,72, other ,Other
+55,S4,stg_ticket,repaired,priority,108,EMERGENCY,Emergency
+55,S4,stg_ticket,type_conversion,actual_cost,5659,7650,7650.00
+55,S4,stg_ticket,type_conversion,estimated_cost,5666,7700,7700.00
+55,S4,stg_ticket,type_conversion,is_tenant_caused,5670,false,false
+55,S4,stg_ticket,type_conversion,source_is_recurring,5670,false,false
+55,S4,stg_ticket,whitespace,category,42, other ,Other
+55,S4,stg_ticket,whitespace,priority,61, Normal,Normal
+55,S4,stg_ticket_status,conflicts_resolved,*,0,,
+55,S4,stg_ticket_status,deleted,*,0,,
+55,S4,stg_ticket_status,duplicates_removed,*,0,,
+55,S4,stg_ticket_status,inserted,*,22406,,
+55,S4,stg_ticket_status,key_not_usable,*,0,,
+55,S4,stg_ticket_status,rejected_by_dq,*,0,,
+55,S4,stg_ticket_status,rows_read,*,22406,,
+55,S4,stg_ticket_status,rows_repaired,*,0,,
+55,S4,stg_ticket_status,superseded,*,0,,
+55,S4,stg_ticket_status,unchanged,*,0,,
+55,S4,stg_ticket_status,updated,*,0,,
+55,S4,stg_ticket_status,type_conversion,status_at,22406,2023-07-01T13:13:00,2023-07-01 13:13:00

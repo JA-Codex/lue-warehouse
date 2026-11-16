@@ -1,0 +1,21 @@
+stg_table,source_system,bronze_rows,rejected_by_dq,key_not_usable,deduplicated,expected_rows,staged_rows,derived_rows,difference,explained
+stg_building,S1,40,0,0,0,40,40,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_unit,S1,1800,0,0,0,1800,1800,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_tenant,S1,3762,0,0,0,3762,3762,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_lease,S1,5883,0,0,0,5883,5883,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_lease_event,S1,9195,414,0,0,8781,8781,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_invoice,S1,54774,0,0,0,54774,54774,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_invoice_line,S1,129885,0,0,0,129885,129885,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_payment,S1,59679,0,0,0,59679,59679,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_payment_allocation,S1,126852,4440,0,0,122412,122412,4798,0,"deduplicated = older versions and conflicting copies (D15); derived_rows = allocations staging made (US-5.2), not from bronze"
+stg_settlement,S3,36967,361,0,0,36606,36606,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_owner,S2,900,0,0,0,900,900,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_ownership,S2,2076,0,0,0,2076,2076,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_vendor,S2,140,0,0,0,140,140,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_maintenance_category,S2,34,0,0,0,34,34,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_holiday,S2,173,0,0,0,173,173,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_ticket,S4,6120,390,0,60,5670,5670,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_ticket_status,S4,24080,60,0,1614,22406,22406,0,0,deduplicated = entries of the ticket copies that did not survive
+stg_weather,S5,4384,0,0,0,4384,4384,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_incentive_offer,S6,7,0,0,0,7,7,0,0,deduplicated = older versions and conflicting copies (D15)
+stg_incentive_log,S6,655,31,0,0,624,624,0,0,deduplicated = older versions and conflicting copies (D15)
