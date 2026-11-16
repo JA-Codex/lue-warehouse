@@ -1,0 +1,24 @@
+Same seed twice (full profile, two folders):
+ev_f.txt:content hash  138eae0c1bb7a482a5ab8e3a5b1f1214632de98f04a2f29ef7803a9f50bcc5fb
+ev_f2.txt:content hash  138eae0c1bb7a482a5ab8e3a5b1f1214632de98f04a2f29ef7803a9f50bcc5fb
+  defects_answer_key.csv  53b4869c4e7e6783  53b4869c4e7e6783
+  summary.csv  fbc4276fdf55db99  fbc4276fdf55db99
+  totals.csv  9569e9a57e6c7645  9569e9a57e6c7645
+  expectations.json  052829600b0a5ae5  052829600b0a5ae5
+  planted_patterns.json  98722bfa727af639  98722bfa727af639
+  planted_patterns.md  f9e21368a61d1bf3  f9e21368a61d1bf3
+  answer key byte-identical: yes
+
+Another seed (3005):
+content hash  abffa4660ee38416eb1a08982657c3271989152c2eca58172f48e89e2962f754
+  defects_answer_key.csv 5ad9a2b1bc94eec0 (differs)
+  all,all,8950
+
+Clean control batch (--clean):
+defects       none (clean control batch)
+stages        framework_probe, master_data, leases_invoices, payments, tickets_incentives, defects_answer_key
+content hash  3b6a4c942a86916a7668ccee3fbf46d85380cd2e12715ec9b5ffa50c20c6ee41
+  answer key rows: 0
+
+The manifest records the weather cache read for the rain-driven leaks:
+   {'data/weather_cache.json': 'd5fb7ddd4753cd369effcaf9ff57c5ca9717a98e0e38fd078b7eb2359803b802'}

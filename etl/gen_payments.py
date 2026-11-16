@@ -8,11 +8,15 @@ Writes, for the chosen profile (etl/generator_config.py):
     payments
     s3/settlement_<channel>_<date>.csv               S3, one file per channel per day
 
-The data is CLEAN. US-2.6 plants the defects (duplicate payments, duplicate settlement lines,
-references
-that do not match) and the answer key. The stage rebuilds the master data and the billing with
+The data is CLEAN. US-2.6 (etl/gen_defects.py) plants the defects afterwards (duplicate and late
+settlement lines, settlement lines with no payment, allocations with no invoice line, late tenants)
+and the answer key. The stage rebuilds the master data and the billing with
 the same
 seeds as US-2.2 and US-2.3 (pure functions), so it never reads another stage's files.
+
+US-2.6 adds one planted pattern here (etl/patterns.py): the tenants of one building (the
+high-arrears building) draw their behaviour from patterns.ARREARS_WEIGHTS instead, so that building
+has far more late and unpaid rent. A tenant who also rents elsewhere keeps that behaviour there.
 
 How tenants pay. Every tenant has one behaviour for the whole window:
 
@@ -70,6 +74,7 @@ import numpy as np
 
 from etl import gen_leases as gl
 from etl import gen_master as gm
+from etl import patterns as pat
 from etl.generate_data import Context, stage
 from etl.generator_config import Profile
 from etl.reference_data import PAYMENT_METHODS
@@ -254,6 +259,20 @@ def build_payments(profile: Profile, master: dict, billing: gl.Billing, rng_for)
             behaviour_rng.integers(DEFAULT_PAID_MONTHS[0], DEFAULT_PAID_MONTHS[1] + 1)
         )
     tenant_index = {t["tenant_code"]: i for i, t in enumerate(tenants)}
+    # Planted pattern 1 (US-2.6): every tenant who rents in the high-arrears building draws the
+    # behaviour again from ARREARS_WEIGHTS, on a stream of its own (the other tenants keep theirs).
+    arrears_code = pat.arrears_building(master)
+    unit_building = {u["unit_id"]: u["building_code"] for u in master["units"]}
+    in_arrears_building = {
+        lease.tenant_code
+        for lease in billing.leases
+        if unit_building[lease.unit_id] == arrears_code
+    }
+    arrears_rng = rng_for("payments.arrears")
+    for t in tenants:  # tenant order: a fixed number of draws
+        draw = gm.pick_weighted(arrears_rng, BEHAVIOURS, pat.ARREARS_WEIGHTS)
+        if t["tenant_code"] in in_arrears_building:
+            behaviour[t["tenant_code"]] = draw
 
     lines_of: dict[str, list[list]] = defaultdict(list)
     for row in billing.line_rows:

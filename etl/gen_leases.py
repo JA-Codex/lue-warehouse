@@ -47,6 +47,18 @@ units are
   and
   service carry 16 percent tax. `discount_amount` is 0: US-2.5 and US-2.6 own incentives.
 
+Added in US-2.6 (etl/patterns.py has the numbers):
+
+* Renewal churn in one city (pattern 6): tenants in patterns.CHURN_CITY renew less often.
+* Incentive offers (pattern 4): when a tenant leaves, an offer is posted on the vacant unit in a
+  quarter of the cases, and then the next tenant comes sooner. The offers are returned in
+  `Billing.offers`; gen_tickets writes them as s6/incentive_log.csv. The offer is not billed as a
+  discount (`discount_amount` stays 0): the coverage fact needs the offer windows only.
+* Defect mid_lease_rent_change: with a non-zero rate (generator_config.DEFECT_RATES), a few
+  leases bill a higher rent from a month inside the lease while the lease record keeps the signed
+  rent. A clean control batch (`--clean`, all rates 0) has none, and rent is then constant inside
+  every lease as above.
+
 Contracts the next stories rely on (US-2.4 and later):
 
 * lease_number is `L-<start year>-<5-digit sequence>`; the sequence runs in order of (start_date,
@@ -68,15 +80,21 @@ percent of
 from __future__ import annotations
 
 import heapq
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 import numpy as np
 
 from etl import gen_master as gm  # a module reference: also works while gen_master is still loading
+from etl import patterns as pat
 from etl.generate_data import Context, GeneratorError, stage
 from etl.generator_config import Profile
-from etl.reference_data import CHARGE_TYPES, LEASE_EVENT_TYPES
+from etl.reference_data import (
+    CHARGE_TYPES,
+    INCENTIVE_OFFER_DAYS,
+    INCENTIVE_OFFERS,
+    LEASE_EVENT_TYPES,
+)
 
 # ----------------------------------------------------------------------------- constants
 RESIDENTIAL_TERM = 11  # months
@@ -107,7 +125,9 @@ UTILITY_SEASON = {1: 0.8, 2: 0.8, 3: 1.0, 4: 1.25, 5: 1.25, 6: 1.7, 7: 1.7, 8: 1
 UTILITY_STEP = 10
 
 # Renewal: chance that a tenant renews at the end of the term (city, then class, then lease type).
-RENEWAL_BASE = {"Lahore": 0.46, "Karachi": 0.45, "Islamabad": 0.47, "Faisalabad": 0.46}
+# US-2.6 lowers it in one city (patterns.CHURN_CITY) and raised the others by 0.04 so the
+# portfolio-wide share stays where US-2.3 had it.
+RENEWAL_BASE = {"Lahore": 0.50, "Karachi": 0.49, "Islamabad": 0.51, "Faisalabad": 0.50}
 RENEWAL_CLASS = {"A": 0.03, "B": 0.0, "C": -0.04}
 RENEWAL_COMMERCIAL_BONUS = 0.08
 RESIDENTIAL_ESCALATION = (0.03, 0.12)  # uniform
@@ -208,6 +228,7 @@ class Lease:
     tenant_code: str = ""
     seq: int = 0
     number: str = ""
+    rent_change: tuple | None = None  # (first month, new rent): a mid-lease change (US-2.6 defect)
 
     @property
     def status(self) -> str:
@@ -223,6 +244,11 @@ class Billing:
     event_rows: list[list]
     invoice_rows: list[list]
     line_rows: list[list]
+    # US-2.6. Offers posted on vacant units: dicts with unit_id, offer_code, start_date, end_date
+    # (gen_tickets writes them to s6/incentive_log.csv). Mid-lease rent changes: one dict per
+    # invoice line billed at the changed rent (gen_defects lists them in the answer key).
+    offers: list[dict] = field(default_factory=list)
+    rent_change_lines: list[dict] = field(default_factory=list)
 
 
 # ----------------------------------------------------------------------------- unit parameters
@@ -284,6 +310,8 @@ def draw_term(rng: np.random.Generator, lease_type: str) -> tuple[int, str]:
 
 def renewal_probability(p: UnitParams) -> float:
     prob = RENEWAL_BASE[p.city] + RENEWAL_CLASS[p.klass]
+    if p.city == pat.CHURN_CITY:  # planted pattern 6: renewal churn in one city
+        prob -= pat.CHURN_RENEWAL_DROP
     if p.lease_type == "Commercial":
         prob += RENEWAL_COMMERCIAL_BONUS
     return min(0.9, max(0.2, prob))
@@ -363,8 +391,15 @@ def simulate_unit(
     window_end: date,
     occupied_at_open: bool,
     next_slot,
+    offer_rng: np.random.Generator | None = None,
+    offers: list | None = None,
 ) -> list[Lease]:
-    """The whole lease history of one unit inside the window, oldest first."""
+    """The whole lease history of one unit inside the window, oldest first.
+
+    `offer_rng` decides the incentive offers on vacancies (planted pattern 4) and `offers`
+    collects them; without them no offer is posted. A stream of its own keeps the offer draws out
+    of the timeline stream.
+    """
     if occupied_at_open:
         term, review = draw_term(rng, p.lease_type)
         elapsed = 1 + int(
@@ -374,7 +409,10 @@ def simulate_unit(
         lease = new_lease(rng, p, start, legacy=True, term_review=(term, review))
     else:
         residual = draw_gap_days(rng, p) * float(rng.uniform(0.15, 1.0))  # vacancy already running
-        start = next_move_in(rng, window_start + timedelta(days=int(residual)))
+        if offer_rng is not None and offer_rng.random() < pat.P_OFFER_ON_VACANCY:
+            start = post_offer(offer_rng, p, window_start, int(residual), window_end, offers)
+        else:
+            start = next_move_in(rng, window_start + timedelta(days=int(residual)))
         if start > window_end:
             return []
         lease = new_lease(rng, p, start, legacy=False)
@@ -396,12 +434,47 @@ def simulate_unit(
             lease = renewal_of(rng, p, lease)
         else:
             lease.outcome = "Terminated"
-            start = next_move_in(rng, lease.end + timedelta(days=1 + draw_gap_days(rng, p)))
+            gap = draw_gap_days(rng, p)
+            if offer_rng is not None and offer_rng.random() < pat.P_OFFER_ON_VACANCY:
+                start = post_offer(
+                    offer_rng, p, lease.end + timedelta(days=1), gap, window_end, offers
+                )
+            else:
+                start = next_move_in(rng, lease.end + timedelta(days=1 + gap))
             if start > window_end:
                 break  # empty when the window closes
             lease = new_lease(rng, p, start, legacy=False)
             lease.slot = next_slot()
     return history
+
+
+def post_offer(
+    rng: np.random.Generator,
+    p: UnitParams,
+    vacant_from: date,
+    gap: int,
+    window_end: date,
+    offers: list | None,
+) -> date:
+    """Post an incentive offer on a unit vacant from `vacant_from`; return the next move-in.
+
+    Planted pattern 4: with an offer the vacancy is OFFER_GAP_FACTOR as long, and the new tenant
+    takes the unit in the first month that is free instead of waiting for a better month.
+    `vacant_from` is the day after a move-out (a 1st) or the window's first day.
+    """
+    lo, hi = pat.OFFER_POST_DAYS
+    posted = vacant_from + timedelta(days=int(rng.integers(lo, hi + 1)))
+    choices = [o for o in INCENTIVE_OFFERS if p.unit["unit_type"] in o[5]]
+    code = choices[int(rng.integers(len(choices)))][0]
+    days = int(gm.pick(rng, INCENTIVE_OFFER_DAYS))
+    earliest = vacant_from + timedelta(days=max(1, int(round(gap * pat.OFFER_GAP_FACTOR))))
+    start = earliest if earliest.day == 1 else add_months(first_of_month(earliest), 1)
+    posted = min(posted, start - timedelta(days=1))  # start is a 1st after vacant_from
+    if posted <= window_end and offers is not None:
+        end = min(posted + timedelta(days=days - 1), start - timedelta(days=1), window_end)
+        offer = {"unit_id": p.unit["unit_id"], "offer_code": code}
+        offers.append(offer | {"start_date": posted, "end_date": end})
+    return start
 
 
 # ----------------------------------------------------------------------------- phase B: tenants
@@ -533,7 +606,7 @@ def make_events(
 def make_invoices(
     leases: list[Lease], units: dict[int, dict], rng: np.random.Generator, ws: date, we: date
 ):
-    invoice_rows, line_rows = [], []
+    invoice_rows, line_rows, changed = [], [], []
     for lease in leases:
         area = units[lease.unit_id]["area_sqft"]
         taxed = lease.lease_type == "Commercial"
@@ -543,7 +616,20 @@ def make_invoices(
         while month <= last:
             number = f"INV-{month.year}-{month.month:02d}-{lease.seq:04d}"
             invoice_rows.append([number, lease.number, month, month.replace(day=DUE_DAY), "Issued"])
-            charges = [("RENT", lease.rent, taxed)]
+            rent = lease.rent
+            if lease.rent_change is not None and month >= lease.rent_change[0]:
+                rent = lease.rent_change[1]
+                changed.append(
+                    {
+                        "invoice_number": number,
+                        "line_no": 1,
+                        "lease_number": lease.number,
+                        "from_month": lease.rent_change[0],
+                        "lease_rent": lease.rent,
+                        "billed_rent": rent,
+                    }
+                )
+            charges = [("RENT", rent, taxed)]
             if lease.service:
                 charges.append(("SERVICE", lease.service, taxed))
             show_utility = lease.utility_mode == "always" or (
@@ -574,7 +660,37 @@ def make_invoices(
             month = add_months(month, 1)
     invoice_rows.sort(key=lambda r: r[0])
     line_rows.sort(key=lambda r: (r[0], r[1]))
-    return invoice_rows, line_rows
+    changed.sort(key=lambda r: r["invoice_number"])
+    return invoice_rows, line_rows, changed
+
+
+def plan_rent_changes(
+    leases: list[Lease], rng: np.random.Generator, rate: float, ws: date, we: date
+) -> None:
+    """Defect mid_lease_rent_change (US-2.6): the rent changes inside a lease.
+
+    The lease record keeps the rent it was signed at; from a month inside the lease the invoices
+    bill a higher rent (a negotiated mid-term increase the lease record never caught up with). Only
+    leases with at least 3 invoices in the window qualify; the change is never in the first or
+    last of them. Applied before the payments are generated, so the tenants pay what is billed.
+    """
+    if rate <= 0:
+        return
+    eligible = []
+    for lease in leases:
+        first = max(first_of_month(lease.start), first_of_month(ws))
+        last = min(first_of_month(lease.end), first_of_month(we))
+        months = (last.year - first.year) * 12 + last.month - first.month + 1
+        if months >= 3:
+            eligible.append((lease, first, months))
+    if not eligible:
+        return
+    n = min(len(eligible), max(1, int(round(rate * len(eligible)))))
+    for i in sorted(int(k) for k in rng.choice(len(eligible), size=n, replace=False)):
+        lease, first, months = eligible[i]
+        month = add_months(first, int(rng.integers(1, months - 1)))
+        new_rent = round_to(lease.rent * (1.0 + float(rng.uniform(0.04, 0.10))), RENT_STEP)
+        lease.rent_change = (month, max(new_rent, lease.rent + RENT_STEP))
 
 
 # ----------------------------------------------------------------------------- the whole set
@@ -593,9 +709,15 @@ def build_billing(profile: Profile, master: dict, rng_for) -> Billing:
 
     slots = iter(range(1, 10**7))
     timeline_rng = rng_for("leases.timeline")
+    offer_rng = rng_for("leases.offers")
     leases: list[Lease] = []
+    offers: list[dict] = []
     for i, p in enumerate(params):
-        leases.extend(simulate_unit(p, timeline_rng, ws, we, i in occupied, lambda: next(slots)))
+        leases.extend(
+            simulate_unit(
+                p, timeline_rng, ws, we, i in occupied, lambda: next(slots), offer_rng, offers
+            )
+        )
 
     leases.sort(key=lambda lease: (lease.start, lease.unit_id))
     if len(leases) > MAX_SEQUENCE:
@@ -609,7 +731,17 @@ def build_billing(profile: Profile, master: dict, rng_for) -> Billing:
     assign_tenants(leases, master["tenants"], rng_for("leases.tenants"), ws)
     events = make_events(leases, master["tenants"], rng_for("leases.events"), ws, we)
     units = {u["unit_id"]: u for u in master["units"]}
-    invoice_rows, line_rows = make_invoices(leases, units, rng_for("leases.billing"), ws, we)
+    plan_rent_changes(
+        leases,
+        rng_for("defects.mid_lease_rent_change"),
+        profile.defect_rates.get("mid_lease_rent_change", 0.0),
+        ws,
+        we,
+    )
+    invoice_rows, line_rows, changed = make_invoices(
+        leases, units, rng_for("leases.billing"), ws, we
+    )
+    offers.sort(key=lambda o: (o["start_date"], o["unit_id"]))
 
     lease_rows = [
         [
@@ -621,7 +753,7 @@ def build_billing(profile: Profile, master: dict, rng_for) -> Billing:
         for lease in leases
     ]  # fmt: skip
     event_rows = [[i, number, code, day] for i, (day, _seq, code, number) in enumerate(events, 1)]
-    return Billing(leases, lease_rows, event_rows, invoice_rows, line_rows)
+    return Billing(leases, lease_rows, event_rows, invoice_rows, line_rows, offers, changed)
 
 
 @stage("leases_invoices", "Leases, lease events, invoices and invoice lines (US-2.3)")

@@ -8,13 +8,14 @@ Writes, for the chosen profile (etl/generator_config.py):
       s6/incentive_log.csv     one row per offer posted on one unit, with start and end dates
 
 S5 weather is not generated: it is real data, downloaded once by etl/refresh_weather.py into the
-committed data/weather_cache.json (decision D12). Nothing here reads the network or the cache,
-so the generator runs anywhere and its output depends only on (profile, seed).
+committed data/weather_cache.json (decision D12). Since US-2.6 the generator READS that cache (never
+the network) for the rain-driven leak tickets, so its output depends on (profile, seed) and the
+committed cache; the manifest records the cache's SHA-256.
 
-The data is CLEAN here (plan US-2.5: valid references "before defect injection"). US-2.6 injects the
-defects (missing resolve times, statuses out of order, unit codes without the building prefix, mixed
-date formats) and plants the patterns (a slow vendor, rain-driven leaks, an incentive that shortens
-vacancy).
+The data is CLEAN here (plan US-2.5: valid references "before defect injection"). US-2.6 adds three
+planted patterns (etl/patterns.py): one slow vendor, leak tickets after rain, and the incentive log
+now lists the offers gen_leases posts on vacant units (which shortens those vacancies). Defects are
+injected afterwards by etl/gen_defects.py, into the files this stage wrote.
 
 Contracts the next stories rely on:
 
@@ -33,7 +34,9 @@ Contracts the next stories rely on:
 * Tickets carry no tenant: the fact finds the tenant from the lease active on the raised date (E7),
   or -2 for a vacant unit. So US-2.5 needs only the master data (plan dependency: US-2.2).
 * Incentive windows lie inside the window, reference real units, and never overlap on one unit.
-  Whether the unit was vacant on a day is decided by the coverage fact (E7), from the leases.
+  Since US-2.6 every offer is posted on a vacant unit and ends by the next move-in; the coverage
+  fact (E7) still decides vacancy from the leases. The number of offers follows from the lease
+  simulation, so target_incentive_offers is approximate.
 """
 
 from __future__ import annotations
@@ -46,10 +49,17 @@ from datetime import date, datetime, timedelta
 
 import numpy as np
 
+from etl import gen_leases as gl
 from etl import gen_master as gm  # a module reference: also works while gen_master is loading
+from etl import patterns as pat
 from etl.generate_data import Context, GeneratorError, stage
 from etl.generator_config import Profile
-from etl.reference_data import MAINTENANCE_SUBCATEGORIES, TRADES
+from etl.reference_data import (
+    INCENTIVE_OFFER_DAYS,
+    INCENTIVE_OFFERS,
+    MAINTENANCE_SUBCATEGORIES,
+    TRADES,
+)
 
 EXPORT_SYSTEM = "LUE tenant app"
 FOLLOW_UP_SHARE = 0.10  # tickets that are a repeat of an earlier one (same unit, same problem)
@@ -109,27 +119,12 @@ LOCATIONS = {
     "Shop": ("shop front", "storeroom", "washroom", "back office"),
 }
 
-# S6 catalogue: (offer_code, offer_type, description, discount_pct, rent_free_days, unit types)
-# Widths follow dim_incentive: code 10, type 20, description 80, discount 0-50, rent-free 0-60.
-OFFERS = [
-    ("RF15", "Rent-free days", "Half a month rent-free on a new lease", "0.00", 15,
-     ("Apartment",)),
-    ("RF30", "Rent-free days", "First month rent-free on an 11-month lease", "0.00", 30,
-     ("Apartment", "Office")),
-    ("RF60", "Rent-free days", "Two months rent-free on a 24-month commercial lease", "0.00", 60,
-     ("Office", "Shop")),
-    ("DISC10", "Discount", "10% off the monthly rent for the first 3 months", "10.00", 0,
-     ("Apartment", "Office", "Shop")),
-    ("DISC15", "Discount", "15% off the monthly rent for the first 6 months", "15.00", 0,
-     ("Apartment", "Office", "Shop")),
-    ("DISC25", "Discount", "25% off the first month's rent", "25.00", 0,
-     ("Apartment",)),
-    ("FREEMAINT", "Free maintenance", "No maintenance charges for the first 6 months", "0.00", 0,
-     ("Apartment", "Office", "Shop")),
-]  # fmt: skip
+# S6 catalogue and offer lengths: in etl/reference_data.py since US-2.6 (gen_leases posts the
+# offers on vacant units and needs them too). The names stay here for the readers of US-2.5.
+OFFERS = INCENTIVE_OFFERS
 OFFER_COLS = ["offer_code", "offer_type", "description", "discount_pct", "rent_free_days"]
 LOG_COLS = ["building_code", "unit_no", "offer_code", "start_date", "end_date"]
-OFFER_DAYS = (14, 21, 30, 45, 60, 90)  # how long an offer stays posted
+OFFER_DAYS = INCENTIVE_OFFER_DAYS
 
 
 # ----------------------------------------------------------------------------- small helpers
@@ -243,8 +238,60 @@ def raise_moment(rng: np.random.Generator, day: date, emergency_likely: bool) ->
     )
 
 
-def make_tickets(profile: Profile, master: dict, rng: np.random.Generator) -> list[Ticket]:
-    """Raised tickets (who, where, what, when); the lifecycle is added by `add_lifecycle`."""
+def rain_tickets(
+    profile: Profile,
+    master: dict,
+    weights_u: np.ndarray,
+    rng: np.random.Generator,
+    rain: list | None = None,
+) -> list[Ticket]:
+    """Planted pattern 5 (US-2.6): extra leak tickets on and after a rainy day, per city.
+
+    `rain` is patterns.rain_days(...) (read from the committed weather cache when not given).
+    """
+    if rain is None:
+        try:
+            rain = pat.rain_days(profile.window_start, profile.window_end)
+        except FileNotFoundError as exc:  # shown as a usage problem, without a traceback
+            raise GeneratorError(str(exc)) from None
+    city_of = {b.code: b.city for b in master["buildings"]}
+    units = master["units"]
+    names = {code: (name, category) for code, name, category, _h in MAINTENANCE_SUBCATEGORIES}
+    in_city: dict[str, np.ndarray] = {}
+    for city in sorted({b.city for b in master["buildings"]}):
+        in_city[city] = np.array([city_of[u["building_code"]] == city for u in units], dtype=float)
+    out = []
+    for city, day, mm in rain:  # sorted by (city, day): a fixed order of draws
+        if city not in in_city:
+            continue  # no building of this profile in that city
+        mask = in_city[city]
+        intensity = min(mm / pat.RAIN_THRESHOLD_MM, pat.RAIN_INTENSITY_CAP)
+        n = int(rng.poisson(pat.RAIN_LEAK_RATE * mask.sum() / 100.0 * intensity))
+        w = weights_u * mask
+        for _ in range(n):
+            when = day
+            if rng.random() < pat.RAIN_NEXT_DAY_SHARE and day < profile.window_end:
+                when = day + timedelta(days=1)
+            code = gm.pick_weighted(rng, pat.RAIN_LEAK_CODES, pat.RAIN_LEAK_WEIGHTS)
+            unit = units[int(rng.choice(len(units), p=w / w.sum()))]
+            name, category = names[code]
+            likely = EMERGENCY_SHARE.get(code, DEFAULT_EMERGENCY_SHARE) >= 0.2
+            out.append(Ticket(unit, code, name, category, raise_moment(rng, when, likely)))
+    return out
+
+
+def make_tickets(
+    profile: Profile,
+    master: dict,
+    rng: np.random.Generator,
+    rain_rng: np.random.Generator | None = None,
+    rain: list | None = None,
+) -> list[Ticket]:
+    """Raised tickets (who, where, what, when); the lifecycle is added by `add_lifecycle`.
+
+    With `rain_rng`, the rain-driven leak tickets (pattern 5) are part of the total: the profile's
+    target_tickets stays exact and fewer ordinary tickets are drawn.
+    """
     units, buildings = master["units"], master["buildings"]
     first, last = profile.window_start, profile.window_end
     n_days = (last - first).days + 1
@@ -264,7 +311,12 @@ def make_tickets(profile: Profile, master: dict, rng: np.random.Generator) -> li
 
     total = profile.target_tickets
     n_follow = int(round(total * FOLLOW_UP_SHARE)) if total >= 10 else 0
-    n_primary = total - n_follow
+    rained = (
+        rain_tickets(profile, master, weights_u, rain_rng, rain)[: total - n_follow]
+        if rain_rng is not None
+        else []
+    )
+    n_primary = total - n_follow - len(rained)
     tickets: list[Ticket] = []
 
     def new_primary() -> Ticket:
@@ -294,7 +346,8 @@ def make_tickets(profile: Profile, master: dict, rng: np.random.Generator) -> li
         likely = EMERGENCY_SHARE.get(code, DEFAULT_EMERGENCY_SHARE) >= 0.2
         return Ticket(unit, code, name, category, raise_moment(rng, day, likely))
 
-    tickets = [new_primary() for _ in range(n_primary)]
+    tickets = [new_primary() for _ in range(n_primary)] + rained
+    n_base = len(tickets)  # a follow-up repeats an ordinary or a rain ticket
     end_moment = datetime.combine(last, datetime.min.time()) + timedelta(hours=23, minutes=59)
     attempts = 0
     while len(tickets) < total:
@@ -302,7 +355,7 @@ def make_tickets(profile: Profile, master: dict, rng: np.random.Generator) -> li
         if attempts > 50 * total:  # short windows: fall back to more first-time tickets
             tickets.append(new_primary())
             continue
-        base = tickets[int(rng.integers(0, n_primary))]
+        base = tickets[int(rng.integers(0, n_base))]
         later = base.raised + timedelta(
             days=int(rng.integers(*FOLLOW_UP_DAYS)), hours=int(rng.integers(-6, 7))
         )
@@ -352,6 +405,7 @@ def add_lifecycle(
     export = datetime.combine(profile.window_end, datetime.min.time()) + timedelta(
         hours=23, minutes=59, seconds=59
     )
+    slow = pat.slow_vendor(master)  # planted pattern 2 (US-2.6)
     for t in tickets:
         events = [("Raised", t.raised, None)]
         assigned = minute(
@@ -364,6 +418,8 @@ def add_lifecycle(
         w = np.array([RATING_WEIGHT[rating_on(v, assigned.date())] for v in pool])
         vendor = pool[int(rng.choice(len(pool), p=w / w.sum()))]
         speed = RATING_SPEED[rating_on(vendor, assigned.date())]
+        if vendor["vendor_code"] == slow:
+            speed *= pat.SLOW_VENDOR_FACTOR
         sla = sla_on(master["sla_policy"], t.code, t.raised.date())
         ratio = RESOLVE_RATIO_MEDIAN * math.exp(rng.normal(0.0, RESOLVE_RATIO_SIGMA)) * speed
         if t.priority == "Emergency":
@@ -418,56 +474,41 @@ def ticket_json(t: Ticket) -> dict:
 
 
 # ----------------------------------------------------------------------------- incentives
-def make_incentive_log(profile: Profile, master: dict, rng: np.random.Generator) -> list[dict]:
-    """Offers posted on units: inside the window, real units, never two at once on one unit."""
-    units, buildings = master["units"], master["buildings"]
-    by_code = {b.code: b for b in buildings}
-    first, last = profile.window_start, profile.window_end
-    span = (last - first).days + 1
-    if profile.target_incentive_offers and span < min(OFFER_DAYS):
-        raise GeneratorError("the window is shorter than the shortest offer")
-    hard_to_let = np.array(
-        [
-            {"A": 0.7, "B": 1.0, "C": 1.5}[by_code[u["building_code"]].building_class]
-            * {"Apartment": 1.0, "Office": 1.2, "Shop": 1.4}[u["unit_type"]]
-            for u in units
-        ]
-    ) * rng.lognormal(0.0, 0.6, len(units))
-    taken: dict[int, list[tuple[date, date]]] = defaultdict(list)
-    rows, attempts = [], 0
-    while len(rows) < profile.target_incentive_offers:
-        attempts += 1
-        if attempts > 200 * max(1, profile.target_incentive_offers):
-            raise GeneratorError("could not place every incentive offer without overlaps")
-        u = units[int(rng.choice(len(units), p=hard_to_let / hard_to_let.sum()))]
-        days = int(gm.pick(rng, [d for d in OFFER_DAYS if d <= span]))
-        start = first + timedelta(int(rng.integers(0, span - days + 1)))
-        end = start + timedelta(days - 1)
-        if any(start <= e and s <= end for s, e in taken[u["unit_id"]]):
-            continue
-        choices = [o for o in OFFERS if u["unit_type"] in o[5]]
-        offer = choices[int(rng.integers(len(choices)))]
-        taken[u["unit_id"]].append((start, end))
-        rows.append(
-            {
-                "building_code": u["building_code"],
-                "unit_no": u["unit_no"],
-                "offer_code": offer[0],
-                "start_date": start,
-                "end_date": end,
-            }
-        )
+def make_incentive_log(master: dict, billing: gl.Billing) -> list[dict]:
+    """The S6 log: the offers gen_leases posted on vacant units (US-2.6, planted pattern 4).
+
+    Inside the window, real units, never two at once on one unit (an offer lies inside one
+    vacancy), and the offer suits the unit type.
+    """
+    units = {u["unit_id"]: u for u in master["units"]}
+    rows = [
+        {
+            "building_code": units[o["unit_id"]]["building_code"],
+            "unit_no": units[o["unit_id"]]["unit_no"],
+            "offer_code": o["offer_code"],
+            "start_date": o["start_date"],
+            "end_date": o["end_date"],
+        }
+        for o in billing.offers
+    ]
     rows.sort(key=lambda r: (r["start_date"], r["building_code"], r["unit_no"]))
     return rows
 
 
 # ----------------------------------------------------------------------------- the whole set
-def build_activity(profile: Profile, master: dict, rng_for) -> dict:
-    """Tickets and incentive log for a profile. A pure function of (profile, seed)."""
-    tickets = make_tickets(profile, master, rng_for("tickets.raised"))
+def build_activity(profile: Profile, master: dict, rng_for, billing=None) -> dict:
+    """Tickets and incentive log for a profile.
+
+    A pure function of (profile, seed) and the committed weather cache. `billing` is rebuilt from
+    the same seeds when not given (the offers are posted by the lease simulation).
+    """
+    tickets = make_tickets(
+        profile, master, rng_for("tickets.raised"), rain_rng=rng_for("tickets.rain")
+    )
     add_lifecycle(profile, master, tickets, rng_for("tickets.lifecycle"))
-    log = make_incentive_log(profile, master, rng_for("incentives.log"))
-    return {"tickets": tickets, "incentive_log": log}
+    if billing is None:
+        billing = gl.build_billing(profile, master, rng_for)
+    return {"tickets": tickets, "incentive_log": make_incentive_log(master, billing)}
 
 
 @stage("tickets_incentives", "Maintenance tickets (S4 JSON) and the incentive log (S6) (US-2.5)")

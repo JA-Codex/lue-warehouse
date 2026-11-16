@@ -13,7 +13,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Repository, branch rules, CI | US-0.3 (Done) |
 | Local environment and `.env.example` | US-0.4 (Done) |
 | Database (E1): schemas, 13 dimensions, 6 facts, audit tables, reference data | US-1.1 to US-1.5 (Done) |
-| Data generator (E2): framework, master data, leases, invoices, payments, tickets, incentives, weather | US-2.1 to US-2.5 (Done); US-2.6 pending |
+| Data generator (E2): framework, master data, leases, invoices, payments, tickets, incentives, weather, planted defects and patterns | US-2.1 to US-2.6 (Done) |
 | Ingestion, staging, dimensions, facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
@@ -118,12 +118,14 @@ make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
-make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 67 + 56)
+make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
+make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
-make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4), 12 (US-1.5) and 66 (US-2.2 to US-2.4) PASS lines
+make db-test     database acceptance tests: 22 (US-1.1), 28 (US-1.2), 24 (US-1.3), 32 (US-1.4), 12 (US-1.5) and 66 (US-2.2 to US-2.4) PASS lines;
+                 load a clean batch first (make generate CLEAN=1, then make db-load-source)
 ```
 
 Generator without `make`: `python etl/generate_data.py --profile small --seed 3004 --out data`. The command
@@ -220,6 +222,20 @@ network errors, keeps finished requests in `data/.weather_parts/` so a stopped r
 when every part is complete and valid. If your network blocks the API, run `python etl/refresh_weather.py
 --print-urls`, save each link from a browser into one folder, then `python etl/refresh_weather.py --import-dir
 <folder>`. Check the cache any time with `make weather-check`.
+
+### Planted defects, answer key and patterns (US-2.6)
+
+A normal generation plants about 1 to 3 percent of defects (rates in `etl/generator_config.py`) and writes the
+answer key into `data/answer_key/`: `defects_answer_key.csv` (every defect: source, table, record, column, type,
+expected handling `reject`, `warn`, `repair` or `accept`, and the check that should catch it), `summary.csv`,
+`totals.csv`, `expectations.json` (the counts later stories compare with) and `planted_patterns.md`. Two S1 files model
+the next extract and are not loaded by `db_load_source.py`: `s1/changes/tenants.csv` (tenant changes for SCD2) and
+`s1/late_arriving/tenants.csv` (tenants that arrive late, for inferred members).
+
+`python etl/generate_data.py --clean` (or `make generate CLEAN=1`) is the clean control batch: every rate 0, an empty
+answer key. The database tests of US-2.2 to US-2.4 need it. The six business patterns (a high-arrears building, a slow
+vendor, summer move-ins, offers that shorten vacancies, leak tickets after rain, renewal churn in Karachi) are in both;
+`python scripts/check_patterns.py --data <folder>` measures them (full profile: all six must show their effect).
 
 ## Change control for the frozen Phase 1 pack
 

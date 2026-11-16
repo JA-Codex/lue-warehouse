@@ -209,3 +209,28 @@ WEATHER_CITIES = [
 WEATHER_DAILY_VARIABLES = ("temperature_2m_max", "precipitation_sum")
 WEATHER_UNITS = {"temperature_2m_max": "°C", "precipitation_sum": "mm"}
 WEATHER_TIMEZONE = "Asia/Karachi"  # PKT, decision D13: days are Pakistan calendar days
+
+
+# ----------------------------------------------------------------------------------------------
+# Added in US-2.5, moved here from etl/gen_tickets.py in US-2.6 (gen_leases posts offers on vacant
+# units, gen_tickets writes the S6 files). The catalogue is the source of dim_incentive.
+# ----------------------------------------------------------------------------------------------
+# S6 catalogue: (offer_code, offer_type, description, discount_pct, rent_free_days, unit types)
+# Widths follow dim_incentive: code 10, type 20, description 80, discount 0-50, rent-free 0-60.
+INCENTIVE_OFFERS = [
+    ("RF15", "Rent-free days", "Half a month rent-free on a new lease", "0.00", 15,
+     ("Apartment",)),
+    ("RF30", "Rent-free days", "First month rent-free on an 11-month lease", "0.00", 30,
+     ("Apartment", "Office")),
+    ("RF60", "Rent-free days", "Two months rent-free on a 24-month commercial lease", "0.00", 60,
+     ("Office", "Shop")),
+    ("DISC10", "Discount", "10% off the monthly rent for the first 3 months", "10.00", 0,
+     ("Apartment", "Office", "Shop")),
+    ("DISC15", "Discount", "15% off the monthly rent for the first 6 months", "15.00", 0,
+     ("Apartment", "Office", "Shop")),
+    ("DISC25", "Discount", "25% off the first month's rent", "25.00", 0,
+     ("Apartment",)),
+    ("FREEMAINT", "Free maintenance", "No maintenance charges for the first 6 months", "0.00", 0,
+     ("Apartment", "Office", "Shop")),
+]  # fmt: skip
+INCENTIVE_OFFER_DAYS = (14, 21, 30, 45, 60, 90)  # how long an offer stays posted

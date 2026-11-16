@@ -1,0 +1,23 @@
+make test (what CI runs), Python 3.11.18, ruff 0.17.5, pandas 3.1.1: exit code 0, 128 s
+
+  ruff check etl scripts
+All checks passed!
+  python scripts/ci_checks.py --sql
+RESULT: PASS
+  python scripts/ci_checks.py --manifest
+RESULT: PASS
+  python scripts/check_contract.py
+  python scripts/test_generator.py
+ RESULT: 39/39 checks passed
+  python scripts/test_master_data.py
+ RESULT: 129/129 checks passed
+  python scripts/test_leases.py
+ RESULT: 114/114 checks passed
+  python scripts/test_payments.py
+ RESULT: 80/80 checks passed
+  python scripts/test_tickets.py
+ RESULT: 69/69 checks passed
+  python scripts/test_weather.py
+ RESULT: 56/56 checks passed
+  python scripts/test_defects.py
+ RESULT: 71/71 checks passed

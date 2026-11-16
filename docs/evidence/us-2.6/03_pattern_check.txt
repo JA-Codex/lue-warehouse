@@ -1,0 +1,57 @@
+python etl/generate_data.py --profile full --clean --out <folder>; python scripts/check_patterns.py --data <folder>
+
+==============================================================================
+ US-2.6 planted patterns, measured with pandas (full profile)
+==============================================================================
+  [PASS] 1 High-arrears building (GLB03): ratio 4.53
+         measured: unpaid 21.5% in GLB03 vs 4.7% elsewhere
+         expected: overdue share of billed rent at least 2.0 times the rest of the portfolio's
+  [PASS] 2 Slow vendor (V-001): ratio 2.00
+         measured: V-001 1.35 of SLA (38 jobs, 84% late) vs 0.67 (26%)
+         expected: median resolve time over SLA at least 1.6 times that of the other vendors of the trade
+  [PASS] 3 Seasonal move-ins (June to August): ratio 1.43
+         measured: 86.2 move-ins a peak month vs 60.3 other months
+         expected: a peak month has at least 1.3 times the new-tenant move-ins of an average other month
+  [PASS] 4 Incentive shortens vacancy (s6 offers): ratio 0.43
+         measured: 58 days with an offer (535) vs 135 without (1570)
+         expected: mean vacancy with an offer at most 0.75 of the mean vacancy without one
+  [PASS] 5 Rain-driven leak tickets (4 cities): ratio 6.35
+         measured: 2.18 per 1,000 unit-days on 394 rainy city-days vs 0.34 on the others
+         expected: leak tickets per unit-day at least 3.0 times higher on a rainy day or the day after than on other days
+  [PASS] 6 Renewal churn (Karachi): ratio 0.54
+         measured: 27% renew in Karachi vs 51% elsewhere
+         expected: renewal rate at most 0.75 of the other cities' rate
+==============================================================================
+ RESULT: 6/6 patterns show their expected effect
+==============================================================================
+
+Other seeds (full, clean): the effects hold, they are not an accident of seed 3004
+seed 7:   [PASS] 1 High-arrears building (F1002): ratio 3.22
+seed 7:   [PASS] 2 Slow vendor (V-001): ratio 1.79
+seed 7:   [PASS] 3 Seasonal move-ins (June to August): ratio 1.48
+seed 7:   [PASS] 4 Incentive shortens vacancy (s6 offers): ratio 0.40
+seed 7:   [PASS] 5 Rain-driven leak tickets (4 cities): ratio 7.61
+seed 7:   [PASS] 6 Renewal churn (Karachi): ratio 0.58
+seed 7:  RESULT: 6/6 patterns show their expected effect
+seed 42:   [PASS] 1 High-arrears building (G1101): ratio 3.88
+seed 42:   [PASS] 2 Slow vendor (V-001): ratio 2.49
+seed 42:   [PASS] 3 Seasonal move-ins (June to August): ratio 1.34
+seed 42:   [PASS] 4 Incentive shortens vacancy (s6 offers): ratio 0.46
+seed 42:   [PASS] 5 Rain-driven leak tickets (4 cities): ratio 7.20
+seed 42:   [PASS] 6 Renewal churn (Karachi): ratio 0.59
+seed 42:  RESULT: 6/6 patterns show their expected effect
+seed 99:   [PASS] 1 High-arrears building (FS701): ratio 5.42
+seed 99:   [PASS] 2 Slow vendor (V-001): ratio 1.69
+seed 99:   [PASS] 3 Seasonal move-ins (June to August): ratio 1.33
+seed 99:   [PASS] 4 Incentive shortens vacancy (s6 offers): ratio 0.40
+seed 99:   [PASS] 5 Rain-driven leak tickets (4 cities): ratio 6.52
+seed 99:   [PASS] 6 Renewal churn (Karachi): ratio 0.58
+seed 99:  RESULT: 6/6 patterns show their expected effect
+
+Small profile (INFO only: 2 buildings and 3 months are too few to measure)
+  [INFO] 1 High-arrears building (DHL01): ratio 2.84
+  [INFO] 2 Slow vendor (V-001): ratio 3.95
+  [INFO] 3 Seasonal move-ins (June to August): ratio 4.00
+  [INFO] 4 Incentive shortens vacancy (s6 offers): ratio n/a
+  [INFO] 5 Rain-driven leak tickets (4 cities): ratio 5.08
+  [INFO] 6 Renewal churn (Karachi): ratio 0.00

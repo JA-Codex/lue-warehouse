@@ -1,0 +1,42 @@
+Do the tests catch broken code? Each line below is one deliberate change to the code, run against the
+full suite named in brackets (copy of the repository, one change at a time). "Caught" means the suite
+failed. Script: 19 mutations, run 2026-11-16.
+
+ #  Deliberate change                                              Suite          Result
+ 0  a ticket's removed unit is not written to the answer key       test_defects   caught (S4: changed tickets != key)
+ 1  two defects allowed on one ticket                              test_defects   caught (one defect per record; S4 detail)
+ 2  an "orphan" allocation still points at a real invoice          test_defects   caught (S1: changed rows != key)
+ 3  a late tenant is left in s1/tenants.csv                        test_defects   caught (late-arriving tenants)
+ 4  a tenant change also changes the phone number                  test_defects   caught (one tracked attribute only)
+ 5  a late settlement line arrives only 1 day late                 test_defects   MISSED at first: the test read the
+                                                                                  limits from the code under test.
+                                                                                  Fixed (limits written out in the
+                                                                                  test); now caught
+ 6  the "at least 1 per table of 20+ rows" rule is dropped         test_defects   caught (not all 12 types planted)
+ 7  an out-of-range date stays inside the window                   test_defects   caught (S1: changed rows != key)
+ 8  the S4 export's ticket_count is not updated                    test_defects   caught (S4 detail)
+ 9  a new settlement line reuses the id of a line moved out        test_defects   caught (3 checks). This was a REAL
+    (the bug the suite found while it was being written)                          bug in the first version; fixed
+10  --clean does not clear the rates                               test_defects   caught (clean control batch)
+11  the mid-lease rent change lowers the rent                      test_defects   caught (rent lines)
+12  the slow vendor is not slow                                    test_defects   caught (pattern 2: ratio 0.94)
+13  no renewal churn in Karachi                                    test_defects   caught (pattern 6: ratio 0.91)
+14  no rain-driven leak tickets                                    test_defects   caught (pattern 5: ratio 1.17)
+15  offers do not shorten the vacancy                              test_defects   caught (pattern 4: ratio 0.91)
+16  the arrears building pays like everyone else                   test_defects   caught (pattern 1: ratio 1.16)
+17  an offer keeps running after the next tenant moves in          test_tickets   MISSED at first: the check compared a
+                                                                                  text unit id with a number, so it
+                                                                                  compared nothing. Fixed (and it now
+                                                                                  prints how many leases it compared:
+                                                                                  2,209); now caught
+18  the defects stage is not the last stage                        test_defects   caught: the generator stops with a
+                                                                                  clear message (guard added)
+
+Result: 19 of 19 caught after two test fixes. The two misses were weak tests, found and closed here.
+
+Also checked (not a code change): generation on the small profile for seeds 0 to 100, and on the full
+profile for seeds 7, 42 and 99 (all six patterns hold, see 03_pattern_check.txt). On the SMALL profile,
+seeds 7, 49, 50, 55, 78, 84, 87, 89 and 91 (9 of 101) stop with "not enough tenants for the leases". main
+(before this story) stops on exactly the same 9 seeds, so it is not new: the 120 tenants of the small
+profile are tight for the US-2.3 tenant assignment. Raising them to 150 made it worse (7 other seeds),
+so it is left as an open item (US-2.6.md). The default seed 3004 and the full profile are not affected.
