@@ -1,0 +1,25 @@
+Do the E4 tests catch broken code? Each line is one deliberate change, run against the suite named
+(small profile with the US-2.6 defects, PostgreSQL 16), then put back. 2026-11-17.
+
+ #  Deliberate change                                          Suite                   Result
+ 0  later rules do not skip a row an earlier rule rejected     test_quality            caught (the second rejection
+                                                                                       of a row breaks the run)
+ 1  no idempotent delete before validating                     test_quality            caught (quarantine doubles)
+ 2  a day-first date (08/12/2024) is not accepted              test_quality            MISSED at first: the small
+                                                                                       profile has no day-first date.
+                                                                                       Added direct tests of the safe
+                                                                                       casts; now caught
+ 3  an exact duplicate loses both copies                       test_quality            caught (good rows flagged)
+ 4  a late tenant is rejected instead of warned (catalogue)    test_quality            caught (detection, false positive)
+ 5  the allocation-to-invoice-line rule is removed (catalogue) test_quality            caught (detection 25 of 32)
+ 6  an empty text counts as a value                            test_quality            caught (bad rows not caught)
+ 7  the event window ends a month early (catalogue)            test_quality            caught (false positive)
+ 8  rejections are not copied to quarantine                    test_quality            caught
+ 9  rules are not run in check order                           test_quality_contract   caught
+10  the comparison credits any finding, whatever its rule      test_quality            MISSED at first: with a correct
+                                                                                       engine the results were right
+                                                                                       anyway. Added a check that
+                                                                                       relabels one finding; now caught
+11  a column name in a rule is not checked                     test_quality_contract   caught
+
+Result: 12 of 12 caught after two test additions.

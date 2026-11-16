@@ -79,7 +79,7 @@ def extract_table(step: Step, src, meta, table: str, target: str) -> None:
     if not columns:
         raise RuntimeError(f"src_pms.{table} does not exist: run python scripts/db_load_source.py")
     expected = [c for c in bronze_columns(step.cur, target) if c not in
-                ("batch_id", "source_system", "loaded_at", "row_hash")]  # fmt: skip
+                ("batch_id", "source_system", "loaded_at", "row_hash", "row_id")]  # fmt: skip
     if columns != expected:
         raise RuntimeError(f"src_pms.{table} columns {columns} do not match {target} {expected}")
 

@@ -1,0 +1,15 @@
+python scripts/test_quality.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+Setup: your data folder into src_pms and a fresh bronze
+  [PASS] loaded and ingested: 6/6 sources, reconciled
+US-4.1 Catalogue and engine
+  [PASS] the catalogue (etl/quality/rules.toml) has 109 rules, run in the order DQ-01 to DQ-06
+  [PASS] validating twice gives identical counts (5,636 rejected, 1,339 warnings) and the quarantine holds each rejection once (5,636)
+  [PASS] a row is rejected at most once: by the first rule it fails
+  [PASS] the run log has the step: validate_dq, Warning, 467,406 rows checked, 5,636 rejected
+  [PASS] a quarantine row holds the bronze row as JSON, the check and a reason: DQ-01 NULL: [S6-LOG-01] required value missing: offer_code is empty
+  [PASS] a rule added to a copy of the catalogue works with no code change (250 findings) and changes nothing else
+  [PASS] a validation that fails (a rule with bad SQL) is rolled back: the earlier findings stay as they were
+  [PASS] a malformed rule is refused with every problem named
+
+Whole suite: RESULT: 25/25 checks passed

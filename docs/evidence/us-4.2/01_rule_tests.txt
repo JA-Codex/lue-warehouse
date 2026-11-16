@@ -1,0 +1,15 @@
+python scripts/test_quality.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+US-4.2 The safe casts of DQ-02
+  [PASS] dates: 2024-12-08 and the day-first 08/12/2024 parse (the same day; repaired in staging); 2025-02-30, TBD, day 32 and month 13 do not
+  [PASS] numbers: -12.50 and 4850 parse; 'Rs. 8,300', '8300/-' and '' do not
+  [PASS] timestamps: with T or a space, with or without seconds; month 13 does not
+US-4.2 and US-4.3 Every rule on a known bad and a known good row
+         good rows: validation run 543, Success
+         bad rows: validation run 544, Warning
+  [PASS] a good row exists in bronze for every rule (109 of 109)
+  [PASS] 109 rules each catch their bad row, and no earlier rule takes it
+  [PASS] 109 good rows pass every rule (no finding at all)
+  [PASS] reasons show the column and the value: [S4-TKT-03] not a number: estimate = 'not-a-number'
+
+Whole suite: RESULT: 25/25 checks passed

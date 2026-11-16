@@ -1,0 +1,29 @@
+python etl/quality/run.py, twice in a row (full profile with the US-2.6 defects)
+
+== Run 1
+==============================================================================
+ Data quality run 550: Warning
+==============================================================================
+  rows checked 467,406   rules 109   rejected 5,636   warnings 1,339
+  DQ-01 NULL             rejected   2,854   warnings       0
+  DQ-02 Data type        rejected      66   warnings       0
+  DQ-03 Duplicate        rejected     427   warnings     120
+  DQ-04 Business rule    rejected       0   warnings     587
+  DQ-05 Referential      rejected   2,131   warnings     632
+  DQ-06 Range            rejected     158   warnings       0
+ Rules that found something
+  S1-LEV-01    reject     184  brz_lease_event: required value missing
+
+== Run 2
+==============================================================================
+ Data quality run 551: Warning
+==============================================================================
+  rows checked 467,406   rules 109   rejected 5,636   warnings 1,339
+  DQ-01 NULL             rejected   2,854   warnings       0
+  DQ-02 Data type        rejected      66   warnings       0
+  DQ-03 Duplicate        rejected     427   warnings     120
+  DQ-04 Business rule    rejected       0   warnings     587
+  DQ-05 Referential      rejected   2,131   warnings     632
+  DQ-06 Range            rejected     158   warnings       0
+ Rules that found something
+  S1-LEV-01    reject     184  brz_lease_event: required value missing

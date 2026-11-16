@@ -62,8 +62,9 @@ def main() -> int:
         check(dims == 13, f"13 dimension tables in lue_dw (found {dims})")
         check(facts == 6, f"6 fact tables in lue_dw (found {facts})")
         check(
-            audit == 6,
-            f"6 tables in lue_audit: 4 audit tables + etl_watermark + file_load (found {audit})",
+            audit == 7,
+            f"7 tables in lue_audit: 4 audit tables + etl_watermark, file_load, dq_result "
+            f"(found {audit})",
         )
         check(fks == 41, f"41 foreign keys from the facts to the dimensions (found {fks})")
         check(

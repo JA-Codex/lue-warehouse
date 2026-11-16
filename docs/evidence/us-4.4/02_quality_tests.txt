@@ -1,0 +1,15 @@
+python scripts/test_quality.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+US-4.4 Against the answer key, and a clean control batch
+  [PASS] detection is 100%: 6,915 of 6,915 planted defects in scope, in 19 groups (source, table, type, rule)
+  [PASS] no false positive: every finding is a planted defect; nothing a later stage handles is rejected
+  [PASS] the warn-only types (conflicting duplicate, late tenant on leases and payments, mid-lease rent change) are reported as warnings, not rejected
+  [PASS] rejections equal the answer key's rejectable defects (5,636)
+  [PASS] dq_validation.csv is written
+  [PASS] the comparison catches a finding made by the wrong rule (1 missed, 1 false positive)
+  [PASS] control batch: a clean full generation loaded into src_pms and ingested
+  [PASS] control batch: zero rejections and zero warnings (466,057 rows checked by 109 rules)
+  [PASS] src_pms and bronze hold your data folder again (validated)
+======================================================================
+ RESULT: 25/25 checks passed
+======================================================================

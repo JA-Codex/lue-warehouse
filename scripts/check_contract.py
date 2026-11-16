@@ -23,6 +23,7 @@ NOT_NULL_KINDS = ("CONSTR_NOTNULL", "CONSTR_IDENTITY")  # an identity column is 
 ALLOWED_EXTRA_TABLES = {
     "etl_watermark": "US-1.5: last loaded value per source table (decision O5)",
     "file_load": "US-3.3: one row per file load with its checksum (decision D16)",
+    "dq_result": "US-4.1: the quality engine's findings per bronze row (rejections and warnings)",
 }
 ALLOWED_EXTRA_CONSTRAINTS = {
     r"ck_dim_\w+_effective_range": "US-1.2: SCD2 range check",

@@ -15,6 +15,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Database (E1): schemas, 13 dimensions, 6 facts, audit tables, reference data | US-1.1 to US-1.5 (Done) |
 | Data generator (E2): framework, master data, leases, invoices, payments, tickets, incentives, weather, planted defects and patterns | US-2.1 to US-2.6 (Done) |
 | Ingestion into bronze (E3): framework, S1 incremental, files with checksums, JSON and weather, reconciliation | US-3.1 to US-3.4 (Done) |
+| Data quality and quarantine (E4): rule catalogue and engine, DQ-01 to DQ-06, proof against the answer key | US-4.1 to US-4.4 (Done) |
 | Ingestion, staging, dimensions, facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
@@ -119,11 +120,13 @@ make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
 make ingest      land all six sources in bronze, with reconciliation (E3)
 make ingest-test E3 acceptance tests: 39 PASS lines (empties bronze, then refills it)
+make validate     run the 109 quality rules on bronze, compare with the answer key (E4)
+make quality-test E4 acceptance tests: 25 PASS lines (reloads src_pms and bronze from data/)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -236,6 +239,19 @@ Each source is one transaction (a failure rolls it back; the others still run) a
 `lue_audit.etl_run_log`. S1 lands only new or changed rows (row hash), the files only new or changed files (SHA-256,
 recorded in `lue_audit.file_load`); a second run lands nothing. Every run ends with a reconciliation of all 20 bronze
 tables in `lue_audit.reconciliation`. The log is in `logs/ingest.log`.
+
+### Data quality and quarantine (E4)
+
+The rules are data: `etl/quality/rules.toml` (109 rules; the field list is at its top). After an ingestion:
+
+    python etl/quality/run.py --compare   # or: make validate
+
+runs them on every bronze batch in the order DQ-01 (NULL) to DQ-06 (range). A row is rejected by the first rule it
+fails: it goes to `lue_audit.quarantine` (as JSON, with the check and a reason that quotes the column and value) and
+later rules skip it. Warnings (a conflicting duplicate, a tenant that has not arrived yet, a mid-lease rent change)
+are findings only. Everything is in `lue_audit.dq_result`; staging keeps the bronze rows without a rejection.
+`--compare` checks the findings against the answer key and writes `data/dq_validation.csv`: on the full profile all
+6,915 planted defects in scope are found, with no false positive, and a clean control batch gets no finding.
 
 ### Planted defects, answer key and patterns (US-2.6)
 

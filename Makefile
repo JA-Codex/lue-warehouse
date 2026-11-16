@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -35,6 +35,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_weather.py
 	$(PYTHON) scripts/test_defects.py
 	$(PYTHON) scripts/test_ingest_contract.py
+	$(PYTHON) scripts/test_quality_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -76,6 +77,12 @@ ingest: ## Land all six sources in bronze: S1 from src_pms, the files from data/
 
 ingest-test: ## Ingestion acceptance tests (US-3.1 to US-3.4); empties bronze, then refills it
 	$(PYTHON) scripts/test_ingest.py
+
+validate: ## Run the quality rules on bronze and compare with the answer key (E4)
+	$(PYTHON) etl/quality/run.py --compare
+
+quality-test: ## Data quality acceptance tests (US-4.1 to US-4.4); reloads src_pms and bronze
+	$(PYTHON) scripts/test_quality.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
 	$(PYTHON) scripts/db_reset.py

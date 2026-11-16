@@ -52,6 +52,11 @@ def reset(cur) -> None:
         cur.execute(f"TRUNCATE lue_staging.{t}")
     cur.execute("TRUNCATE lue_audit.file_load")
     cur.execute("DELETE FROM lue_audit.etl_watermark WHERE source_system = 'S1'")
+    # E4's findings name bronze rows by row_id: with bronze emptied they would point at nothing.
+    cur.execute("SELECT to_regclass('lue_audit.dq_result') IS NOT NULL")
+    if cur.fetchone()[0]:
+        cur.execute("TRUNCATE lue_audit.dq_result")
+        cur.execute("DELETE FROM lue_audit.quarantine")
 
 
 def run(data: Path, only: list[str]):
