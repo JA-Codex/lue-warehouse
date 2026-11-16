@@ -1,0 +1,11 @@
+Structure drift, from python scripts/test_ingest.py (on a temporary copy of the data):
+
+1. s6/offers.csv with the header rent_free_days renamed to free_days:
+   file_load.message = structure changed: missing 'rent_free_days'; unexpected 'free_days' (expected offer_code, offer_type, description, discount_pct, rent_free_days)
+   [PASS] a file with a renamed column is rejected before load, saying which column
+   [PASS] the other file of the source still goes through (unchanged: skipped)
+   [PASS] the run log marks the step Warning
+   [PASS] S2: a sheet whose header changed is rejected; the workbook's other sheets land (the file changed, so as a new batch)
+
+2. s4/tickets.json cut off before its end:
+   [PASS] a cut-off JSON file is rejected for both ticket tables; nothing lands

@@ -1,0 +1,17 @@
+python scripts/test_ingest.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+US-3.3 S2, S3, S6 files
+  [PASS] run 1: a Loaded file_load row per file and target, each with its SHA-256 (3991); 5 empty settlement files with the same bytes as an earlier one are skipped by checksum (D16)
+  [PASS] S6 offers land exactly as written in the file, in order
+  [PASS] empty cells stay empty texts (13), they do not become NULL or vanish
+  [PASS] 8 reconciliation checks, all passed
+  [PASS] run 2 with unchanged files lands 0 rows; every file is logged Skipped, unchanged
+  [PASS] an edited file lands exactly its 10 rows as a new batch; the old batch stays (append, never truncate)
+  [PASS] reconciliation catches a row lost from bronze (difference -1, FAIL)
+         message: structure changed: missing 'rent_free_days'; unexpected 'free_days' (expected offer_code, offer_type, description, discount_pct, rent_free_days)
+  [PASS] a file with a renamed column is rejected before load, saying which column
+  [PASS] the other file of the source still goes through (unchanged: skipped)
+  [PASS] the run log marks the step Warning
+  [PASS] S2: a sheet whose header changed is rejected; the workbook's other sheets land (the file changed, so as a new batch)
+
+Whole suite: RESULT: 39/39 checks passed
