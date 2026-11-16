@@ -24,6 +24,9 @@ ALLOWED_EXTRA_TABLES = {
     "etl_watermark": "US-1.5: last loaded value per source table (decision O5)",
     "file_load": "US-3.3: one row per file load with its checksum (decision D16)",
     "dq_result": "US-4.1: the quality engine's findings per bronze row (rejections and warnings)",
+    "dq_batch": "E5: the bronze batches E4 has validated (staging reads only these)",
+    "stg_load": "US-5.1/US-5.3: per run and staging table the count bridge",
+    "cleaning_evidence": "US-5.4: per run and issue the cleaning counts and samples",
 }
 ALLOWED_EXTRA_CONSTRAINTS = {
     r"ck_dim_\w+_effective_range": "US-1.2: SCD2 range check",

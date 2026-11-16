@@ -1,0 +1,41 @@
+python etl/staging/run.py --full --compare
+================================================================================================
+ Staging run 55 (full reload)
+================================================================================================
+  table                    status       read rejected unusable superseded inserted  updated unchanged
+  stage_reset              Success  
+  stg_building             Success        40        0        0          0       40        0         0
+  stg_unit                 Success     1,800        0        0          0    1,800        0         0
+  stg_tenant               Success     3,762        0        0          0    3,762        0         0
+  stg_lease                Success     5,883        0        0          0    5,883        0         0
+  stg_lease_event          Success     9,195      414        0          0    8,781        0         0
+  stg_invoice              Success    54,774        0        0          0   54,774        0         0
+  stg_invoice_line         Success   129,885        0        0          0  129,885        0         0
+  stg_payment              Success    59,679        0        0          0   59,679        0         0
+  stg_payment_allocation   Success   126,852    4,440        0          0  122,412        0         0
+  stg_settlement           Success    36,967      361        0          0   36,606        0         0
+  stg_owner                Success       900        0        0          0      900        0         0
+  stg_ownership            Success     2,076        0        0          0    2,076        0         0
+  stg_vendor               Success       140        0        0          0      140        0         0
+  stg_maintenance_category Success        34        0        0          0       34        0         0
+  stg_holiday              Success       173        0        0          0      173        0         0
+  stg_ticket               Success     6,120      390        0         60    5,670        0         0
+  stg_ticket_status        Success    22,406        0        0          0   22,406        0         0
+  stg_weather              Success     4,384        0        0          0    4,384        0         0
+  stg_incentive_offer      Success         7        0        0          0        7        0         0
+  stg_incentive_log        Success       655       31        0          0      624        0         0
+  stage_business           Success  
+ Business (US-5.2): derived allocations +4,798 ~0 -0 (4,319 payments); rows with changed derived values: stg_lease 5,883, stg_payment_allocation 127,210, stg_invoice_line 129,885, stg_payment 59,679, stg_settlement 36,606, stg_ticket 5,670
+ Count bridge (US-5.1): 20/20 tables balance
+ Evidence (US-5.4): data/staging_evidence
+ Answer key (US-5.1 repairs, US-5.2 matching)
+  [PASS] repair stg_building.city: 1/1  repaired to the canonical value
+  [PASS] repair stg_incentive_log.start_date: 19/19  repaired to the canonical value
+  [PASS] repair stg_ticket.category: 72/72  repaired to the canonical value
+  [PASS] repair stg_ticket.priority: 108/108  repaired to the canonical value
+  [PASS] repair stg_unit.unit_type: 54/54  repaired to the canonical value
+  [PASS] match  stg_settlement.is_matched: 541/541  each planted line is unmatched
+  [PASS] match  stg_settlement.is_matched: 721/721  each planted line is matched (reported late)
+  [PASS] total  stg_settlement.is_matched: 541/541  unmatched_settlements in expectations.json
+  [PASS] total  stg_payment.is_unsettled: 722/722  unsettled_electronic_payments in expectations.json
+================================================================================================

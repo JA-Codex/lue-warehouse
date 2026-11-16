@@ -167,9 +167,12 @@ class StepResult:
     status: str = "Running"
     rows_read: int = 0
     rows_written: int = 0
+    rows_updated: int = 0  # staging (US-5.3): rows changed in place; 0 for ingestion
     rows_rejected: int = 0
     message: str = ""
     seconds: float = 0.0
+    rejects_warn: bool = True  # staging: rows E4 rejected are expected, not a reason for Warning
+    warning: bool = False  # set by a step that finished but needs a look (status Warning)
     batches: list[int] = field(default_factory=list)
 
 
@@ -264,12 +267,13 @@ class Run:
             cur.execute(
                 "INSERT INTO lue_audit.etl_run_log (run_id, step, started_at, ended_at, rows_read, "
                 "rows_inserted, rows_updated, rows_rejected, status) "
-                "VALUES (%s, %s, %s, %s, %s, %s, 0, %s, %s) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "ON CONFLICT (run_id, step) DO UPDATE SET ended_at = EXCLUDED.ended_at, "
                 "rows_read = EXCLUDED.rows_read, rows_inserted = EXCLUDED.rows_inserted, "
-                "rows_rejected = EXCLUDED.rows_rejected, status = EXCLUDED.status",
+                "rows_updated = EXCLUDED.rows_updated, rows_rejected = EXCLUDED.rows_rejected, "
+                "status = EXCLUDED.status",
                 (self.run_id, r.step[:40], started, ended, r.rows_read, r.rows_written,
-                 r.rows_rejected, r.status),
+                 r.rows_updated, r.rows_rejected, r.status),
             )  # fmt: skip
 
     def step(self, name: str, source_system: str, ingest: Callable[[Step], None]) -> StepResult:
@@ -281,12 +285,14 @@ class Run:
         try:
             ingest(step)
             self.data.commit()
-            result.status = "Warning" if result.rows_rejected else "Success"
+            warn = result.warning or (result.rows_rejected and result.rejects_warn)
+            result.status = "Warning" if warn else "Success"
         except Exception as exc:  # noqa: BLE001  any failure: roll the source back, log, go on
             self.data.rollback()
             result.status = "Failed"
             result.message = f"{type(exc).__name__}: {exc}".strip()[:300]
             result.rows_written = 0  # nothing of this source stayed in bronze
+            result.rows_updated = 0
             self.log.error(kv(step=name, source=source_system, status="Failed",
                               error=result.message))  # fmt: skip
         finally:

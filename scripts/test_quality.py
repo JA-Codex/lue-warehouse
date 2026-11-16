@@ -53,7 +53,7 @@ def scalar(cur, sql: str, args=None):
 def reset_bronze(cur) -> None:
     for t in engine.bronze_tables(cur):
         cur.execute(f"TRUNCATE lue_staging.{t}")
-    cur.execute("TRUNCATE lue_audit.file_load, lue_audit.dq_result")
+    cur.execute("TRUNCATE lue_audit.file_load, lue_audit.dq_result, lue_audit.dq_batch")
     cur.execute("DELETE FROM lue_audit.quarantine")
     cur.execute("DELETE FROM lue_audit.etl_watermark WHERE source_system = 'S1'")
 

@@ -1,0 +1,95 @@
+======================================================================
+ E5 contract tests: staging spec, SQL and allocation rules (no database)
+======================================================================
+US-5.1 The spec, the generated files and the bronze contract
+  [PASS] the staging functions, tables and contract (docs/contracts/staging.md) are what etl/staging/spec.py gives (ddl.py --check)
+  [PASS] 20 staging tables, unique names: 20
+  [PASS] every table the plan names (US-5.1 step 5) exists in the spec
+  [PASS] every table reads a bronze table of sql/20_staging/01_bronze.sql
+  [PASS] every b.column in the spec exists in its bronze table
+  [PASS] every key column is a loaded (not derived) column
+  [PASS] no column name twice in a table (lineage included)
+  [PASS] no % in any spec expression (psycopg2 would read it as a parameter)
+  [PASS] a table that depends on another comes after it (stg_ticket_status after stg_ticket)
+  [PASS] one staging table per bronze table (20 of 20)
+  [PASS] the contract documents every table; the functions file shows the ' lahore ' example
+US-5.1 Vocabularies: one spelling per value
+  [PASS] no two canonical values share a match key; every variant maps to a canonical value of its domain
+  [PASS] the vocabulary seed has each (domain, key) once (71 rows): one INSERT can load it
+  [PASS] cities: the generator's ['Faisalabad', 'Islamabad', 'Karachi', 'Lahore'] = vocabulary = regions = codes
+  [PASS] employer sectors: the generator's 15 = the vocabulary
+  [PASS] unit types and offer types: those of etl/reference_data.py = the vocabulary
+  [PASS] payment methods: the six of etl/reference_data.py; electronic = BANK, RAAST, JAZZ, EASY (as the generator's settlements)
+  [PASS] match key: case and spaces ignored, as clean_text and lower in SQL
+US-5.1 to US-5.4 Every statement staging builds parses
+  [PASS] DDL, window, source, merge, evidence and business SQL parse (pglast)
+  [PASS] every derived column (28 in 6 tables) is computed and set by business.py
+  [PASS] evidence classifies columns by their whole expression (a flag computed from priority is not a priority repair)
+  [PASS] the merge updates only a changed value, never with an older version, lets a derived row give way to the source, and tells inserts from updates
+  [PASS] stg_ticket_status follows the surviving ticket copy (no version test)
+  [PASS] the window: after the watermark (same second: a later batch), validated batches only, E4 rejections excluded
+US-5.2 Allocation where the source did not (pure rules)
+  [PASS] oldest due line first, never more than a line's balance or the payment's rest
+  [PASS] the payment's own invoice first (US-2.4: one invoice per payment), a line it already has is skipped, then the oldest due
+  [PASS] never on an invoice issued after the payment; the rest stays unallocated
+  [PASS] payments in paid order share the balances: 280 of 300 allocated, the earlier payment first, no line over its balance
+  [PASS] a tenant with no open line: nothing derived
+  [PASS] a reversal mirrors the original's allocations, negative, line by line
+  [PASS] a reversal skips a line it already reverses in S1 and never reverses more than its rest
+  [PASS] never more than the original allocated (rest -500, original 130)
+  [PASS] payments and reversals in paid order: a reversal reopens its line for the tenant's next payment
+  [PASS] a reversal of a payment staging allocated itself mirrors those derived allocations
+US-5.1 The answer key's repairs are read
+  [PASS] canonical values come from the key's detail (quoted spelling, day-first date)
+  [PASS] every table with a US-5.1 repair in the answer key is mapped to its staging table
+======================================================================
+ RESULT: 36/36 checks passed
+======================================================================
+
+======================================================================
+ E5 acceptance tests: staging (US-5.1 to US-5.4)
+======================================================================
+Setup: your data folder into src_pms and a fresh bronze, validated
+  [PASS] loaded, ingested (6/6 sources) and validated
+US-5.1 Clean, standardise and deduplicate (full load)
+  [PASS] full load: stage_reset, 20 tables and stage_business, all Success (22/22)
+  [PASS] ' lahore ' and 'LAHORE' -> 'Lahore', 'khi' -> 'Karachi', an unknown or empty value -> NULL; clean_text trims and collapses, blank -> NULL; region, city code, day-first date
+  [PASS] no city, unit type or payment method in more than one spelling, none NULL: stg_building.city 4, stg_weather.city 4, stg_unit.unit_type 3, stg_payment.method_code 6
+  [PASS] every payment method is in lue_staging.payment_method; no source value is outside its vocabulary (no not_in_vocabulary evidence)
+  [PASS] count bridge: staged rows = bronze - rejected by E4 - unusable - deduplicated, for all 20 tables
+  [PASS] the differences are the planted ones: 414 lease events, 4,440 allocations and 361 settlement lines rejected by E4; 60 ticket copies deduplicated (conflicting duplicates, D15)
+  [PASS] survivorship on the 60 conflicting ticket pairs (120 warned copies): the copy with the latest status time is staged, every time
+  [PASS] every staged status entry belongs to the staged copy of its ticket
+US-5.4 Cleaning evidence
+  [PASS] an evidence file per source (S1 to S6), the count bridge and the distinct values
+  [PASS] for every table the evidence counts reconcile with the count bridge: read = rejected + unusable + superseded + inserted + updated + unchanged
+  [PASS] the plan's sample by name: ' lahore ' -> 'Lahore' (stg_building.city)
+  [PASS] repairs counted as planted (unit type 54, city 1, day-first dates 19), duplicates removed 361 (settlements), conflicts resolved by survivorship 60 (tickets)
+  [PASS] distinct unit types: 15 spellings before, ['Apartment', 'Office', 'Shop'] after
+US-5.2 Business transformations
+  [PASS] no payment allocated more than its amount, no line more than its net amount
+  [PASS] sum of allocations = amount for 59,256 of 59,256 cleared payments
+  [PASS] every reversal is fully allocated (423/423), with staging mirroring the original where E4 rejected its allocation
+  [PASS] 4,798 derived allocations for 4,319 payments, each one of a payment whose S1 allocation E4 rejected; marked derived, no bronze lineage
+  [PASS] days_past_due = paid date - due date on every allocation, reversals too (934)
+  [PASS] a matched settlement line has its lag = settlement date - paid date
+  [PASS] term in months for every lease (5,883; e.g. L-2020-00001 2020-08-01 to 2023-07-31 = 36)
+  [PASS] tickets: emergency flag = priority Emergency, every ticket raised, durations and SLA breach consistent; 222 of 5,670 recurring within 30 days
+  [PASS] answer key: every planted repair, 541 unmatched settlements (expected 541), 722 unsettled electronic payments (expected 722); late lines still matched (9 checks)
+US-5.1 Survivorship (D15) and the guards, on fixture rows
+  [PASS] two versions of a unit in one batch: the latest updated_at (floor 41) wins although it was landed first; 1 superseded, 1 updated
+  [PASS] an older version landed later (updated_at 2020) does not replace the newer one: unchanged (US-5.3: never with an older version)
+  [PASS] a key that is empty after cleaning: counted as unusable, not staged, step Warning
+  [PASS] a bronze batch not yet validated: staging refuses to start (bronze batches wait for validation in brz_owner (1): run python etl/qu...)
+  [PASS] a second staging run at the same time is refused
+US-5.3 Incremental loading with watermarks
+  [PASS] a second run with no source change inserts and updates zero rows (the run log agrees), derived values included
+  [PASS] one source row changed (tenant T-0001's phone): exactly one update in staging, stage_tenant rows_updated = 1 in the run log, nothing else moves
+  [PASS] a step that fails (year 99999 does not fit SMALLINT) rolls back: watermark and table as they were, the other steps still run
+  [PASS] fixed, the next run succeeds
+  [PASS] a batch landed in the same second as the watermark (2026-11-17 03:12:33) is read once, then not again
+  [PASS] the same row landed again (owner OW-0001, a new batch): read 1, unchanged 1, updated 0 (an update only when a value differs)
+  [PASS] src_pms, bronze and staging hold your data folder again (validated, staged in full)
+======================================================================
+ RESULT: 35/35 checks passed
+======================================================================
