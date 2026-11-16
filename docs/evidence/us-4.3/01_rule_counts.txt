@@ -1,0 +1,61 @@
+python etl/quality/run.py --compare (full profile with the US-2.6 defects)
+
+==============================================================================
+ Data quality run 552: Warning
+==============================================================================
+  rows checked 467,406   rules 109   rejected 5,636   warnings 1,339
+  DQ-01 NULL             rejected   2,854   warnings       0
+  DQ-02 Data type        rejected      66   warnings       0
+  DQ-03 Duplicate        rejected     427   warnings     120
+  DQ-04 Business rule    rejected       0   warnings     587
+  DQ-05 Referential      rejected   2,131   warnings     632
+  DQ-06 Range            rejected     158   warnings       0
+ Rules that found something
+  S1-LEV-01    reject     184  brz_lease_event: required value missing
+  S1-ALC-01    reject   2,537  brz_payment_allocation: required value missing
+  S4-TKT-01    reject     120  brz_ticket: required value missing
+  S6-LOG-01    reject      13  brz_incentive_log: required value missing
+  S4-TKT-03    reject      60  brz_ticket: not a number
+  S6-LOG-02    reject       6  brz_incentive_log: not a date
+  S3-SET-04    reject     361  brz_settlement: settlement line repeated in its file
+  S4-TKT-04    reject      60  brz_ticket: ticket exported twice
+  S4-TKT-05    warn       120  brz_ticket: ticket exported twice with different values; staging keeps the latest
+  S6-LOG-03    reject       6  brz_incentive_log: offer logged twice
+  S1-INL-06    warn       587  brz_invoice_line: rent billed differs from the lease's monthly rent (a mid-lease change)
+  S1-LEA-08    warn        62  brz_lease: tenant not in S1 yet: inferred member (US-6.5)
+  S1-LEV-04    reject     138  brz_lease_event: lease not found
+  S1-PAY-06    warn       570  brz_payment: tenant not in S1 yet: inferred member (US-6.5)
+  S1-ALC-05    reject   1,903  brz_payment_allocation: invoice line not found
+  S4-TKT-06    reject      90  brz_ticket: unit not found
+  S1-LEV-06    reject      92  brz_lease_event: event date outside the window
+  S4-TST-04    reject      60  brz_ticket_status: raised outside the window
+  S6-LOG-07    reject       6  brz_incentive_log: offer date outside the window
+ Answer key (US-4.4)
+  [ -- ] S1 buildings            inconsistent_text               repair US-5.1: 1 (later stage)
+  [PASS] S1 invoice_lines        mid_lease_rent_change           warn   DQ-04: 587/587
+  [PASS] S1 lease_events         null_required_value             reject DQ-01: 184/184
+  [PASS] S1 lease_events         orphan_reference                reject DQ-05: 138/138
+  [PASS] S1 lease_events         out_of_range_date               reject DQ-06: 92/92
+  [PASS] S1 leases               late_arriving_tenant_reference  warn   DQ-05: 62/62
+  [PASS] S1 payment_allocations  null_required_value             reject DQ-01: 2537/2537
+  [PASS] S1 payment_allocations  orphan_reference                reject DQ-05: 1903/1903
+  [PASS] S1 payments             late_arriving_tenant_reference  warn   DQ-05: 570/570
+  [ -- ] S1 tenants              tenant_attribute_change         accept US-6.2: 76 (later stage)
+  [ -- ] S1 units                inconsistent_text               repair US-5.1: 54 (later stage)
+  [PASS] S3 settlements          duplicate_settlement_line       reject DQ-03: 361/361
+  [ -- ] S3 settlements          late_arriving_payment           warn   US-5.2: 721 (later stage)
+  [ -- ] S3 settlements          orphan_reference                warn   US-5.2: 541 (later stage)
+  [PASS] S4 tickets              conflicting_duplicate           warn   DQ-03: 60/60
+  [PASS] S4 tickets              exact_duplicate                 reject DQ-03: 60/60
+  [ -- ] S4 tickets              inconsistent_text               repair US-5.1: 180 (later stage)
+  [PASS] S4 tickets              null_required_value             reject DQ-01: 120/120
+  [PASS] S4 tickets              orphan_reference                reject DQ-05: 90/90
+  [PASS] S4 tickets              out_of_range_date               reject DQ-06: 60/60
+  [PASS] S4 tickets              wrong_data_type                 reject DQ-02: 60/60
+  [PASS] S6 incentive_log        exact_duplicate                 reject DQ-03: 6/6
+  [ -- ] S6 incentive_log        inconsistent_text               repair US-5.1: 19 (later stage)
+  [PASS] S6 incentive_log        null_required_value             reject DQ-01: 13/13
+  [PASS] S6 incentive_log        out_of_range_date               reject DQ-06: 6/6
+  [PASS] S6 incentive_log        wrong_data_type                 reject DQ-02: 6/6
+ Detected 6,915 of 6,915 planted defects in scope; 0 false positives. Written: data/dq_validation.csv
+==============================================================================

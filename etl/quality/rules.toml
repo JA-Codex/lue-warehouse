@@ -604,3 +604,553 @@ key = ["building_code", "unit_no", "offer_code", "start_date"]
 severity = "reject"
 message = "offer logged twice"
 
+# ============================================================================ DQ-04 Business rule
+# Phase 1: net = billed + tax - discount; lease end after start; resolved after raised; payment
+# above 0 unless a reversal. The plan adds: due date on or after issue date, no overlapping leases.
+
+[[rule]]
+id = "S1-INL-05"
+check = "DQ-04"
+table = "brz_invoice_line"
+type = "condition"
+sql = "lue_audit.try_numeric(b.net_amount) <> lue_audit.try_numeric(b.billed_amount) + lue_audit.try_numeric(b.tax_amount) - lue_audit.try_numeric(b.discount_amount)"
+show = ["billed_amount", "tax_amount", "discount_amount", "net_amount"]
+severity = "reject"
+message = "net is not billed + tax - discount"
+bad = { net_amount = "1.00" }
+
+[[rule]]
+id = "S1-INL-06"
+check = "DQ-04"
+table = "brz_invoice_line"
+type = "condition"
+where = "b.charge_code = 'RENT'"
+sql = "NOT EXISTS (SELECT 1 FROM lue_staging.brz_invoice i JOIN lue_staging.brz_lease l ON l.lease_number = i.lease_number WHERE i.invoice_number = b.invoice_number AND lue_audit.try_numeric(l.monthly_rent) = lue_audit.try_numeric(b.billed_amount)) AND EXISTS (SELECT 1 FROM lue_staging.brz_invoice i JOIN lue_staging.brz_lease l ON l.lease_number = i.lease_number WHERE i.invoice_number = b.invoice_number)"
+show = ["invoice_number", "billed_amount"]
+severity = "warn"
+message = "rent billed differs from the lease's monthly rent (a mid-lease change)"
+fixture_where = "b.tax_amount = '0.00' AND b.discount_amount = '0.00'"
+bad = { billed_amount = "1.00", net_amount = "1.00" }
+
+[[rule]]
+id = "S1-INV-03"
+check = "DQ-04"
+table = "brz_invoice"
+type = "condition"
+sql = "lue_audit.try_date(b.due_date) < lue_audit.try_date(b.invoice_date)"
+show = ["invoice_date", "due_date"]
+severity = "reject"
+message = "due date before the invoice date"
+bad = { due_date = "2023-07-01", invoice_date = "2023-07-15" }
+
+[[rule]]
+id = "S1-LEA-05"
+check = "DQ-04"
+table = "brz_lease"
+type = "condition"
+sql = "lue_audit.try_date(b.end_date) <= lue_audit.try_date(b.start_date)"
+show = ["start_date", "end_date"]
+severity = "reject"
+message = "lease ends before it starts"
+bad = { end_date = "2020-01-01" }
+
+[[rule]]
+id = "S1-LEA-06"
+check = "DQ-04"
+table = "brz_lease"
+type = "condition"
+sql = "EXISTS (SELECT 1 FROM lue_staging.brz_lease o WHERE o.unit_id = b.unit_id AND o.lease_number <> b.lease_number AND lue_audit.try_date(o.start_date) <= lue_audit.try_date(b.end_date) AND lue_audit.try_date(b.start_date) <= lue_audit.try_date(o.end_date))"
+show = ["unit_id", "start_date", "end_date"]
+severity = "reject"
+message = "overlaps another lease on the same unit"
+bad = { lease_number = "L-1900-00001" }
+
+[[rule]]
+id = "S1-PAY-05"
+check = "DQ-04"
+table = "brz_payment"
+type = "condition"
+sql = "(coalesce(btrim(b.reversal_of), '') = '' AND lue_audit.try_numeric(b.amount) <= 0) OR (coalesce(btrim(b.reversal_of), '') <> '' AND lue_audit.try_numeric(b.amount) >= 0)"
+show = ["amount", "reversal_of"]
+severity = "reject"
+message = "amount must be above 0 (below 0 only for a reversal)"
+fixture_where = "coalesce(b.reversal_of, '') = ''"
+bad = { amount = "-10.00" }
+
+[[rule]]
+id = "S2-OSH-03"
+check = "DQ-04"
+table = "brz_ownership"
+type = "condition"
+sql = "coalesce(btrim(b.valid_to), '') <> '' AND lue_audit.try_date(b.valid_to) < lue_audit.try_date(b.valid_from)"
+show = ["valid_from", "valid_to"]
+severity = "reject"
+message = "ownership ends before it starts"
+bad = { valid_from = "2026-01-01", valid_to = "2025-01-01" }
+
+[[rule]]
+id = "S3-SET-05"
+check = "DQ-04"
+table = "brz_settlement"
+type = "condition"
+sql = "lue_audit.try_numeric(b.net_amount) <> lue_audit.try_numeric(b.gross_amount) - lue_audit.try_numeric(b.fee_amount) OR lue_audit.try_date(b.settlement_date) < lue_audit.try_date(b.transaction_date)"
+show = ["transaction_date", "settlement_date", "gross_amount", "fee_amount", "net_amount"]
+severity = "reject"
+message = "net is not gross - fee, or settled before the payment"
+bad = { net_amount = "1.00" }
+
+[[rule]]
+id = "S4-TST-03"
+check = "DQ-04"
+table = "brz_ticket_status"
+type = "condition"
+where = "b.status = 'Resolved'"
+sql = "EXISTS (SELECT 1 FROM lue_staging.brz_ticket_status r WHERE r.source_file = b.source_file AND r.source_row = b.source_row AND r.status = 'Raised' AND lue_audit.try_timestamp(r.status_at) > lue_audit.try_timestamp(b.status_at))"
+show = ["ticket_id", "status_at"]
+severity = "reject"
+message = "resolved before it was raised"
+bad = { status_at = "2023-01-01 00:00:00" }
+
+[[rule]]
+id = "S6-LOG-04"
+check = "DQ-04"
+table = "brz_incentive_log"
+type = "condition"
+sql = "lue_audit.try_date(b.end_date) < lue_audit.try_date(b.start_date)"
+show = ["start_date", "end_date"]
+severity = "reject"
+message = "offer ends before it starts"
+bad = { start_date = "2025-05-01", end_date = "2025-04-01" }
+
+# ============================================================================ DQ-05 Referential
+# Phase 1: every invoice's lease, unit and tenant exist; missing unit -> quarantine; missing tenant
+# -> inferred member (US-6.5): a tenant (or vendor) that is not there yet is a warning, not a
+# rejection, because it may arrive in a later extract.
+
+[[rule]]
+id = "S1-UNT-06"
+check = "DQ-05"
+table = "brz_unit"
+type = "reference"
+columns = ["building_code"]
+ref_table = "brz_building"
+ref_columns = ["building_code"]
+severity = "reject"
+message = "building not found"
+
+[[rule]]
+id = "S1-LEA-07"
+check = "DQ-05"
+table = "brz_lease"
+type = "reference"
+columns = ["unit_id"]
+ref_table = "brz_unit"
+ref_columns = ["unit_id"]
+severity = "reject"
+message = "unit not found"
+
+[[rule]]
+id = "S1-LEA-08"
+check = "DQ-05"
+table = "brz_lease"
+type = "reference"
+columns = ["tenant_code"]
+ref_table = "brz_tenant"
+ref_columns = ["tenant_code"]
+severity = "warn"
+message = "tenant not in S1 yet: inferred member (US-6.5)"
+
+[[rule]]
+id = "S1-LEA-09"
+check = "DQ-05"
+table = "brz_lease"
+type = "reference"
+columns = ["previous_lease_number"]
+ref_table = "brz_lease"
+ref_columns = ["lease_number"]
+severity = "reject"
+message = "previous lease not found"
+
+[[rule]]
+id = "S1-LEV-04"
+check = "DQ-05"
+table = "brz_lease_event"
+type = "reference"
+columns = ["lease_number"]
+ref_table = "brz_lease"
+ref_columns = ["lease_number"]
+severity = "reject"
+message = "lease not found"
+
+[[rule]]
+id = "S1-LEV-05"
+check = "DQ-05"
+table = "brz_lease_event"
+type = "in_list"
+columns = ["event_code"]
+values = ["SIGN", "RENEW", "NOTICE", "TERM"]
+severity = "reject"
+message = "unknown lease event"
+
+[[rule]]
+id = "S1-INV-04"
+check = "DQ-05"
+table = "brz_invoice"
+type = "reference"
+columns = ["lease_number"]
+ref_table = "brz_lease"
+ref_columns = ["lease_number"]
+severity = "reject"
+message = "lease not found"
+
+[[rule]]
+id = "S1-INL-07"
+check = "DQ-05"
+table = "brz_invoice_line"
+type = "reference"
+columns = ["invoice_number"]
+ref_table = "brz_invoice"
+ref_columns = ["invoice_number"]
+severity = "reject"
+message = "invoice not found"
+
+[[rule]]
+id = "S1-INL-08"
+check = "DQ-05"
+table = "brz_invoice_line"
+type = "in_list"
+columns = ["charge_code"]
+values = ["RENT", "SERVICE", "LATEFEE", "UTILITY", "CREDIT", "DEPADJ"]
+severity = "reject"
+message = "unknown charge type"
+
+[[rule]]
+id = "S1-PAY-06"
+check = "DQ-05"
+table = "brz_payment"
+type = "reference"
+columns = ["tenant_code"]
+ref_table = "brz_tenant"
+ref_columns = ["tenant_code"]
+severity = "warn"
+message = "tenant not in S1 yet: inferred member (US-6.5)"
+
+[[rule]]
+id = "S1-PAY-07"
+check = "DQ-05"
+table = "brz_payment"
+type = "in_list"
+columns = ["method_code"]
+values = ["CASH", "CHEQUE", "BANK", "RAAST", "JAZZ", "EASY"]
+severity = "reject"
+message = "unknown payment method"
+
+[[rule]]
+id = "S1-PAY-08"
+check = "DQ-05"
+table = "brz_payment"
+type = "reference"
+columns = ["reversal_of"]
+ref_table = "brz_payment"
+ref_columns = ["payment_reference"]
+severity = "reject"
+message = "reversed payment not found"
+fixture_where = "coalesce(b.reversal_of, '') <> ''"
+
+[[rule]]
+id = "S1-ALC-04"
+check = "DQ-05"
+table = "brz_payment_allocation"
+type = "reference"
+columns = ["payment_reference"]
+ref_table = "brz_payment"
+ref_columns = ["payment_reference"]
+severity = "reject"
+message = "payment not found"
+
+[[rule]]
+id = "S1-ALC-05"
+check = "DQ-05"
+table = "brz_payment_allocation"
+type = "reference"
+columns = ["invoice_number", "line_no"]
+ref_table = "brz_invoice_line"
+ref_columns = ["invoice_number", "line_no"]
+severity = "reject"
+message = "invoice line not found"
+
+[[rule]]
+id = "S2-OSH-04"
+check = "DQ-05"
+table = "brz_ownership"
+type = "reference"
+columns = ["owner_code"]
+ref_table = "brz_owner"
+ref_columns = ["owner_code"]
+severity = "reject"
+message = "owner not found"
+
+[[rule]]
+id = "S2-OSH-05"
+check = "DQ-05"
+table = "brz_ownership"
+type = "reference"
+columns = ["building_code", "unit_no"]
+ref_table = "brz_unit"
+ref_columns = ["building_code", "unit_no"]
+severity = "reject"
+message = "unit not found"
+
+[[rule]]
+id = "S4-TKT-06"
+check = "DQ-05"
+table = "brz_ticket"
+type = "reference"
+columns = ["building_code", "unit_no"]
+ref_table = "brz_unit"
+ref_columns = ["building_code", "unit_no"]
+severity = "reject"
+message = "unit not found"
+
+[[rule]]
+id = "S4-TKT-07"
+check = "DQ-05"
+table = "brz_ticket"
+type = "reference"
+columns = ["subcategory_code"]
+ref_table = "brz_sla_policy"
+ref_columns = ["subcategory_code"]
+severity = "reject"
+message = "maintenance subcategory not found"
+
+[[rule]]
+id = "S4-TKT-08"
+check = "DQ-05"
+table = "brz_ticket"
+type = "reference"
+columns = ["vendor_code"]
+ref_table = "brz_vendor"
+ref_columns = ["vendor_code"]
+severity = "warn"
+message = "vendor not in S2 yet: inferred member (US-6.5)"
+
+[[rule]]
+id = "S6-LOG-05"
+check = "DQ-05"
+table = "brz_incentive_log"
+type = "reference"
+columns = ["building_code", "unit_no"]
+ref_table = "brz_unit"
+ref_columns = ["building_code", "unit_no"]
+severity = "reject"
+message = "unit not found"
+
+[[rule]]
+id = "S6-LOG-06"
+check = "DQ-05"
+table = "brz_incentive_log"
+type = "reference"
+columns = ["offer_code"]
+ref_table = "brz_incentive_offer"
+ref_columns = ["offer_code"]
+severity = "reject"
+message = "offer not found"
+
+# ============================================================================ DQ-06 Range
+# Phase 1: dates between 2023-07-01 and the run date, amounts within plausible bounds. The window is
+# 2023-07-01 to 2026-06-30. Leases may have started before it (legacy leases) and run past it, so
+# they get a plausibility range; a settlement can arrive up to a month after the window closes.
+
+[[rule]]
+id = "S1-LEA-10"
+check = "DQ-06"
+table = "brz_lease"
+type = "date_range"
+columns = ["start_date", "end_date"]
+min = "2015-01-01"
+max = "2035-12-31"
+severity = "reject"
+message = "lease date outside 2015 to 2035"
+
+[[rule]]
+id = "S1-LEA-11"
+check = "DQ-06"
+table = "brz_lease"
+type = "condition"
+sql = "EXISTS (SELECT 1 FROM lue_staging.brz_unit u WHERE u.unit_id = b.unit_id AND lue_audit.try_numeric(b.monthly_rent) NOT BETWEEN (CASE u.unit_type WHEN 'Apartment' THEN 5000 WHEN 'Office' THEN 10000 ELSE 10000 END) AND (CASE u.unit_type WHEN 'Apartment' THEN 1000000 WHEN 'Office' THEN 2000000 ELSE 1500000 END))"
+show = ["unit_id", "monthly_rent"]
+severity = "reject"
+message = "rent outside the plausible band for the unit type"
+bad = { monthly_rent = "99999999.00" }
+
+[[rule]]
+id = "S1-LEV-06"
+check = "DQ-06"
+table = "brz_lease_event"
+type = "date_range"
+columns = ["event_date"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "event date outside the window"
+
+[[rule]]
+id = "S1-INV-05"
+check = "DQ-06"
+table = "brz_invoice"
+type = "date_range"
+columns = ["invoice_date"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "invoice date outside the window"
+
+[[rule]]
+id = "S1-INL-09"
+check = "DQ-06"
+table = "brz_invoice_line"
+type = "number_range"
+columns = ["billed_amount", "net_amount"]
+min = 0
+max = 5000000
+abs = true
+severity = "reject"
+message = "amount above the cap of 5,000,000"
+fixture_where = "b.tax_amount = '0.00' AND b.discount_amount = '0.00'"
+bad = { billed_amount = "50000001.00", net_amount = "50000001.00" }
+
+[[rule]]
+id = "S1-PAY-09"
+check = "DQ-06"
+table = "brz_payment"
+type = "date_range"
+columns = ["paid_at"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "payment date outside the window"
+
+[[rule]]
+id = "S1-PAY-10"
+check = "DQ-06"
+table = "brz_payment"
+type = "number_range"
+columns = ["amount"]
+min = 0
+max = 5000000
+abs = true
+severity = "reject"
+message = "amount above the cap of 5,000,000"
+
+[[rule]]
+id = "S1-ALC-06"
+check = "DQ-06"
+table = "brz_payment_allocation"
+type = "number_range"
+columns = ["allocated_amount"]
+min = 0
+max = 5000000
+abs = true
+severity = "reject"
+message = "amount above the cap of 5,000,000"
+
+[[rule]]
+id = "S2-SLA-04"
+check = "DQ-06"
+table = "brz_sla_policy"
+type = "number_range"
+columns = ["default_sla_hours"]
+min = 1
+max = 2000
+severity = "reject"
+message = "SLA hours outside 1 to 2,000"
+
+[[rule]]
+id = "S3-SET-06"
+check = "DQ-06"
+table = "brz_settlement"
+type = "date_range"
+columns = ["transaction_date"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "payment date outside the window"
+
+[[rule]]
+id = "S3-SET-07"
+check = "DQ-06"
+table = "brz_settlement"
+type = "date_range"
+columns = ["settlement_date"]
+min = "2023-07-01"
+max = "2026-07-31"
+severity = "reject"
+message = "settlement date outside the window (plus a month)"
+bad = { settlement_date = "2027-01-01" }
+
+[[rule]]
+id = "S4-TKT-09"
+check = "DQ-06"
+table = "brz_ticket"
+type = "number_range"
+columns = ["estimate", "final_cost"]
+min = 0
+max = 5000000
+severity = "reject"
+message = "cost outside 0 to 5,000,000"
+
+[[rule]]
+id = "S4-TST-04"
+check = "DQ-06"
+table = "brz_ticket_status"
+type = "date_range"
+where = "b.status = 'Raised'"
+columns = ["status_at"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "raised outside the window"
+
+[[rule]]
+id = "S5-WEA-05"
+check = "DQ-06"
+table = "brz_weather"
+type = "date_range"
+columns = ["weather_date"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "day outside the window"
+
+[[rule]]
+id = "S5-WEA-06"
+check = "DQ-06"
+table = "brz_weather"
+type = "number_range"
+columns = ["max_temp_c"]
+min = -15
+max = 55
+severity = "reject"
+message = "temperature outside -15 to 55 C"
+
+[[rule]]
+id = "S5-WEA-07"
+check = "DQ-06"
+table = "brz_weather"
+type = "number_range"
+columns = ["rainfall_mm"]
+min = 0
+max = 600
+severity = "reject"
+message = "rainfall outside 0 to 600 mm"
+
+[[rule]]
+id = "S6-LOG-07"
+check = "DQ-06"
+table = "brz_incentive_log"
+type = "date_range"
+columns = ["start_date", "end_date"]
+min = "2023-07-01"
+max = "2026-06-30"
+severity = "reject"
+message = "offer date outside the window"

@@ -1,0 +1,19 @@
+lue_audit.quarantine: one row per rule that rejected something, DQ-04 to DQ-06 (full profile)
+    check_name     |      source_table      |                                                rejection_reason                                                |                                            record                                             
+-------------------+------------------------+----------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------
+ DQ-05 Referential | brz_payment_allocation | [S1-ALC-05] invoice line not found: invoice_number = 'INV-2099-07-0818', line_no = '2' not in brz_invoice_line | {"row_id": 782700, "line_no": "2", "batch_id": 84401, "row_hash": "989be9cd752a99d216d85b5...
+ DQ-05 Referential | brz_lease_event        | [S1-LEV-04] lease not found: lease_number = 'L-1999-01874' not in brz_lease                                    | {"row_id": 56570, "batch_id": 84397, "event_id": "1017", "row_hash": "308cfd20a1d5ebaf68b4...
+ DQ-06 Range       | brz_lease_event        | [S1-LEV-06] event date outside the window: event_date = '2015-10-12'                                           | {"row_id": 56645, "batch_id": 84397, "event_id": "1085", "row_hash": "510091a4ee01031306e9...
+ DQ-05 Referential | brz_ticket             | [S4-TKT-06] unit not found: building_code = 'BLA02', unit_no = 'Z-003' not in brz_unit                         | {"row_id": 38717, "status": "Verified", "unit_no": "Z-003", "batch_id": 88391, "category":...
+ DQ-06 Range       | brz_ticket_status      | [S4-TST-04] raised outside the window: status_at = '1970-01-01T09:36:00'                                       | {"row_id": 151576, "status": "Raised", "batch_id": 88392, "loaded_at": "2026-11-17T00:17:1...
+ DQ-06 Range       | brz_incentive_log      | [S6-LOG-07] offer date outside the window: start_date = '2013-09-04'                                           | {"row_id": 4459, "unit_no": "A-1001", "batch_id": 88395, "end_date": "2013-10-18", "loaded...
+(6 rows)
+
+Warnings (lue_audit.dq_result, severity warn), DQ-04 and DQ-05:
+  rule_id  |   source_table   |                                                                        reason                                                                        
+-----------+------------------+------------------------------------------------------------------------------------------------------------------------------------------------------
+ S1-INL-06 | brz_invoice_line | [S1-INL-06] rent billed differs from the lease's monthly rent (a mid-lease change): invoice_number = 'INV-2023-08-0444'; billed_amount = '113000.00'
+ S1-LEA-08 | brz_lease        | [S1-LEA-08] tenant not in S1 yet: inferred member (US-6.5): tenant_code = 'T-0085' not in brz_tenant
+ S1-PAY-06 | brz_payment      | [S1-PAY-06] tenant not in S1 yet: inferred member (US-6.5): tenant_code = 'T-0244' not in brz_tenant
+(3 rows)
+
