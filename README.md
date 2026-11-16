@@ -14,6 +14,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Local environment and `.env.example` | US-0.4 (Done) |
 | Database (E1): schemas, 13 dimensions, 6 facts, audit tables, reference data | US-1.1 to US-1.5 (Done) |
 | Data generator (E2): framework, master data, leases, invoices, payments, tickets, incentives, weather, planted defects and patterns | US-2.1 to US-2.6 (Done) |
+| Ingestion into bronze (E3): framework, S1 incremental, files with checksums, JSON and weather, reconciliation | US-3.1 to US-3.4 (Done) |
 | Ingestion, staging, dimensions, facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
@@ -116,11 +117,13 @@ make reports     stub
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
 make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
+make ingest      land all six sources in bronze, with reconciliation (E3)
+make ingest-test E3 acceptance tests: 39 PASS lines (empties bronze, then refills it)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 5 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -222,6 +225,17 @@ network errors, keeps finished requests in `data/.weather_parts/` so a stopped r
 when every part is complete and valid. If your network blocks the API, run `python etl/refresh_weather.py
 --print-urls`, save each link from a browser into one folder, then `python etl/refresh_weather.py --import-dir
 <folder>`. Check the cache any time with `make weather-check`.
+
+### Ingestion into bronze (E3)
+
+After `make db-deploy` (which now also creates the 20 `lue_staging.brz_*` tables) and `make db-load-source`:
+
+    python etl/ingest/run.py              # or: make ingest. --only S1,S4 for some sources
+
+Each source is one transaction (a failure rolls it back; the others still run) and one row in
+`lue_audit.etl_run_log`. S1 lands only new or changed rows (row hash), the files only new or changed files (SHA-256,
+recorded in `lue_audit.file_load`); a second run lands nothing. Every run ends with a reconciliation of all 20 bronze
+tables in `lue_audit.reconciliation`. The log is in `logs/ingest.log`.
 
 ### Planted defects, answer key and patterns (US-2.6)
 

@@ -32,6 +32,10 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-2.4 | Generate payments and settlements | Ahmad Waqar | Done | 2026-11-15 | [US-2.4](US-2.4.md) | [evidence](../evidence/us-2.4/) |
 | US-2.5 | Generate tickets, incentives and weather | Eesha (done by Hanan) | Done | 2026-11-16 | [US-2.5](US-2.5.md) | [evidence](../evidence/us-2.5/) |
 | US-2.6 | Inject defects, plant patterns, write the answer key | Ahmad Waqar (done by Hanan) | Done | 2026-11-16 | [US-2.6](US-2.6.md) | [evidence](../evidence/us-2.6/) |
+| US-3.1 | Build the ingestion framework | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.1](US-3.1.md) | [evidence](../evidence/us-3.1/) |
+| US-3.2 | Ingest S1 from the source database | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.2](US-3.2.md) | [evidence](../evidence/us-3.2/) |
+| US-3.3 | Ingest the Excel and CSV sources (S2, S3, S6) | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.3](US-3.3.md) | [evidence](../evidence/us-3.3/) |
+| US-3.4 | Ingest JSON and weather, and reconcile bronze | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.4](US-3.4.md) | [evidence](../evidence/us-3.4/) |
 
 ## Later epics
 
@@ -60,3 +64,7 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-16 | Late tenants and tenant changes are the next S1 extract (`s1/late_arriving/`, `s1/changes/`), not loaded by `db_load_source.py` | [US-2.6](US-2.6.md) |
 | 2026-11-16 | Incentive offers are posted on vacant units (planted pattern 4); the generator reads the committed weather cache for rain-driven leaks | [US-2.6](US-2.6.md) |
 | 2026-11-16 | `--clean` gives the clean control batch; the US-2.2 to US-2.5 tests and the S1 database test run on it | [US-2.6](US-2.6.md) |
+| 2026-11-16 | Bronze is all `TEXT`, append-only, with `batch_id`, `source_system`, `loaded_at` (plus `row_hash` for S1, `source_file` and `source_row` for files) | [US-3.1](US-3.1.md) |
+| 2026-11-16 | S1 changes are found by row hash; the watermark is kept but cannot see back-dated changes or tables without `updated_at` | [US-3.2](US-3.2.md) |
+| 2026-11-16 | File loads and checksums go to a new `lue_audit.file_load`; the pack's `lineage` stays one row per bronze table and source | [US-3.3](US-3.3.md) |
+| 2026-11-16 | A ticket's status rows keep the ticket object's position (`source_row`), so duplicated tickets keep their own histories | [US-3.4](US-3.4.md) |

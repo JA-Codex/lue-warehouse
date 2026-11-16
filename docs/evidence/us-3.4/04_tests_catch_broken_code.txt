@@ -1,0 +1,21 @@
+Do the E3 tests catch broken code? Each line is one deliberate change to the code, run against the
+suite named (small profile with the US-2.6 defects, PostgreSQL 16), then put back. 2026-11-16.
+
+ #  Deliberate change                                       Suite                  Result
+ 0  a failed source is committed instead of rolled back     test_ingest            caught (partial rows kept)
+ 1  S1 lands every row on every run (no row hash)           test_ingest            caught (run 2 lands rows)
+ 2  the watermark may move back to an older updated_at      test_ingest            MISSED at first: the test dated
+                                                                                   back a tenant that was not the
+                                                                                   newest, so the maximum did not
+                                                                                   change. Fixed (it now dates back
+                                                                                   the newest one); now caught
+ 3  no structure check on files                             test_ingest            caught (renamed column loads)
+ 4  no checksum skip                                        test_ingest            caught (rerun lands rows)
+ 5  a missing value lands as an empty text                  test_ingest            caught (S1 values, tickets)
+ 6  status rows all point at the first copy of a ticket     test_ingest            caught (copies' histories)
+ 7  reconciliation always passes                            test_ingest            caught (lost row not seen)
+ 8  the run log is not closed after a step                  test_ingest            caught (Failed not recorded)
+ 9  booleans land as Python's True/False                    test_ingest_contract   caught
+10  the bronze DDL loses a column                           test_ingest_contract   caught (S6 header vs bronze)
+
+Result: 11 of 11 caught after one test fix.
