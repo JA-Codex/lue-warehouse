@@ -1,0 +1,11 @@
+The US-5.3 block of scripts/test_staging.py (full output in ../us-5.1/04_staging_tests.txt):
+US-5.3 Incremental loading with watermarks
+  [PASS] a second run with no source change inserts and updates zero rows (the run log agrees), derived values included
+  [PASS] one source row changed (tenant T-0001's phone): exactly one update in staging, stage_tenant rows_updated = 1 in the run log, nothing else moves
+  [PASS] a step that fails (year 99999 does not fit SMALLINT) rolls back: watermark and table as they were, the other steps still run
+  [PASS] fixed, the next run succeeds
+  [PASS] a batch landed in the same second as the watermark (2026-11-17 03:12:33) is read once, then not again
+  [PASS] the same row landed again (owner OW-0001, a new batch): read 1, unchanged 1, updated 0 (an update only when a value differs)
+  [PASS] src_pms, bronze and staging hold your data folder again (validated, staged in full)
+======================================================================
+ RESULT: 35/35 checks passed

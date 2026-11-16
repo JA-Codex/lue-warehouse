@@ -36,6 +36,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_defects.py
 	$(PYTHON) scripts/test_ingest_contract.py
 	$(PYTHON) scripts/test_quality_contract.py
+	$(PYTHON) scripts/test_staging_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -83,6 +84,12 @@ validate: ## Run the quality rules on bronze and compare with the answer key (E4
 
 quality-test: ## Data quality acceptance tests (US-4.1 to US-4.4); reloads src_pms and bronze
 	$(PYTHON) scripts/test_quality.py
+
+stage: ## Load staging incrementally, record the evidence, compare with the answer key (E5); FULL=1 reloads all
+	$(PYTHON) etl/staging/run.py --compare $(if $(FULL),--full,)
+
+staging-test: ## Staging acceptance tests (US-5.1 to US-5.4); reloads src_pms, bronze and staging (about 7 minutes)
+	$(PYTHON) scripts/test_staging.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
 	$(PYTHON) scripts/db_reset.py
