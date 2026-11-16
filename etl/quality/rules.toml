@@ -41,3 +41,566 @@
 # Values in bronze are text exactly as the source gave them, so the rules use the safe casts
 # lue_audit.try_numeric, try_date and try_timestamp (NULL instead of an error).
 
+# ============================================================================ DQ-01 NULL
+# Business keys, amounts and dates must be present (Phase 1: DQ-01). Optional fields (an open
+# ticket's vendor, a first lease's previous lease, a tenant's employer) are not checked.
+
+[[rule]]
+id = "S1-BLD-01"
+check = "DQ-01"
+table = "brz_building"
+type = "required"
+columns = ["building_code", "building_name", "city", "building_class"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-UNT-01"
+check = "DQ-01"
+table = "brz_unit"
+type = "required"
+columns = ["unit_id", "building_code", "unit_no", "unit_type", "area_sqft"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-TEN-01"
+check = "DQ-01"
+table = "brz_tenant"
+type = "required"
+columns = ["tenant_code", "full_name", "tenant_type"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-LEA-01"
+check = "DQ-01"
+table = "brz_lease"
+type = "required"
+columns = ["lease_number", "unit_id", "tenant_code", "lease_type", "start_date", "end_date", "monthly_rent", "status"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-LEV-01"
+check = "DQ-01"
+table = "brz_lease_event"
+type = "required"
+columns = ["event_id", "lease_number", "event_code", "event_date"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-INV-01"
+check = "DQ-01"
+table = "brz_invoice"
+type = "required"
+columns = ["invoice_number", "lease_number", "invoice_date", "due_date", "status"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-INL-01"
+check = "DQ-01"
+table = "brz_invoice_line"
+type = "required"
+columns = ["invoice_number", "line_no", "charge_code", "billed_amount", "tax_amount", "discount_amount", "net_amount"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-PAY-01"
+check = "DQ-01"
+table = "brz_payment"
+type = "required"
+columns = ["payment_reference", "tenant_code", "paid_at", "method_code", "amount", "status"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S1-ALC-01"
+check = "DQ-01"
+table = "brz_payment_allocation"
+type = "required"
+columns = ["payment_reference", "invoice_number", "line_no", "allocated_amount"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S2-OWN-01"
+check = "DQ-01"
+table = "brz_owner"
+type = "required"
+columns = ["owner_code", "owner_name", "owner_type"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S2-OSH-01"
+check = "DQ-01"
+table = "brz_ownership"
+type = "required"
+columns = ["building_code", "unit_no", "owner_code", "valid_from"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S2-VEN-01"
+check = "DQ-01"
+table = "brz_vendor"
+type = "required"
+columns = ["vendor_code", "vendor_name", "trade", "rating"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S2-SLA-01"
+check = "DQ-01"
+table = "brz_sla_policy"
+type = "required"
+columns = ["subcategory_code", "default_sla_hours", "valid_from"]
+severity = "reject"
+message = "required value missing"
+
+# holiday_name is empty on the Ramadan days that are not public holidays.
+[[rule]]
+id = "S2-HOL-01"
+check = "DQ-01"
+table = "brz_holiday"
+type = "required"
+columns = ["holiday_date"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S3-SET-01"
+check = "DQ-01"
+table = "brz_settlement"
+type = "required"
+columns = ["settlement_id", "payment_reference", "transaction_date", "settlement_date", "gross_amount", "fee_amount", "net_amount"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S4-TKT-01"
+check = "DQ-01"
+table = "brz_ticket"
+type = "required"
+columns = ["ticket_id", "building_code", "unit_no", "category", "subcategory_code", "priority", "status"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S4-TST-01"
+check = "DQ-01"
+table = "brz_ticket_status"
+type = "required"
+columns = ["ticket_id", "status", "status_at"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S5-WEA-01"
+check = "DQ-01"
+table = "brz_weather"
+type = "required"
+columns = ["city", "weather_date"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S6-OFR-01"
+check = "DQ-01"
+table = "brz_incentive_offer"
+type = "required"
+columns = ["offer_code", "offer_type"]
+severity = "reject"
+message = "required value missing"
+
+[[rule]]
+id = "S6-LOG-01"
+check = "DQ-01"
+table = "brz_incentive_log"
+type = "required"
+columns = ["building_code", "unit_no", "offer_code", "start_date", "end_date"]
+severity = "reject"
+message = "required value missing"
+
+# ============================================================================ DQ-02 Data type
+# Numbers, dates and timestamps must parse (Phase 1: "dates parse in every building's format;
+# amounts are numeric"). A day-first date (DD/MM/YYYY) parses: it is repaired in staging (US-5.1).
+
+[[rule]]
+id = "S1-BLD-02"
+check = "DQ-02"
+table = "brz_building"
+type = "integer"
+columns = ["year_built"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S1-UNT-02"
+check = "DQ-02"
+table = "brz_unit"
+type = "integer"
+columns = ["unit_id", "floor_no", "bedrooms"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S1-UNT-03"
+check = "DQ-02"
+table = "brz_unit"
+type = "numeric"
+columns = ["area_sqft"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S1-UNT-04"
+check = "DQ-02"
+table = "brz_unit"
+type = "boolean"
+columns = ["furnished"]
+severity = "reject"
+message = "not true or false"
+
+[[rule]]
+id = "S1-UNT-05"
+check = "DQ-02"
+table = "brz_unit"
+type = "timestamp"
+columns = ["updated_at"]
+severity = "reject"
+message = "not a timestamp"
+
+[[rule]]
+id = "S1-TEN-02"
+check = "DQ-02"
+table = "brz_tenant"
+type = "timestamp"
+columns = ["updated_at"]
+severity = "reject"
+message = "not a timestamp"
+
+[[rule]]
+id = "S1-LEA-02"
+check = "DQ-02"
+table = "brz_lease"
+type = "integer"
+columns = ["unit_id"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S1-LEA-03"
+check = "DQ-02"
+table = "brz_lease"
+type = "date"
+columns = ["start_date", "end_date"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S1-LEA-04"
+check = "DQ-02"
+table = "brz_lease"
+type = "numeric"
+columns = ["monthly_rent"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S1-LEV-02"
+check = "DQ-02"
+table = "brz_lease_event"
+type = "integer"
+columns = ["event_id"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S1-LEV-03"
+check = "DQ-02"
+table = "brz_lease_event"
+type = "date"
+columns = ["event_date"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S1-INV-02"
+check = "DQ-02"
+table = "brz_invoice"
+type = "date"
+columns = ["invoice_date", "due_date"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S1-INL-02"
+check = "DQ-02"
+table = "brz_invoice_line"
+type = "integer"
+columns = ["line_no"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S1-INL-03"
+check = "DQ-02"
+table = "brz_invoice_line"
+type = "numeric"
+columns = ["billed_amount", "tax_amount", "discount_amount", "net_amount"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S1-PAY-02"
+check = "DQ-02"
+table = "brz_payment"
+type = "timestamp"
+columns = ["paid_at"]
+severity = "reject"
+message = "not a timestamp"
+
+[[rule]]
+id = "S1-PAY-03"
+check = "DQ-02"
+table = "brz_payment"
+type = "numeric"
+columns = ["amount"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S1-ALC-02"
+check = "DQ-02"
+table = "brz_payment_allocation"
+type = "integer"
+columns = ["line_no"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S1-ALC-03"
+check = "DQ-02"
+table = "brz_payment_allocation"
+type = "numeric"
+columns = ["allocated_amount"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S2-OSH-02"
+check = "DQ-02"
+table = "brz_ownership"
+type = "date"
+columns = ["valid_from", "valid_to"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S2-VEN-02"
+check = "DQ-02"
+table = "brz_vendor"
+type = "date"
+columns = ["rating_changed_on"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S2-SLA-02"
+check = "DQ-02"
+table = "brz_sla_policy"
+type = "integer"
+columns = ["default_sla_hours"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S2-SLA-03"
+check = "DQ-02"
+table = "brz_sla_policy"
+type = "date"
+columns = ["valid_from"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S2-HOL-02"
+check = "DQ-02"
+table = "brz_holiday"
+type = "date"
+columns = ["holiday_date"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S2-HOL-03"
+check = "DQ-02"
+table = "brz_holiday"
+type = "boolean"
+columns = ["is_public_holiday", "is_ramadan"]
+severity = "reject"
+message = "not true or false"
+
+[[rule]]
+id = "S3-SET-02"
+check = "DQ-02"
+table = "brz_settlement"
+type = "date"
+columns = ["transaction_date", "settlement_date"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S3-SET-03"
+check = "DQ-02"
+table = "brz_settlement"
+type = "numeric"
+columns = ["gross_amount", "fee_amount", "net_amount"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S4-TKT-02"
+check = "DQ-02"
+table = "brz_ticket"
+type = "boolean"
+columns = ["is_emergency", "is_recurring", "is_tenant_caused"]
+severity = "reject"
+message = "not true or false"
+
+[[rule]]
+id = "S4-TKT-03"
+check = "DQ-02"
+table = "brz_ticket"
+type = "numeric"
+columns = ["estimate", "final_cost"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S4-TST-02"
+check = "DQ-02"
+table = "brz_ticket_status"
+type = "timestamp"
+columns = ["status_at"]
+severity = "reject"
+message = "not a timestamp"
+
+[[rule]]
+id = "S5-WEA-02"
+check = "DQ-02"
+table = "brz_weather"
+type = "date"
+columns = ["weather_date"]
+severity = "reject"
+message = "not a date"
+
+[[rule]]
+id = "S5-WEA-03"
+check = "DQ-02"
+table = "brz_weather"
+type = "numeric"
+columns = ["max_temp_c", "rainfall_mm"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S6-OFR-02"
+check = "DQ-02"
+table = "brz_incentive_offer"
+type = "numeric"
+columns = ["discount_pct"]
+severity = "reject"
+message = "not a number"
+
+[[rule]]
+id = "S6-OFR-03"
+check = "DQ-02"
+table = "brz_incentive_offer"
+type = "integer"
+columns = ["rent_free_days"]
+severity = "reject"
+message = "not a whole number"
+
+[[rule]]
+id = "S6-LOG-02"
+check = "DQ-02"
+table = "brz_incentive_log"
+type = "date"
+columns = ["start_date", "end_date"]
+severity = "reject"
+message = "not a date"
+
+# ============================================================================ DQ-03 Duplicate
+# Decision D15: an EXACT duplicate (same key, same values) in one batch is quarantined, keeping the
+# first by ingestion order. A CONFLICTING duplicate (same key, different values) is a warning and
+# both go on to staging, where survivorship keeps the latest (US-5.1).
+
+[[rule]]
+id = "S1-INL-04"
+check = "DQ-03"
+table = "brz_invoice_line"
+type = "duplicate_exact"
+key = ["invoice_number", "line_no"]
+severity = "reject"
+message = "exact duplicate in the batch"
+
+[[rule]]
+id = "S1-PAY-04"
+check = "DQ-03"
+table = "brz_payment"
+type = "duplicate_exact"
+key = ["payment_reference"]
+severity = "reject"
+message = "exact duplicate in the batch"
+
+[[rule]]
+id = "S3-SET-04"
+check = "DQ-03"
+table = "brz_settlement"
+type = "duplicate_exact"
+key = ["settlement_id"]
+severity = "reject"
+message = "settlement line repeated in its file"
+
+[[rule]]
+id = "S4-TKT-04"
+check = "DQ-03"
+table = "brz_ticket"
+type = "duplicate_exact"
+key = ["ticket_id"]
+severity = "reject"
+message = "ticket exported twice"
+
+[[rule]]
+id = "S4-TKT-05"
+check = "DQ-03"
+table = "brz_ticket"
+type = "duplicate_conflict"
+key = ["ticket_id"]
+severity = "warn"
+message = "ticket exported twice with different values; staging keeps the latest"
+
+[[rule]]
+id = "S5-WEA-04"
+check = "DQ-03"
+table = "brz_weather"
+type = "duplicate_exact"
+key = ["city", "weather_date"]
+severity = "reject"
+message = "exact duplicate in the batch"
+
+[[rule]]
+id = "S6-LOG-03"
+check = "DQ-03"
+table = "brz_incentive_log"
+type = "duplicate_exact"
+key = ["building_code", "unit_no", "offer_code", "start_date"]
+severity = "reject"
+message = "offer logged twice"
+
