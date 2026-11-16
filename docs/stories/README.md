@@ -36,6 +36,10 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-3.2 | Ingest S1 from the source database | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.2](US-3.2.md) | [evidence](../evidence/us-3.2/) |
 | US-3.3 | Ingest the Excel and CSV sources (S2, S3, S6) | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.3](US-3.3.md) | [evidence](../evidence/us-3.3/) |
 | US-3.4 | Ingest JSON and weather, and reconcile bronze | Junaid (done by Hanan) | Done | 2026-11-16 | [US-3.4](US-3.4.md) | [evidence](../evidence/us-3.4/) |
+| US-4.1 | Define the rule catalogue and engine | Junaid (done by Hanan) | Done | 2026-11-17 | [US-4.1](US-4.1.md) | [evidence](../evidence/us-4.1/) |
+| US-4.2 | Implement completeness, type and duplicate checks (DQ-01 to DQ-03) | Eesha (done by Hanan) | Done | 2026-11-17 | [US-4.2](US-4.2.md) | [evidence](../evidence/us-4.2/) |
+| US-4.3 | Implement business, referential and range checks (DQ-04 to DQ-06) | Junaid (done by Hanan) | Done | 2026-11-17 | [US-4.3](US-4.3.md) | [evidence](../evidence/us-4.3/) |
+| US-4.4 | Validate the checks against the answer key | Junaid (done by Hanan) | Done | 2026-11-17 | [US-4.4](US-4.4.md) | [evidence](../evidence/us-4.4/) |
 
 ## Later epics
 
@@ -68,3 +72,7 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-16 | S1 changes are found by row hash; the watermark is kept but cannot see back-dated changes or tables without `updated_at` | [US-3.2](US-3.2.md) |
 | 2026-11-16 | File loads and checksums go to a new `lue_audit.file_load`; the pack's `lineage` stays one row per bronze table and source | [US-3.3](US-3.3.md) |
 | 2026-11-16 | A ticket's status rows keep the ticket object's position (`source_row`), so duplicated tickets keep their own histories | [US-3.4](US-3.4.md) |
+| 2026-11-17 | Quality rules are data in `etl/quality/rules.toml` (TOML: no new dependency); the engine builds each rule's SQL from its fields | [US-4.1](US-4.1.md) |
+| 2026-11-17 | Findings (rejections and warnings) go to a new `lue_audit.dq_result` by bronze `row_id`; the pack's quarantine holds the rejected rows | [US-4.1](US-4.1.md) |
+| 2026-11-17 | A day-first date passes DQ-02 (repaired in US-5.1); a missing tenant or vendor is a warning (inferred member, US-6.5) | [US-4.2](US-4.2.md), [US-4.3](US-4.3.md) |
+| 2026-11-17 | Settlement lines without a payment pass E4: unmatched settlements are US-5.2's | [US-4.3](US-4.3.md) |

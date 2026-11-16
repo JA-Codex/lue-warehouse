@@ -1,0 +1,36 @@
+make test (what CI runs), Python 3.11.18: exit code 0, 180 s
+  ruff check etl scripts
+  All checks passed!
+  python scripts/ci_checks.py --sql
+  RESULT: PASS
+  python scripts/ci_checks.py --manifest
+  RESULT: PASS
+  python scripts/check_contract.py
+  python scripts/test_generator.py
+   RESULT: 39/39 checks passed
+  python scripts/test_master_data.py
+   RESULT: 129/129 checks passed
+  python scripts/test_leases.py
+   RESULT: 114/114 checks passed
+  python scripts/test_payments.py
+   RESULT: 80/80 checks passed
+  python scripts/test_tickets.py
+   RESULT: 69/69 checks passed
+  python scripts/test_weather.py
+   RESULT: 56/56 checks passed
+  python scripts/test_defects.py
+   RESULT: 71/71 checks passed
+  python scripts/test_ingest_contract.py
+   RESULT: 17/17 checks passed
+  python scripts/test_quality_contract.py
+   RESULT: 20/20 checks passed
+
+Database suites on PostgreSQL 16 (full profile; the clean control batch for the US-2.2 to US-2.4 test, then the batch with defects for E3 and E4):
+  test_db_setup      RESULT: 22/22 checks passed
+  test_dimensions    RESULT: 28/28 checks passed
+  test_facts         RESULT: 24/24 checks passed
+  test_source_load   RESULT: 66/66 checks passed
+  test_reference     RESULT: 32/32 checks passed
+  test_smoke         RESULT: 12/12 checks passed
+  test_ingest        RESULT: 39/39 checks passed
+  test_quality       RESULT: 25/25 checks passed
