@@ -1,0 +1,20 @@
+python scripts/test_ingest.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+US-3.4 S4 tickets, S5 weather, reconciliation
+  [PASS] 6,121 ticket rows = tickets in the file; 24,081 status rows = the sum of the status_history lengths
+  [PASS] the two copies of MR-2023-00001 keep their own histories [4, 1]
+  [PASS] a ticket lands field for field as text (null stays NULL, true stays true)
+  [PASS] US-2.6 defects arrive untouched: 60 estimates as text, 120 tickets without a unit, as the answer key says
+  [PASS] weather: 4,384 city-days, 0 missing values kept as NULL
+  [PASS] reconciliation: tickets, status entries and city-days, all with difference 0
+  [PASS] rerun: both files skipped, unchanged
+  [PASS] a cut-off JSON file is rejected for both ticket tables; nothing lands
+Your data folder, all six sources (bronze is left full and current)
+  [PASS] run 290: all six sources Success, 467,406 rows landed
+  [PASS] 20 reconciliation rows, one per bronze table, all with difference 0
+  [PASS] lineage: one row per bronze table and its source
+  [PASS] every landed row carries batch_id, source_system and loaded_at
+  [PASS] every bronze table is stamped with its own source system
+======================================================================
+ RESULT: 39/39 checks passed
+======================================================================

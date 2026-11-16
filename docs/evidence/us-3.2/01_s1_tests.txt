@@ -1,0 +1,14 @@
+python scripts/test_ingest.py (full profile with the US-2.6 defects, seed 3004; PostgreSQL 16)
+
+US-3.2 S1, incremental
+  [PASS] run 1 lands everything: 391,870 rows, every table equals its source
+  [PASS] every value in bronze is the source's value as text, row for row (9 tables)
+  [PASS] 9 reconciliation rows (source rows found in bronze), all passed
+  [PASS] the watermark of units and tenants is the newest updated_at loaded
+  [PASS] run 2 straight after: reads 391,870, lands 0
+  [PASS] updating one source row lands exactly that row, as a new version (even with an updated_at older than the watermark)
+  [PASS] an older updated_at never moves the watermark back
+  [PASS] putting the row back lands nothing (that version is already in bronze)
+  [PASS] a failed S1 run lands nothing (the changed unit included) and leaves the watermark alone
+
+Whole suite: RESULT: 39/39 checks passed

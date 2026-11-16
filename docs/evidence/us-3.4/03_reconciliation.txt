@@ -1,0 +1,50 @@
+lue_audit.reconciliation for run 294 (every bronze table against its source)
+                         check_name                         | source_rows | bronze_rows | difference | passed 
+------------------------------------------------------------+-------------+-------------+------------+--------
+ brz_building rows vs src_pms.buildings                     |          40 |          40 |          0 | t
+ brz_holiday rows vs the files                              |         173 |         173 |          0 | t
+ brz_incentive_log rows vs the files                        |         655 |         655 |          0 | t
+ brz_incentive_offer rows vs the files                      |           7 |           7 |          0 | t
+ brz_invoice rows vs src_pms.invoices                       |       54774 |       54774 |          0 | t
+ brz_invoice_line rows vs src_pms.invoice_lines             |      129885 |      129885 |          0 | t
+ brz_lease rows vs src_pms.leases                           |        5883 |        5883 |          0 | t
+ brz_lease_event rows vs src_pms.lease_events               |        9195 |        9195 |          0 | t
+ brz_owner rows vs the files                                |         900 |         900 |          0 | t
+ brz_ownership rows vs the files                            |        2076 |        2076 |          0 | t
+ brz_payment rows vs src_pms.payments                       |       59679 |       59679 |          0 | t
+ brz_payment_allocation rows vs src_pms.payment_allocations |      126852 |      126852 |          0 | t
+ brz_settlement rows vs the files                           |       36967 |       36967 |          0 | t
+ brz_sla_policy rows vs the files                           |          34 |          34 |          0 | t
+ brz_tenant rows vs src_pms.tenants                         |        3762 |        3762 |          0 | t
+ brz_ticket rows vs tickets in the file                     |        6120 |        6120 |          0 | t
+ brz_ticket_status rows vs status entries in the file       |       24080 |       24080 |          0 | t
+ brz_unit rows vs src_pms.units                             |        1800 |        1800 |          0 | t
+ brz_vendor rows vs the files                               |         140 |         140 |          0 | t
+ brz_weather rows vs city-days in the cache                 |        4384 |        4384 |          0 | t
+(20 rows)
+
+lue_audit.lineage (the pack's table: one row per bronze table and its source)
+            target_table            |             source_table              |  layer_path  
+------------------------------------+---------------------------------------+--------------
+ lue_staging.brz_building           | src_pms.buildings                     | S1 -> bronze
+ lue_staging.brz_holiday            | S2 registers.xlsx sheet holidays      | S2 -> bronze
+ lue_staging.brz_incentive_log      | S6 s6/incentive_log.csv               | S6 -> bronze
+ lue_staging.brz_incentive_offer    | S6 s6/offers.csv                      | S6 -> bronze
+ lue_staging.brz_invoice            | src_pms.invoices                      | S1 -> bronze
+ lue_staging.brz_invoice_line       | src_pms.invoice_lines                 | S1 -> bronze
+ lue_staging.brz_lease              | src_pms.leases                        | S1 -> bronze
+ lue_staging.brz_lease_event        | src_pms.lease_events                  | S1 -> bronze
+ lue_staging.brz_owner              | S2 registers.xlsx sheet owners        | S2 -> bronze
+ lue_staging.brz_ownership          | S2 registers.xlsx sheet ownership     | S2 -> bronze
+ lue_staging.brz_payment            | src_pms.payments                      | S1 -> bronze
+ lue_staging.brz_payment_allocation | src_pms.payment_allocations           | S1 -> bronze
+ lue_staging.brz_settlement         | S3 s3/settlement_<channel>_<date>.csv | S3 -> bronze
+ lue_staging.brz_sla_policy         | S2 registers.xlsx sheet sla_policy    | S2 -> bronze
+ lue_staging.brz_tenant             | src_pms.tenants                       | S1 -> bronze
+ lue_staging.brz_ticket             | S4 s4/tickets.json                    | S4 -> bronze
+ lue_staging.brz_ticket_status      | S4 s4/tickets.json status_history     | S4 -> bronze
+ lue_staging.brz_unit               | src_pms.units                         | S1 -> bronze
+ lue_staging.brz_vendor             | S2 registers.xlsx sheet vendors       | S2 -> bronze
+ lue_staging.brz_weather            | S5 data/weather_cache.json            | S5 -> bronze
+(20 rows)
+

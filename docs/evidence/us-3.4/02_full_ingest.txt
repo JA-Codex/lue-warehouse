@@ -1,0 +1,44 @@
+python etl/ingest/run.py (full profile with the US-2.6 defects; S1 was already landed by the runs in us-3.2)
+
+==============================================================================
+ Ingestion run 294: data
+==============================================================================
+  [SUCCESS] ingest_s1_pms            read  391,870  landed        0  rejected 0    3.6 s
+  [SUCCESS] ingest_s2_registers      read    3,323  landed    3,323  rejected 0    0.3 s
+  [SUCCESS] ingest_s3_settlements    read   36,967  landed   36,967  rejected 0    8.5 s
+  [SUCCESS] ingest_s4_tickets        read   30,200  landed   30,200  rejected 0    0.3 s
+  [SUCCESS] ingest_s5_weather        read    4,384  landed    4,384  rejected 0    0.0 s
+  [SUCCESS] ingest_s6_incentives     read      662  landed      662  rejected 0    0.0 s
+ Reconciliation (source rows vs rows in bronze)
+  [PASS] brz_building rows vs src_pms.buildings                         40       40
+  [PASS] brz_holiday rows vs the files                                 173      173
+  [PASS] brz_incentive_log rows vs the files                           655      655
+  [PASS] brz_incentive_offer rows vs the files                           7        7
+  [PASS] brz_invoice rows vs src_pms.invoices                       54,774   54,774
+  [PASS] brz_invoice_line rows vs src_pms.invoice_lines            129,885  129,885
+  [PASS] brz_lease rows vs src_pms.leases                            5,883    5,883
+  [PASS] brz_lease_event rows vs src_pms.lease_events                9,195    9,195
+  [PASS] brz_owner rows vs the files                                   900      900
+  [PASS] brz_ownership rows vs the files                             2,076    2,076
+  [PASS] brz_payment rows vs src_pms.payments                       59,679   59,679
+  [PASS] brz_payment_allocation rows vs src_pms.payment_allocations  126,852  126,852
+  [PASS] brz_settlement rows vs the files                           36,967   36,967
+  [PASS] brz_sla_policy rows vs the files                               34       34
+  [PASS] brz_tenant rows vs src_pms.tenants                          3,762    3,762
+  [PASS] brz_ticket rows vs tickets in the file                      6,120    6,120
+  [PASS] brz_ticket_status rows vs status entries in the file       24,080   24,080
+  [PASS] brz_unit rows vs src_pms.units                              1,800    1,800
+  [PASS] brz_vendor rows vs the files                                  140      140
+  [PASS] brz_weather rows vs city-days in the cache                  4,384    4,384
+==============================================================================
+ RESULT: 6/6 sources landed, 20/20 reconciliation checks passed
+==============================================================================
+
+And straight after, a second run:
+  [SUCCESS] ingest_s1_pms            read  391,870  landed        0  rejected 0    3.2 s
+  [SUCCESS] ingest_s2_registers      read    3,323  landed        0  rejected 0    0.4 s
+  [SUCCESS] ingest_s3_settlements    read   36,967  landed        0  rejected 0    7.8 s
+  [SUCCESS] ingest_s4_tickets        read   30,200  landed        0  rejected 0    0.2 s
+  [SUCCESS] ingest_s5_weather        read    4,384  landed        0  rejected 0    0.0 s
+  [SUCCESS] ingest_s6_incentives     read      662  landed        0  rejected 0    0.0 s
+ RESULT: 6/6 sources landed, 20/20 reconciliation checks passed

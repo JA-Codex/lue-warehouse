@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test db-reset
+.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -34,6 +34,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_tickets.py
 	$(PYTHON) scripts/test_weather.py
 	$(PYTHON) scripts/test_defects.py
+	$(PYTHON) scripts/test_ingest_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -69,6 +70,12 @@ db-test: ## Database acceptance tests (US-1.1 to US-1.5, US-2.2 to US-2.4; load 
 	$(PYTHON) scripts/test_source_load.py
 	$(PYTHON) scripts/test_reference.py
 	$(PYTHON) scripts/test_smoke.py
+
+ingest: ## Land all six sources in bronze: S1 from src_pms, the files from data/ (E3)
+	$(PYTHON) etl/ingest/run.py
+
+ingest-test: ## Ingestion acceptance tests (US-3.1 to US-3.4); empties bronze, then refills it
+	$(PYTHON) scripts/test_ingest.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
 	$(PYTHON) scripts/db_reset.py
