@@ -1,0 +1,34 @@
+Allocation reconciliation (US-5.2), full profile, after a full staging load.
+
+1. Payments: allocated versus amount
+      kind       | payments | fully_allocated | over_allocated | not_full 
+-----------------+----------+-----------------+----------------+----------
+ cleared payment |    59256 |           59256 |              0 |        0
+ reversal        |      423 |             423 |              0 |        0
+(2 rows)
+
+2. Invoice lines: allocated versus net amount (positive lines)
+ lines  | over_allocated | fully_paid | unpaid 
+--------+----------------+------------+--------
+ 129885 |              0 |     119719 |   8235
+(1 row)
+
+3. Allocations by source
+ allocation_source | rows_  | payments |    amount     | min_dpd | avg_dpd | max_dpd 
+-------------------+--------+----------+---------------+---------+---------+---------
+ S1                | 122412 |    59249 | 5164241138.00 |      -9 |     4.2 |     127
+ derived           |   4798 |     4319 |  183048571.00 |      -9 |    31.3 |     976
+(2 rows)
+
+4. Every derived allocation belongs to a payment whose S1 allocation E4 rejected
+ derived_rows | with_rejected_s1_row 
+--------------+----------------------
+         4798 |                 4798
+(1 row)
+
+5. Settlements (answer key: 541 unmatched, 722 unsettled electronic payments)
+ unmatched_settlements | unsettled_electronic_payments 
+-----------------------+-------------------------------
+                   541 |                           722
+(1 row)
+
