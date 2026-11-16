@@ -17,7 +17,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Ingestion into bronze (E3): framework, S1 incremental, files with checksums, JSON and weather, reconciliation | US-3.1 to US-3.4 (Done) |
 | Data quality and quarantine (E4): rule catalogue and engine, DQ-01 to DQ-06, proof against the answer key | US-4.1 to US-4.4 (Done) |
 | Staging (E5): clean, standardise, deduplicate, business fields, incremental merge, cleaning evidence | US-5.1 to US-5.4 (Done) |
-| Dimensions, facts, marts, reports | Phase 2 and 3, pending |
+| Dimensions (E6): loader pattern and surrogate keys | US-6.1 (Done); US-6.2 to US-6.5 in progress |
+| Facts, marts, reports | Phase 2 and 3, pending |
 
 ## Layout
 
@@ -126,11 +127,13 @@ make quality-test E4 acceptance tests: 25 PASS lines (reloads src_pms and bronze
 make stage       load the 20 staging tables (incremental; FULL=1 reloads all), evidence CSVs in
                  data/staging_evidence/, compare with the answer key (E5)
 make staging-test E5 acceptance tests: 35 PASS lines (reloads src_pms, bronze and staging; about 7 minutes)
+make dims        load the dimensions from staging: surrogate keys, Type 1 overwrites (E6)
+make dims-test   US-6.1 acceptance tests: 11 PASS lines (empties and reloads the dimension members)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 10)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)

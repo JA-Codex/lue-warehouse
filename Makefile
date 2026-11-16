@@ -37,6 +37,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_ingest_contract.py
 	$(PYTHON) scripts/test_quality_contract.py
 	$(PYTHON) scripts/test_staging_contract.py
+	$(PYTHON) scripts/test_dim_load_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -90,6 +91,12 @@ stage: ## Load staging incrementally, record the evidence, compare with the answ
 
 staging-test: ## Staging acceptance tests (US-5.1 to US-5.4); reloads src_pms, bronze and staging (about 7 minutes)
 	$(PYTHON) scripts/test_staging.py
+
+dims: ## Load the dimensions from staging: new members get surrogate keys, Type 1 overwritten (E6)
+	$(PYTHON) etl/dimensions/run.py
+
+dims-test: ## Dimension acceptance tests (US-6.1); empties and reloads the dimension members
+	$(PYTHON) scripts/test_dim_load.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
 	$(PYTHON) scripts/db_reset.py

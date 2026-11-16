@@ -1,0 +1,43 @@
+Fresh warehouse (python scripts/db_reset.py), then ingest, validate, stage (full profile, seed 3004).
+
+1. First load: python etl/dimensions/run.py
+==============================================================================
+ Dimension run 4
+==============================================================================
+  dimension                  status       read  inserted  updated  unchanged
+  dim_tenant                 Success     3,762     3,762        0          0
+==============================================================================
+
+2. Rerun with nothing changed: python etl/dimensions/run.py
+==============================================================================
+ Dimension run 5
+==============================================================================
+  dimension                  status       read  inserted  updated  unchanged
+  dim_tenant                 Success     3,762         0        0      3,762
+==============================================================================
+   The run log (steps dim_*), runs 4 and 5:
+ run_id |    step    | rows_read | rows_inserted | rows_updated | rows_rejected | status  
+--------+------------+-----------+---------------+--------------+---------------+---------
+      4 | dim_tenant |      3762 |          3762 |            0 |             0 | Success
+      5 | dim_tenant |      3762 |             0 |            0 |             0 | Success
+(2 rows)
+
+3. Business key and surrogate key side by side (the brief's evidence):
+ tenant_code | tenant_key |  tenant_name   | tenant_type | employer_sector | is_current | effective_from | effective_to 
+-------------+------------+----------------+-------------+-----------------+------------+----------------+--------------
+ N/A         |         -2 | Not applicable | N/A         | Not applicable  | t          | 1900-01-01     | 9999-12-31
+ Unknown     |         -1 | Unknown        | Unknown     | Unknown         | t          | 1900-01-01     | 9999-12-31
+ T-0001      |          1 | Maryam Dar     | Individual  | Education       | t          | 1900-01-01     | 9999-12-31
+ T-0002      |          2 | Saad Mirza     | Individual  | Unknown         | t          | 1900-01-01     | 9999-12-31
+ T-0003      |          3 | Omar Mahmood   | Individual  | Healthcare      | t          | 1900-01-01     | 9999-12-31
+ T-0004      |          4 | Anum Rizvi     | Individual  | Government      | t          | 1900-01-01     | 9999-12-31
+ T-0005      |          5 | Saba Sheikh    | Individual  | Retail          | t          | 1900-01-01     | 9999-12-31
+ T-0006      |          6 | Bushra Ejaz    | Individual  | Government      | t          | 1900-01-01     | 9999-12-31
+(8 rows)
+
+4. Surrogate keys unique and positive, one row per tenant code:
+ members | keys | min | max  | tenant_codes | staged_tenants 
+---------+------+-----+------+--------------+----------------
+    3762 | 3762 |   1 | 3762 |         3762 |           3762
+(1 row)
+
