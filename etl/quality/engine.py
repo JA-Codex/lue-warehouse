@@ -358,6 +358,9 @@ def validate(step, rules: list[Rule] | None = None, batches: list[int] | None = 
     cur = step.cur
     tables = bronze_tables(cur)
     check_against(rules, tables)
+    cur.execute("SELECT to_regclass('lue_audit.dq_batch') IS NOT NULL")
+    if not cur.fetchone()[0]:  # a database deployed before E5
+        raise RuleError("lue_audit.dq_batch is missing: run python scripts/db_deploy.py first")
     run_id = step.run.run_id
     found = step.loaded_at
     scoped = batches is not None
@@ -384,6 +387,15 @@ def validate(step, rules: list[Rule] | None = None, batches: list[int] | None = 
         summary.seconds[r.id] = time.monotonic() - clock
     for t in sorted({r.table for r in rules}):
         cur.execute(quarantine_sql(t), params)
+    # E5: record which batches are validated (staging reads only these). In the same transaction,
+    # so a failed validation records nothing.
+    cur.execute(
+        "INSERT INTO lue_audit.dq_batch (batch_id, run_id, validated_at) "
+        "SELECT b, %(run)s, %(found)s FROM unnest(%(batches)s::bigint[]) AS b "
+        "ON CONFLICT (batch_id) DO UPDATE SET run_id = EXCLUDED.run_id, "
+        "validated_at = EXCLUDED.validated_at",
+        params,
+    )
     step.read(summary.rows_checked)
     step.reject(summary.rejected)
     step.result.rows_written = summary.rejected + summary.warned

@@ -1,0 +1,106 @@
+1. A rerun with no source change (after a full load):
+   python etl/staging/run.py
+================================================================================================
+ Staging run 49 (incremental)
+================================================================================================
+  table                    status       read rejected unusable superseded inserted  updated unchanged
+  stg_building             Success         0        0        0          0        0        0         0
+  stg_unit                 Success         0        0        0          0        0        0         0
+  stg_tenant               Success         0        0        0          0        0        0         0
+  stg_lease                Success         0        0        0          0        0        0         0
+  stg_lease_event          Success         0        0        0          0        0        0         0
+  stg_invoice              Success         0        0        0          0        0        0         0
+  stg_invoice_line         Success         0        0        0          0        0        0         0
+  stg_payment              Success         0        0        0          0        0        0         0
+  stg_payment_allocation   Success         0        0        0          0        0        0         0
+  stg_settlement           Success         0        0        0          0        0        0         0
+  stg_owner                Success         0        0        0          0        0        0         0
+  stg_ownership            Success         0        0        0          0        0        0         0
+  stg_vendor               Success         0        0        0          0        0        0         0
+  stg_maintenance_category Success         0        0        0          0        0        0         0
+  stg_holiday              Success         0        0        0          0        0        0         0
+  stg_ticket               Success         0        0        0          0        0        0         0
+  stg_ticket_status        Success         0        0        0          0        0        0         0
+  stg_weather              Success         0        0        0          0        0        0         0
+  stg_incentive_offer      Success         0        0        0          0        0        0         0
+  stg_incentive_log        Success         0        0        0          0        0        0         0
+  stage_business           Success  
+ Business (US-5.2): derived allocations +0 ~0 -0 (4,319 payments); rows with changed derived values: stg_lease 0, stg_payment_allocation 0, stg_invoice_line 0, stg_payment 0, stg_settlement 0, stg_ticket 0
+ Count bridge (US-5.1): 20/20 tables balance
+ Evidence (US-5.4): data/staging_evidence
+================================================================================================
+   The run log of run 49:
+            step            | rows_read | rows_inserted | rows_updated | rows_rejected | status  
+----------------------------+-----------+---------------+--------------+---------------+---------
+ stage_building             |         0 |             0 |            0 |             0 | Success
+ stage_business             |         0 |             0 |            0 |             0 | Success
+ stage_holiday              |         0 |             0 |            0 |             0 | Success
+ stage_incentive_log        |         0 |             0 |            0 |             0 | Success
+ stage_incentive_offer      |         0 |             0 |            0 |             0 | Success
+ stage_invoice              |         0 |             0 |            0 |             0 | Success
+ stage_invoice_line         |         0 |             0 |            0 |             0 | Success
+ stage_lease                |         0 |             0 |            0 |             0 | Success
+ stage_lease_event          |         0 |             0 |            0 |             0 | Success
+ stage_maintenance_category |         0 |             0 |            0 |             0 | Success
+ stage_owner                |         0 |             0 |            0 |             0 | Success
+ stage_ownership            |         0 |             0 |            0 |             0 | Success
+ stage_payment              |         0 |             0 |            0 |             0 | Success
+ stage_payment_allocation   |         0 |             0 |            0 |             0 | Success
+ stage_settlement           |         0 |             0 |            0 |             0 | Success
+ stage_tenant               |         0 |             0 |            0 |             0 | Success
+ stage_ticket               |         0 |             0 |            0 |             0 | Success
+ stage_ticket_status        |         0 |             0 |            0 |             0 | Success
+ stage_unit                 |         0 |             0 |            0 |             0 | Success
+ stage_vendor               |         0 |             0 |            0 |             0 | Success
+ stage_weather              |         0 |             0 |            0 |             0 | Success
+(21 rows)
+
+2. One source row changed in src_pms (tenant T-0001's phone, updated_at now), then:
+   python etl/ingest/run.py --only S1; python etl/quality/run.py; python etl/staging/run.py
+   ingest: step=ingest_s1_pms source=S1 status=Success rows_read=391870 rows_written=1 rows_rejected=0 seconds=2.2
+================================================================================================
+ Staging run 52 (incremental)
+================================================================================================
+  table                    status       read rejected unusable superseded inserted  updated unchanged
+  stg_building             Success         0        0        0          0        0        0         0
+  stg_unit                 Success         0        0        0          0        0        0         0
+  stg_tenant               Success         1        0        0          0        0        1         0
+  stg_lease                Success         0        0        0          0        0        0         0
+  stg_lease_event          Success         0        0        0          0        0        0         0
+  stg_invoice              Success         0        0        0          0        0        0         0
+  stg_invoice_line         Success         0        0        0          0        0        0         0
+  stg_payment              Success         0        0        0          0        0        0         0
+  stg_payment_allocation   Success         0        0        0          0        0        0         0
+  stg_settlement           Success         0        0        0          0        0        0         0
+  stg_owner                Success         0        0        0          0        0        0         0
+  stg_ownership            Success         0        0        0          0        0        0         0
+  stg_vendor               Success         0        0        0          0        0        0         0
+  stg_maintenance_category Success         0        0        0          0        0        0         0
+  stg_holiday              Success         0        0        0          0        0        0         0
+  stg_ticket               Success         0        0        0          0        0        0         0
+  stg_ticket_status        Success         0        0        0          0        0        0         0
+  stg_weather              Success         0        0        0          0        0        0         0
+  stg_incentive_offer      Success         0        0        0          0        0        0         0
+  stg_incentive_log        Success         0        0        0          0        0        0         0
+  stage_business           Success  
+ Business (US-5.2): derived allocations +0 ~0 -0 (4,319 payments); rows with changed derived values: stg_lease 0, stg_payment_allocation 0, stg_invoice_line 0, stg_payment 0, stg_settlement 0, stg_ticket 0
+ Count bridge (US-5.1): 20/20 tables balance
+ Evidence (US-5.4): data/staging_evidence
+================================================================================================
+   The run log of run 52, steps that inserted or updated anything:
+     step     | rows_read | rows_inserted | rows_updated | status  
+--------------+-----------+---------------+--------------+---------
+ stage_tenant |         1 |             0 |            1 | Success
+(1 row)
+
+   lue_audit.stg_load of run 52, tables that read anything:
+ stg_table  | bronze_rows_read | rows_inserted | rows_updated | rows_unchanged 
+------------+------------------+---------------+--------------+----------------
+ stg_tenant |                1 |             0 |            1 |              0
+(1 row)
+
+ tenant_code |    phone     |   src_updated_at    | run_id 
+-------------+--------------+---------------------+--------
+ T-0001      | 0399-1234567 | 2026-11-17 02:32:50 |     52
+(1 row)
+

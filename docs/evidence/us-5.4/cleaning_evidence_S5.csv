@@ -1,0 +1,15 @@
+run_id,source_system,stg_table,issue,column_name,rows_affected,sample_before,sample_after
+55,S5,stg_weather,conflicts_resolved,*,0,,
+55,S5,stg_weather,deleted,*,0,,
+55,S5,stg_weather,duplicates_removed,*,0,,
+55,S5,stg_weather,inserted,*,4384,,
+55,S5,stg_weather,key_not_usable,*,0,,
+55,S5,stg_weather,rejected_by_dq,*,0,,
+55,S5,stg_weather,rows_read,*,4384,,
+55,S5,stg_weather,rows_repaired,*,0,,
+55,S5,stg_weather,superseded,*,0,,
+55,S5,stg_weather,unchanged,*,0,,
+55,S5,stg_weather,updated,*,0,,
+55,S5,stg_weather,type_conversion,max_temp_c,4384,37.5,37.5
+55,S5,stg_weather,type_conversion,rainfall_mm,4384,0.0,0.0
+55,S5,stg_weather,type_conversion,weather_date,4384,2023-07-01,2023-07-01

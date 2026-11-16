@@ -1,0 +1,19 @@
+run_id,source_system,stg_table,issue,column_name,rows_affected,sample_before,sample_after
+55,S3,stg_settlement,conflicts_resolved,*,0,,
+55,S3,stg_settlement,deleted,*,0,,
+55,S3,stg_settlement,derived_values_changed,*,36606,,
+55,S3,stg_settlement,duplicates_removed,*,361,,
+55,S3,stg_settlement,inserted,*,36606,,
+55,S3,stg_settlement,key_not_usable,*,0,,
+55,S3,stg_settlement,rejected_by_dq,*,361,,
+55,S3,stg_settlement,rows_read,*,36967,,
+55,S3,stg_settlement,rows_repaired,*,0,,
+55,S3,stg_settlement,superseded,*,0,,
+55,S3,stg_settlement,unchanged,*,0,,
+55,S3,stg_settlement,updated,*,0,,
+55,S3,stg_settlement,type_conversion,fee_amount,36606,25.00,25.00
+55,S3,stg_settlement,type_conversion,gross_amount,36606,49790.00,49790.00
+55,S3,stg_settlement,type_conversion,net_amount,36606,49765.00,49765.00
+55,S3,stg_settlement,type_conversion,settlement_date,36606,2023-07-03,2023-07-03
+55,S3,stg_settlement,type_conversion,transaction_date,36606,2023-07-02,2023-07-02
+55,S3,stg_settlement,unmatched_settlement,payment_reference,541,PAY-9000001,is_matched = false

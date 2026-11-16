@@ -1,0 +1,226 @@
+stg_table,column_name,stage,value,rows
+stg_building,city,before,Faisalabad,6
+stg_building,city,before,Islamabad,8
+stg_building,city,before,Karachi,10
+stg_building,city,before,Lahore,15
+stg_building,city,before,lahore,1
+stg_building,city,after,Faisalabad,6
+stg_building,city,after,Islamabad,8
+stg_building,city,after,Karachi,10
+stg_building,city,after,Lahore,16
+stg_unit,unit_type,before, Apartment,6
+stg_unit,unit_type,before, Shop,1
+stg_unit,unit_type,before, apartment ,6
+stg_unit,unit_type,before, office ,1
+stg_unit,unit_type,before, shop ,2
+stg_unit,unit_type,before,APARTMENT,11
+stg_unit,unit_type,before,Apartment,1385
+stg_unit,unit_type,before,Apartment  ,9
+stg_unit,unit_type,before,OFFICE,1
+stg_unit,unit_type,before,Office,165
+stg_unit,unit_type,before,SHOP,1
+stg_unit,unit_type,before,Shop,196
+stg_unit,unit_type,before,Shop  ,2
+stg_unit,unit_type,before,apartment,13
+stg_unit,unit_type,before,shop,1
+stg_unit,unit_type,after,Apartment,1430
+stg_unit,unit_type,after,Office,167
+stg_unit,unit_type,after,Shop,203
+stg_tenant,tenant_type,before,Corporate,432
+stg_tenant,tenant_type,before,Individual,3330
+stg_tenant,tenant_type,after,Corporate,432
+stg_tenant,tenant_type,after,Individual,3330
+stg_tenant,employer_sector,before,Banking,223
+stg_tenant,employer_sector,before,Construction,236
+stg_tenant,employer_sector,before,Education,254
+stg_tenant,employer_sector,before,Energy,256
+stg_tenant,employer_sector,before,Government,245
+stg_tenant,employer_sector,before,Healthcare,271
+stg_tenant,employer_sector,before,Hospitality,213
+stg_tenant,employer_sector,before,IT and Software,239
+stg_tenant,employer_sector,before,Legal and Consulting,248
+stg_tenant,employer_sector,before,Logistics,236
+stg_tenant,employer_sector,before,Manufacturing,240
+stg_tenant,employer_sector,before,Media,219
+stg_tenant,employer_sector,before,Retail,233
+stg_tenant,employer_sector,before,Self-employed,219
+stg_tenant,employer_sector,before,Telecom,246
+stg_tenant,employer_sector,before,,184
+stg_tenant,employer_sector,after,Banking,223
+stg_tenant,employer_sector,after,Construction,236
+stg_tenant,employer_sector,after,Education,254
+stg_tenant,employer_sector,after,Energy,256
+stg_tenant,employer_sector,after,Government,245
+stg_tenant,employer_sector,after,Healthcare,271
+stg_tenant,employer_sector,after,Hospitality,213
+stg_tenant,employer_sector,after,IT and Software,239
+stg_tenant,employer_sector,after,Legal and Consulting,248
+stg_tenant,employer_sector,after,Logistics,236
+stg_tenant,employer_sector,after,Manufacturing,240
+stg_tenant,employer_sector,after,Media,219
+stg_tenant,employer_sector,after,Retail,233
+stg_tenant,employer_sector,after,Self-employed,219
+stg_tenant,employer_sector,after,Telecom,246
+stg_tenant,employer_sector,after,Unknown,184
+stg_tenant,contact_channel,before,Email,585
+stg_tenant,contact_channel,before,Phone,1809
+stg_tenant,contact_channel,before,WhatsApp,1368
+stg_tenant,contact_channel,after,Email,585
+stg_tenant,contact_channel,after,Phone,1809
+stg_tenant,contact_channel,after,WhatsApp,1368
+stg_lease,lease_type,before,Commercial,848
+stg_lease,lease_type,before,Residential,5035
+stg_lease,lease_type,after,Commercial,848
+stg_lease,lease_type,after,Residential,5035
+stg_lease,rent_review_type,before,Annual escalation,296
+stg_lease,rent_review_type,before,Fixed,5587
+stg_lease,rent_review_type,after,Annual escalation,296
+stg_lease,rent_review_type,after,Fixed,5587
+stg_lease,status,before,Active,1499
+stg_lease,status,before,Renewed,1978
+stg_lease,status,before,Terminated,2406
+stg_lease,status,after,Active,1499
+stg_lease,status,after,Renewed,1978
+stg_lease,status,after,Terminated,2406
+stg_invoice,status,before,Overdue,2490
+stg_invoice,status,before,Paid,50254
+stg_invoice,status,before,Partial,2030
+stg_invoice,status,after,Overdue,2490
+stg_invoice,status,after,Paid,50254
+stg_invoice,status,after,Partial,2030
+stg_payment,status,before,Bounced,423
+stg_payment,status,before,Cleared,59256
+stg_payment,status,after,Bounced,423
+stg_payment,status,after,Cleared,59256
+stg_owner,owner_type,before,Company,171
+stg_owner,owner_type,before,Individual,729
+stg_owner,owner_type,after,Company,171
+stg_owner,owner_type,after,Individual,729
+stg_vendor,trade,before,Civil,25
+stg_vendor,trade,before,Electrical,30
+stg_vendor,trade,before,General maintenance,23
+stg_vendor,trade,before,HVAC,20
+stg_vendor,trade,before,Pest control,12
+stg_vendor,trade,before,Plumbing,30
+stg_vendor,trade,after,Civil,25
+stg_vendor,trade,after,Electrical,30
+stg_vendor,trade,after,General maintenance,23
+stg_vendor,trade,after,HVAC,20
+stg_vendor,trade,after,Pest control,12
+stg_vendor,trade,after,Plumbing,30
+stg_maintenance_category,category_name,before,Civil,6
+stg_maintenance_category,category_name,before,Electrical,6
+stg_maintenance_category,category_name,before,HVAC,5
+stg_maintenance_category,category_name,before,Other,4
+stg_maintenance_category,category_name,before,Pest control,4
+stg_maintenance_category,category_name,before,Plumbing,9
+stg_maintenance_category,category_name,after,Civil,6
+stg_maintenance_category,category_name,after,Electrical,6
+stg_maintenance_category,category_name,after,HVAC,5
+stg_maintenance_category,category_name,after,Other,4
+stg_maintenance_category,category_name,after,Pest control,4
+stg_maintenance_category,category_name,after,Plumbing,9
+stg_ticket,category,before, Civil,3
+stg_ticket,category,before, Electrical,2
+stg_ticket,category,before, HVAC,2
+stg_ticket,category,before, Other,1
+stg_ticket,category,before, Pest control,1
+stg_ticket,category,before, Plumbing,1
+stg_ticket,category,before, civil ,3
+stg_ticket,category,before, hvac ,2
+stg_ticket,category,before, other ,2
+stg_ticket,category,before, pest control ,1
+stg_ticket,category,before, plumbing ,4
+stg_ticket,category,before,CIVIL,4
+stg_ticket,category,before,Civil,1226
+stg_ticket,category,before,Civil  ,2
+stg_ticket,category,before,ELECTRICAL,5
+stg_ticket,category,before,Electrical,1210
+stg_ticket,category,before,Electrical  ,1
+stg_ticket,category,before,HVAC,999
+stg_ticket,category,before,HVAC  ,5
+stg_ticket,category,before,Other,667
+stg_ticket,category,before,Other  ,3
+stg_ticket,category,before,PEST CONTROL,1
+stg_ticket,category,before,PLUMBING,6
+stg_ticket,category,before,Pest control,382
+stg_ticket,category,before,Pest control  ,3
+stg_ticket,category,before,Plumbing,1564
+stg_ticket,category,before,Plumbing  ,6
+stg_ticket,category,before,civil,7
+stg_ticket,category,before,electrical,2
+stg_ticket,category,before,hvac,1
+stg_ticket,category,before,plumbing,4
+stg_ticket,category,after,Civil,1143
+stg_ticket,category,after,Electrical,1118
+stg_ticket,category,after,HVAC,934
+stg_ticket,category,after,Other,633
+stg_ticket,category,after,Pest control,363
+stg_ticket,category,after,Plumbing,1479
+stg_ticket,priority,before, Emergency,5
+stg_ticket,priority,before, High,4
+stg_ticket,priority,before, Normal,11
+stg_ticket,priority,before, emergency ,2
+stg_ticket,priority,before, high ,5
+stg_ticket,priority,before, normal ,20
+stg_ticket,priority,before,EMERGENCY,2
+stg_ticket,priority,before,Emergency,756
+stg_ticket,priority,before,Emergency  ,2
+stg_ticket,priority,before,HIGH,7
+stg_ticket,priority,before,High,1325
+stg_ticket,priority,before,High  ,1
+stg_ticket,priority,before,NORMAL,14
+stg_ticket,priority,before,Normal,3931
+stg_ticket,priority,before,Normal  ,11
+stg_ticket,priority,before,emergency,1
+stg_ticket,priority,before,high,8
+stg_ticket,priority,before,normal,15
+stg_ticket,priority,after,Emergency,707
+stg_ticket,priority,after,High,1253
+stg_ticket,priority,after,Normal,3710
+stg_ticket,reported_via,before,Building staff,1337
+stg_ticket,reported_via,before,Tenant app,4783
+stg_ticket,reported_via,after,Building staff,1238
+stg_ticket,reported_via,after,Tenant app,4432
+stg_ticket,status,before,Assigned,25
+stg_ticket,status,before,Raised,24
+stg_ticket,status,before,Resolved,278
+stg_ticket,status,before,Verified,5793
+stg_ticket,status,after,Assigned,7
+stg_ticket,status,after,Raised,4
+stg_ticket,status,after,Resolved,248
+stg_ticket,status,after,Verified,5411
+stg_ticket_status,status,before,Assigned,6096
+stg_ticket_status,status,before,Raised,6120
+stg_ticket_status,status,before,Resolved,6071
+stg_ticket_status,status,before,Verified,5793
+stg_ticket_status,status,after,Assigned,5666
+stg_ticket_status,status,after,Raised,5670
+stg_ticket_status,status,after,Resolved,5659
+stg_ticket_status,status,after,Verified,5411
+stg_weather,city,before,Faisalabad,1096
+stg_weather,city,before,Islamabad,1096
+stg_weather,city,before,Karachi,1096
+stg_weather,city,before,Lahore,1096
+stg_weather,city,after,Faisalabad,1096
+stg_weather,city,after,Islamabad,1096
+stg_weather,city,after,Karachi,1096
+stg_weather,city,after,Lahore,1096
+stg_incentive_offer,offer_type,before,Discount,3
+stg_incentive_offer,offer_type,before,Free maintenance,1
+stg_incentive_offer,offer_type,before,Rent-free days,3
+stg_incentive_offer,offer_type,after,Discount,3
+stg_incentive_offer,offer_type,after,Free maintenance,1
+stg_incentive_offer,offer_type,after,Rent-free days,3
+stg_payment,method_code,before,BANK,17086
+stg_payment,method_code,before,CASH,12586
+stg_payment,method_code,before,CHEQUE,10306
+stg_payment,method_code,before,EASY,5840
+stg_payment,method_code,before,JAZZ,5822
+stg_payment,method_code,before,RAAST,8039
+stg_payment,method_code,after,BANK,17086
+stg_payment,method_code,after,CASH,12586
+stg_payment,method_code,after,CHEQUE,10306
+stg_payment,method_code,after,EASY,5840
+stg_payment,method_code,after,JAZZ,5822
+stg_payment,method_code,after,RAAST,8039

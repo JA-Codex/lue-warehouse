@@ -1,0 +1,10 @@
+check,table,column,expected,found,not_staged,wrong,ok,note
+repair,stg_building,city,1,1,0,0,True,repaired to the canonical value
+repair,stg_incentive_log,start_date,19,19,0,0,True,repaired to the canonical value
+repair,stg_ticket,category,72,72,0,0,True,repaired to the canonical value
+repair,stg_ticket,priority,108,108,0,0,True,repaired to the canonical value
+repair,stg_unit,unit_type,54,54,0,0,True,repaired to the canonical value
+match,stg_settlement,is_matched,541,541,0,0,True,each planted line is unmatched
+match,stg_settlement,is_matched,721,721,0,0,True,each planted line is matched (reported late)
+total,stg_settlement,is_matched,541,541,,,True,unmatched_settlements in expectations.json
+total,stg_payment,is_unsettled,722,722,,,True,unsettled_electronic_payments in expectations.json

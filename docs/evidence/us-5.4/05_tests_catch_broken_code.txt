@@ -1,0 +1,23 @@
+Deliberate breakages of the E5 code. Each was applied alone, the test suite run, the code restored.
+Contract suite (scripts/test_staging_contract.py, no database):
+  CAUGHT  allocation ignores the line balance (4 checks fail)
+  CAUGHT  allocation on an invoice issued after the payment (1)
+  CAUGHT  the payment's own invoice not first (1)
+  CAUGHT  a reversal does not reopen its line (1)
+  CAUGHT  the merge compares values the wrong way (1)
+  CAUGHT  a vocabulary variant maps to a non-canonical value (2)
+  CAUGHT  evidence reads a flag computed from priority as a priority repair (1)
+Database suite (scripts/test_staging.py):
+  CAUGHT  survivorship ignores updated_at: 3 failing check(s)
+        [FAIL] survivorship on the 60 conflicting ticket pairs (120 warned copies): the copy with the latest status time is staged, every time
+        [FAIL] two versions of a unit in one batch: the latest updated_at (floor 41) wins although it was landed first; 1 superseded, 1 updated
+        [FAIL] an older version landed later (updated_at 2020) does not replace the newer one: unchanged (US-5.3: never with an older version)
+  CAUGHT  an older version replaces a newer one: 1 failing check(s)
+        [FAIL] an older version landed later (updated_at 2020) does not replace the newer one: unchanged (US-5.3: never with an older version)
+  CAUGHT  a batch in the same second as the watermark is skipped: 1 failing check(s)
+        [FAIL] a batch landed in the same second as the watermark (2026-11-17 01:59:16) is read once, then not again
+  First run: MISSED  merge updates rows whose values did not change. A rerun reads nothing, so no
+  check re-landed an unchanged row. Check added (the same owner row landed again: unchanged, not updated); rerun:
+  CAUGHT  merge updates rows whose values did not change: 1 failing check(s)
+        [FAIL] the same row landed again (owner OW-0001, a new batch): read 1, unchanged 1, updated 0 (an update only when a value differs)
+Result: 11 of 11 caught (after one test addition).
