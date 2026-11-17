@@ -1,5 +1,7 @@
 """Shared PDF building blocks for the Phase 2 reports (reportlab)."""
 
+# ruff: noqa: E501  (drawing coordinates: long lines read better)
+
 from __future__ import annotations
 
 from datetime import date
@@ -118,4 +120,41 @@ def build(path, title: str, subtitle: str, story: list) -> None:
     doc.build(head + story, onFirstPage=footer, onLaterPages=footer)
 
 
-__all__ = ["PageBreak", "Spacer", "bullets", "build", "escape", "fmt", "keep", "mm", "p", "table"]
+__all__ = ["PageBreak", "Spacer", "bullets", "build", "escape", "flow", "fmt", "keep", "mm", "p", "table"]
+
+
+def flow(steps: list[tuple[str, str]], side: tuple[int, str, str] | None = None):
+    """A left-to-right pipeline diagram: boxes (title, caption) joined by arrows; side = (index of
+    the box it hangs from, title, caption) for a branch drawn below that box."""
+    from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
+
+    width, n = 174 * mm, len(steps)
+    gap = 7 * mm
+    box_w = (width - gap * (n - 1)) / n
+    box_h, top = 17 * mm, 34 * mm if side else 20 * mm
+    d = Drawing(width, top + 2)
+    y = top - box_h
+    for i, (title, caption) in enumerate(steps):
+        x = i * (box_w + gap)
+        d.add(Rect(x, y, box_w, box_h, fillColor=SHADE, strokeColor=ACCENT, strokeWidth=0.8, rx=3, ry=3))
+        d.add(String(x + box_w / 2, y + box_h - 6.5 * mm, title, fontName="Helvetica-Bold",
+                     fontSize=8.2, fillColor=ACCENT, textAnchor="middle"))  # fmt: skip
+        for k, line in enumerate(caption.split("\n")):
+            d.add(String(x + box_w / 2, y + box_h - 10.5 * mm - k * 3.2 * mm, line,
+                         fontName="Helvetica", fontSize=6.6, fillColor=INK, textAnchor="middle"))  # fmt: skip
+        if i < n - 1:
+            ax, ay = x + box_w + 1, y + box_h / 2
+            d.add(Line(ax, ay, ax + gap - 3, ay, strokeColor=ACCENT, strokeWidth=0.9))
+            d.add(Polygon([ax + gap - 2, ay, ax + gap - 5, ay + 2, ax + gap - 5, ay - 2],
+                          fillColor=ACCENT, strokeColor=ACCENT))  # fmt: skip
+    if side:
+        i, title, caption = side
+        x = i * (box_w + gap)
+        sy = 0
+        d.add(Line(x + box_w / 2, y - 1, x + box_w / 2, sy + 10 * mm + 2, strokeColor=colors.HexColor("#b42318"), strokeWidth=0.9))
+        d.add(Rect(x, sy, box_w, 10 * mm, fillColor=colors.HexColor("#fdecea"), strokeColor=colors.HexColor("#b42318"), strokeWidth=0.8, rx=3, ry=3))
+        d.add(String(x + box_w / 2, sy + 6 * mm, title, fontName="Helvetica-Bold", fontSize=7.6,
+                     fillColor=colors.HexColor("#b42318"), textAnchor="middle"))  # fmt: skip
+        d.add(String(x + box_w / 2, sy + 2.6 * mm, caption, fontName="Helvetica", fontSize=6.4,
+                     fillColor=INK, textAnchor="middle"))  # fmt: skip
+    return d
