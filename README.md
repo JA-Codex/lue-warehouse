@@ -18,7 +18,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Data quality and quarantine (E4): rule catalogue and engine, DQ-01 to DQ-06, proof against the answer key | US-4.1 to US-4.4 (Done) |
 | Staging (E5): clean, standardise, deduplicate, business fields, incremental merge, cleaning evidence | US-5.1 to US-5.4 (Done) |
 | Dimensions (E6): loader pattern and surrogate keys | US-6.1 (Done); US-6.2 to US-6.5 in progress |
-| Facts, marts, reports | Phase 2 and 3, pending |
+| Phase 2 reports: Data Cleaning, Data Quality, Implementation (generated, `make reports`) | Done |
+| Facts, marts, Phase 3 reports | Pending |
 
 ## Layout
 
@@ -116,7 +117,6 @@ make help        list the targets
 make setup       install dependencies and run PostgreSQL connection test (US-0.4)
 make test        lint + SQL parse + frozen-pack + DDL contract check + generator tests (what CI runs)
 make rebuild     stub until the pipeline exists; must always pass on main
-make reports     stub
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
 make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
@@ -129,6 +129,8 @@ make stage       load the 20 staging tables (incremental; FULL=1 reloads all), e
 make staging-test E5 acceptance tests: 35 PASS lines (reloads src_pms, bronze and staging; about 7 minutes)
 make dims        load the dimensions from staging: surrogate keys, Type 1 overwrites (E6)
 make dims-test   US-6.1 acceptance tests: 11 PASS lines (empties and reloads the dimension members)
+make reports     build the Phase 2 reports from the warehouse: docs/reports/LUE_Data_Cleaning_Report.pdf,
+                 LUE_Data_Quality_Report.pdf, LUE_Phase2_Implementation.pdf (every number read, none typed)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)

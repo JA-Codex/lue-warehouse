@@ -51,9 +51,6 @@ weather: ## Download the S5 weather once into data/weather_cache.json; resumes i
 weather-check: ## Check data/weather_cache.json covers every city and day; no network (US-2.5)
 	$(PYTHON) etl/refresh_weather.py --check
 
-reports: ## Stub: generate the report PDFs (E9, E14)
-	@echo "reports: not implemented yet"
-
 db-setup: ## Create databases, roles and schemas; safe to re-run (US-1.1)
 	$(PYTHON) scripts/db_setup.py
 
@@ -97,6 +94,9 @@ dims: ## Load the dimensions from staging: new members get surrogate keys, Type 
 
 dims-test: ## Dimension acceptance tests (US-6.1); empties and reloads the dimension members
 	$(PYTHON) scripts/test_dim_load.py
+
+reports: ## Build the Phase 2 reports (cleaning, quality, implementation) from the warehouse into docs/reports/
+	$(PYTHON) etl/reports/build.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
 	$(PYTHON) scripts/db_reset.py
