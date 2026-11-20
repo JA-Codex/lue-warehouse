@@ -186,6 +186,9 @@ DIMS = [
                t.source_system
         FROM lue_staging.stg_tenant t""",
         history=TENANT_HISTORY,
+        references="""
+        SELECT tenant_code FROM lue_staging.stg_lease WHERE tenant_code IS NOT NULL
+        UNION SELECT tenant_code FROM lue_staging.stg_payment WHERE tenant_code IS NOT NULL""",
         cols={"tenant_name": 1, "tenant_type": 2, "employer_sector": 2, "contact_channel": 1}),
     Dim("dim_lease", "lease_key", ["lease_number"], story="US-6.4", staging=["stg_lease"],
         depends=["dim_unit", "dim_tenant"],

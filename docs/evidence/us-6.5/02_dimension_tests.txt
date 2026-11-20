@@ -1,0 +1,68 @@
+======================================================================
+ E6 contract tests: dimension spec and loader (no database)
+======================================================================
+US-6.1 The spec against the frozen design
+  [PASS] 13 dimensions in the DDL; the 5 static ones of US-1.4 among them
+  [PASS] every dimension of the spec exists, once, and is not a static one: dim_owner, dim_vendor, dim_maintenance_category, dim_incentive, dim_weather, dim_unit, dim_tenant, dim_lease
+  [PASS] the surrogate key is the identity column; every column exists; every NOT NULL column is filled on insert; SCD2 and inferred flags match the DDL
+  [PASS] every column's SCD type is the data dictionary's (Phase 1 model.py): dim_owner Type 1 ['owner_name', 'owner_type', 'portfolio_size_band'], Type 2 [], dim_vendor Type 1 ['vendor_name', 'trade', 'phone'], Type 2 ['rating_band'], dim_maintenance_category Type 1 ['subcategory_name', 'category_name'], Type 2 ['default_sla_hours'], dim_incentive Type 1 ['incentive_type', 'incentive_description', 'discount_pct', 'rent_free_days'], Type 2 [], dim_weather Type 1 ['rainfall_mm', 'rain_band', 'max_temp_c', 'heat_band'], Type 2 [], dim_unit Type 1 ['bedrooms', 'area_sqft', 'building_name', 'building_class', 'building_age_band', 'locality', 'city', 'region'], Type 2 ['unit_type', 'furnished_flag'], dim_tenant Type 1 ['tenant_name', 'contact_channel'], Type 2 ['tenant_type', 'employer_sector'], dim_lease Type 1 [], Type 2 []
+  [PASS] every source reads real staging columns (docs/contracts/staging.md)
+  [PASS] load order: the static dimensions (checked first), then the independent ones, then unit, tenant and lease
+  [PASS] a dimension's dependencies load before it
+US-6.1 The loader's SQL
+  [PASS] source, history, insert and Type 1 statements parse (pglast)
+  [PASS] insert: never names the surrogate key (the identity assigns it), only new natural keys, a first version valid from 1900-01-01 to 9999-12-31
+  [PASS] Type 1: only when a value differs, never on the special members, never a Type 2 column
+US-6.2 to US-6.5 SCD2 and inferred members (pure rules)
+  [PASS] versions from history: the first from 1900-01-01, a new one only when a Type 2 value changes
+  [PASS] two changes the same day: the later wins, one version
+  [PASS] a change undone the same day leaves no version
+  [PASS] several changes of one member are versioned in date order (plan US-6.2 step 3)
+  [PASS] new versions are only those after the current one: a rerun adds none (idempotent)
+  [PASS] a member loaded with its latest values before history was known: first version corrected, then versioned
+  [PASS] a change on the current version's own day is made in place; an older stored version that disagrees is reported, never rewritten
+  [PASS] every SCD2 dimension has a history giving its key, Type 2 columns, change date and order
+  [PASS] inferred members only where the DDL has is_inferred (dim_tenant); their SQL parses
+======================================================================
+ RESULT: 19/19 checks passed
+======================================================================
+
+======================================================================
+ E6 acceptance tests: the dimensions (US-6.1 to US-6.5)
+======================================================================
+Setup: the first extract into src_pms, bronze and staging; dimension members emptied
+  [PASS] first extract loaded, validated and staged
+US-6.1 and US-6.4 The first load
+  [PASS] holidays and 8 dimensions loaded in order: dim_date_holidays, dim_owner, dim_vendor, dim_maintenance_category, dim_incentive, dim_weather, dim_unit, dim_tenant, dim_lease
+  [PASS] every staged natural key is a member, once: owner 900, vendor 140, incentive 7, weather 4,384, unit 1,800, tenant 3,762, lease 5,883, maintenance_category 30
+  [PASS] the large dimensions hold over 100 members (the brief's minimum, full profile)
+  [PASS] surrogate keys unique and positive, the special members -1 and -2 untouched, in every dimension
+  [PASS] US-6.5: the 38 tenants leases and payments reference before they reach S1 are inferred members (the late_arriving file's tenants exactly)
+  [PASS] US-6.4: unit natural key building-unit; age, rain, heat and portfolio bands all in their domains
+  [PASS] US-6.4: dim_date holiday and Ramadan flags from the S2 register (59/116 public holidays / Ramadan days)
+US-6.3 Vendor and category history
+  [PASS] each vendor rating change (17) is one new version from the change date, the old rating kept before it
+  [PASS] each SLA change (4) is a new category version; every earlier SLA value is kept as it was
+  [PASS] US-6.1: a rerun inserts nothing, adds no version and changes nothing
+US-6.1 Type 1 in place, keys never reused, a bad source refused
+  [PASS] a Type 1 correction (the name of T-0001) is overwritten in place: same key 19380, no new version
+  [PASS] every surrogate key comes from its identity sequence, which only moves forward: a key is never reused
+  [PASS] a source with a natural key twice is refused and nothing changes
+US-6.2 and US-6.5 The next extract: tenant changes and late tenants
+======================================================================
+ Next extract applied to lue_source.src_pms.tenants
+  s1/late_arriving/tenants.csv     38 applied,    0 already as given
+  s1/changes/tenants.csv           76 applied,    0 already as given
+======================================================================
+  [PASS] next extract applied to src_pms (s1/changes and s1/late_arriving)
+  [PASS] 76 planted changes: 36 employer-sector (Type 2) changes give 36 new versions
+  [PASS] each Type 2 change: the old sector valid until the change date, the new one from it (one current version)
+  [PASS] each contact-channel change (40, Type 1 in the data dictionary) is overwritten in place, no version
+  [PASS] past-month query: T-0040 a month before 2025-05-03 is 'Healthcare', from 2025-05-03 'Construction'
+  [PASS] the 38 inferred tenants are completed in place: same key, is_inferred FALSE, no new version
+  [PASS] a rerun creates no version (idempotent)
+US-6.5 The SQL dimension tests
+  [PASS] 47 tests in sql/90_tests/01_dimension_tests.sql, 0 violations
+======================================================================
+ RESULT: 22/22 checks passed
+======================================================================

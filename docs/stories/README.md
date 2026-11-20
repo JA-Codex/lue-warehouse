@@ -48,6 +48,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-6.2 | Implement tenant SCD Type 2 | Hanan | Done | 2026-11-21 | [US-6.2](US-6.2.md) | [evidence](../evidence/us-6.2/) |
 | US-6.3 | Extend SCD2 to unit, vendor and category | Eesha (done by Hanan) | Done | 2026-11-21 | [US-6.3](US-6.3.md) | [evidence](../evidence/us-6.3/) |
 | US-6.4 | Load remaining dimensions and hierarchies | Eesha (done by Hanan) | Done | 2026-11-21 | [US-6.4](US-6.4.md) | [evidence](../evidence/us-6.4/) |
+| US-6.5 | Inferred members, late arrivals, dimension tests | Hanan | Done | 2026-11-21 | [US-6.5](US-6.5.md) | [evidence](../evidence/us-6.5/) |
 
 ## Later epics
 
@@ -94,3 +95,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-21 | Tenant history is rebuilt from bronze (staging keeps only the latest row); contact channel is Type 1 as the frozen dictionary says | [US-6.2](US-6.2.md) |
 | 2026-11-21 | Vendor rating history from the register's previous rating and change date; category SLA history from the policy's valid_from | [US-6.3](US-6.3.md) |
 | 2026-11-21 | Bands: building age as of today, owner portfolio from current ownership ('None' for no current unit), rain and heat from the dictionary's thresholds | [US-6.4](US-6.4.md) |
+| 2026-11-21 | Inferred members only on dim_tenant (the frozen DDL's is_inferred); completed in place when the record arrives | [US-6.5](US-6.5.md) |

@@ -1,0 +1,70 @@
+US-6.5 Inferred member lifecycle (full profile, seed 3004).
+
+1. After the first extract: leases and payments reference 38 tenants S1 has not sent yet; each is an inferred member with the Unknown member's attributes:
+ tenant_key | tenant_code | tenant_name | tenant_type | employer_sector | is_inferred | source_system 
+------------+-------------+-------------+-------------+-----------------+-------------+---------------
+      15230 | T-0010      | Unknown     | Unknown     | Unknown         | t           | INFERRED
+      15231 | T-0085      | Unknown     | Unknown     | Unknown         | t           | INFERRED
+      15232 | T-0135      | Unknown     | Unknown     | Unknown         | t           | INFERRED
+(3 rows)
+
+2. After the next extract (s1/late_arriving/tenants.csv reaches S1): completed in place, same key, no new version:
+ tenant_key | tenant_code |   tenant_name    | tenant_type |   employer_sector    | is_inferred | source_system | effective_from | effective_to 
+------------+-------------+------------------+-------------+----------------------+-------------+---------------+----------------+--------------
+      15230 | T-0010      | Anwar Associates | Corporate   | Banking              | f           | S1            | 1900-01-01     | 9999-12-31
+      15231 | T-0085      | Usman Hashmi     | Individual  | IT and Software      | f           | S1            | 1900-01-01     | 9999-12-31
+      15232 | T-0135      | Khalid Ghafoor   | Individual  | Legal and Consulting | f           | S1            | 1900-01-01     | 9999-12-31
+(3 rows)
+
+3. The SQL dimension tests (sql/90_tests/01_dimension_tests.sql):
+                                    test                                     | violations 
+-----------------------------------------------------------------------------+------------
+ dim_date: holiday flags equal the S2 register                               |          0
+ dim_incentive: no NULL key or natural key                                   |          0
+ dim_incentive: one row per natural key                                      |          0
+ dim_incentive: special members -1 and -2 present                            |          0
+ dim_incentive: surrogate key unique                                         |          0
+ dim_lease: no NULL key or natural key                                       |          0
+ dim_lease: one row per natural key                                          |          0
+ dim_lease: special members -1 and -2 present                                |          0
+ dim_lease: surrogate key unique                                             |          0
+ dim_maintenance_category: current version open to 9999-12-31, others closed |          0
+ dim_maintenance_category: exactly one current version per natural key       |          0
+ dim_maintenance_category: first version starts 1900-01-01                   |          0
+ dim_maintenance_category: no NULL key or natural key                        |          0
+ dim_maintenance_category: no gap or overlap between versions                |          0
+ dim_maintenance_category: special members -1 and -2 present                 |          0
+ dim_maintenance_category: surrogate key unique                              |          0
+ dim_owner: no NULL key or natural key                                       |          0
+ dim_owner: one row per natural key                                          |          0
+ dim_owner: special members -1 and -2 present                                |          0
+ dim_owner: surrogate key unique                                             |          0
+ dim_tenant: an inferred member has one version only                         |          0
+ dim_tenant: current version open to 9999-12-31, others closed               |          0
+ dim_tenant: exactly one current version per natural key                     |          0
+ dim_tenant: first version starts 1900-01-01                                 |          0
+ dim_tenant: no NULL key or natural key                                      |          0
+ dim_tenant: no gap or overlap between versions                              |          0
+ dim_tenant: special members -1 and -2 present                               |          0
+ dim_tenant: surrogate key unique                                            |          0
+ dim_unit: current version open to 9999-12-31, others closed                 |          0
+ dim_unit: every hierarchy level populated                                   |          0
+ dim_unit: exactly one current version per natural key                       |          0
+ dim_unit: first version starts 1900-01-01                                   |          0
+ dim_unit: no NULL key or natural key                                        |          0
+ dim_unit: no gap or overlap between versions                                |          0
+ dim_unit: special members -1 and -2 present                                 |          0
+ dim_unit: surrogate key unique                                              |          0
+ dim_vendor: current version open to 9999-12-31, others closed               |          0
+ dim_vendor: exactly one current version per natural key                     |          0
+ dim_vendor: first version starts 1900-01-01                                 |          0
+ dim_vendor: no NULL key or natural key                                      |          0
+ dim_vendor: no gap or overlap between versions                              |          0
+ dim_vendor: special members -1 and -2 present                               |          0
+ dim_vendor: surrogate key unique                                            |          0
+ dim_weather: no NULL key or natural key                                     |          0
+ dim_weather: one row per natural key                                        |          0
+ dim_weather: special members -1 and -2 present                              |          0
+ dim_weather: surrogate key unique                                           |          0
+(47 rows)
+

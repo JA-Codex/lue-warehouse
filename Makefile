@@ -92,8 +92,11 @@ staging-test: ## Staging acceptance tests (US-5.1 to US-5.4); reloads src_pms, b
 dims: ## Load the dimensions from staging: new members get surrogate keys, Type 1 overwritten (E6)
 	$(PYTHON) etl/dimensions/run.py
 
-dims-test: ## Dimension acceptance tests (US-6.1); empties and reloads the dimension members
+dims-test: ## Dimension acceptance tests (US-6.1 to US-6.5); reloads src_pms, bronze, staging and the dimensions
 	$(PYTHON) scripts/test_dim_load.py
+
+next-extract: ## Apply the generator's next S1 extract (tenant changes, late tenants) to src_pms (US-6.2, US-6.5)
+	$(PYTHON) scripts/db_apply_next_extract.py
 
 reports: ## Build the Phase 2 reports (cleaning, quality, implementation) from the warehouse into docs/reports/
 	$(PYTHON) etl/reports/build.py
