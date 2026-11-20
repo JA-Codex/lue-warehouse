@@ -46,6 +46,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-5.4 | Capture cleaning evidence | Ahmad Waqar (done by Hanan) | Done | 2026-11-17 | [US-5.4](US-5.4.md) | [evidence](../evidence/us-5.4/) |
 | US-6.1 | Build the dimension loader pattern and surrogate keys | Hanan | Done | 2026-11-17 | [US-6.1](US-6.1.md) | [evidence](../evidence/us-6.1/) |
 | US-6.2 | Implement tenant SCD Type 2 | Hanan | Done | 2026-11-21 | [US-6.2](US-6.2.md) | [evidence](../evidence/us-6.2/) |
+| US-6.3 | Extend SCD2 to unit, vendor and category | Eesha (done by Hanan) | Done | 2026-11-21 | [US-6.3](US-6.3.md) | [evidence](../evidence/us-6.3/) |
 
 ## Later epics
 
@@ -90,3 +91,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-17 | The staging watermark is `loaded_at` plus the last batch read; counts per run in new `lue_audit.stg_load` | [US-5.3](US-5.3.md) |
 | 2026-11-17 | Dimensions are data (`etl/dimensions/spec.py`, SCD types checked against the Phase 1 dictionary in CI); one loader; a member's first SCD2 version is valid from 1900-01-01 | [US-6.1](US-6.1.md) |
 | 2026-11-21 | Tenant history is rebuilt from bronze (staging keeps only the latest row); contact channel is Type 1 as the frozen dictionary says | [US-6.2](US-6.2.md) |
+| 2026-11-21 | Vendor rating history from the register's previous rating and change date; category SLA history from the policy's valid_from | [US-6.3](US-6.3.md) |

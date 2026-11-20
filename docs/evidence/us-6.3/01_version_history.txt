@@ -1,0 +1,41 @@
+US-6.3 SCD2 for vendor and maintenance category; unit (no planted unit change). Version samples:
+
+Vendor rating history (from the register's previous rating and change date):
+ vendor_key | vendor_code | rating_band | effective_from | effective_to | is_current 
+------------+-------------+-------------+----------------+--------------+------------
+        315 | V-001       | C           | 1900-01-01     | 2026-02-22   | f
+        455 | V-001       | B           | 2026-02-22     | 9999-12-31   | t
+        317 | V-003       | B           | 1900-01-01     | 2024-03-25   | f
+        456 | V-003       | C           | 2024-03-25     | 9999-12-31   | t
+(4 rows)
+
+Maintenance category SLA history (a changed SLA is a new version; the old one is kept):
+ maint_category_key | subcategory_code | default_sla_hours | effective_from | effective_to | is_current 
+--------------------+------------------+-------------------+----------------+--------------+------------
+                 91 | PLB-GEYSER       |                72 | 1900-01-01     | 2024-05-28   | f
+                 99 | PLB-GEYSER       |                36 | 2024-05-28     | 9999-12-31   | t
+                 93 | PLB-SEWER        |                24 | 1900-01-01     | 2024-04-06   | f
+                100 | PLB-SEWER        |                12 | 2024-04-06     | 9999-12-31   | t
+                 95 | PLB-TAP          |                72 | 1900-01-01     | 2026-03-21   | f
+                101 | PLB-TAP          |                36 | 2026-03-21     | 9999-12-31   | t
+                 96 | PST-FUM          |                72 | 1900-01-01     | 2025-09-13   | f
+                102 | PST-FUM          |                36 | 2025-09-13     | 9999-12-31   | t
+(8 rows)
+
+Unit versions (one per unit: no unit type or furnished change in the data):
+ unit_key |   unit_nk   | unit_type | furnished_flag | effective_from | effective_to | is_current 
+----------+-------------+-----------+----------------+----------------+--------------+------------
+     3601 | BHD01-A-001 | Shop      | f              | 1900-01-01     | 9999-12-31   | t
+     3602 | BHD01-A-002 | Shop      | f              | 1900-01-01     | 9999-12-31   | t
+     3603 | BHD01-A-003 | Apartment | t              | 1900-01-01     | 9999-12-31   | t
+(3 rows)
+
+Versions per SCD2 dimension:
+           dim            | rows_ | members 
+--------------------------+-------+---------
+ dim_unit                 |  1800 |    1800
+ dim_tenant               |  3836 |    3800
+ dim_vendor               |   157 |     140
+ dim_maintenance_category |    34 |      30
+(4 rows)
+

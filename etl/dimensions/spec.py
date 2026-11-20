@@ -91,7 +91,6 @@ TENANT_HISTORY = f"""
            ({staging.BY_NAME['stg_tenant'].updated})::date AS change_date,
            row_number() OVER (ORDER BY {staging.BY_NAME['stg_tenant'].updated}, b.loaded_at, b.row_id) AS seq
     FROM lue_staging.brz_tenant b WHERE {validated('brz_tenant')}"""
-# (unit history: US-6.3)
 UNIT_NK = f"{expr('stg_unit', 'building_code')} || '-' || {expr('stg_unit', 'unit_no')}"
 UNIT_HISTORY = f"""
     SELECT {UNIT_NK} AS unit_nk,
@@ -102,6 +101,49 @@ UNIT_HISTORY = f"""
     FROM lue_staging.brz_unit b WHERE {validated('brz_unit')}"""
 
 DIMS = [
+    Dim("dim_vendor", "vendor_key", ["vendor_code"], story="US-6.3", scd2=True,
+        staging=["stg_vendor"],
+        source="""
+        SELECT v.vendor_code, coalesce(v.vendor_name, 'Unknown') AS vendor_name,
+               coalesce(v.trade, 'Unknown') AS trade, coalesce(v.rating, '?') AS rating_band,
+               coalesce(v.phone, 'Unknown') AS phone, v.source_system
+        FROM lue_staging.stg_vendor v""",
+        history="""
+        SELECT v.vendor_code, coalesce(v.previous_rating, v.rating, '?') AS rating_band,
+               DATE '1900-01-01' AS change_date, 1 AS seq
+        FROM lue_staging.stg_vendor v
+        UNION ALL
+        SELECT v.vendor_code, coalesce(v.rating, '?'), v.rating_changed_on, 2
+        FROM lue_staging.stg_vendor v WHERE v.rating_changed_on IS NOT NULL""",
+        cols={"vendor_name": 1, "trade": 1, "rating_band": 2, "phone": 1}),
+    Dim("dim_maintenance_category", "maint_category_key", ["subcategory_code"], story="US-6.3", scd2=True,
+        staging=["stg_maintenance_category"],
+        source="""
+        SELECT DISTINCT ON (c.subcategory_code) c.subcategory_code,
+               coalesce(c.subcategory_name, 'Unknown') AS subcategory_name,
+               coalesce(c.category_name, 'Unknown') AS category_name,
+               coalesce(c.default_sla_hours, 0) AS default_sla_hours, c.source_system
+        FROM lue_staging.stg_maintenance_category c
+        ORDER BY c.subcategory_code, c.valid_from DESC""",
+        history="""
+        SELECT c.subcategory_code, coalesce(c.default_sla_hours, 0) AS default_sla_hours,
+               c.valid_from AS change_date, row_number() OVER (ORDER BY c.valid_from) AS seq
+        FROM lue_staging.stg_maintenance_category c""",
+        cols={"subcategory_name": 1, "category_name": 1, "default_sla_hours": 2}),
+    Dim("dim_unit", "unit_key", ["unit_nk"], story="US-6.3", scd2=True, staging=["stg_unit", "stg_building"],
+        source=f"""
+        SELECT u.building_code || '-' || u.unit_no AS unit_nk, u.building_code, u.unit_no,
+               coalesce(u.unit_type, 'Unknown') AS unit_type, coalesce(u.bedrooms, 0) AS bedrooms,
+               coalesce(u.area_sqft, 0) AS area_sqft, coalesce(u.furnished, FALSE) AS furnished_flag,
+               coalesce(u.floor_no, 0) AS floor_no, coalesce(b.building_name, 'Unknown') AS building_name,
+               coalesce(b.building_class, '?') AS building_class, {age_band('b.year_built')} AS building_age_band,
+               coalesce(b.locality, 'Unknown') AS locality, coalesce(b.city, 'Unknown') AS city,
+               coalesce(b.region, 'Unknown') AS region, u.source_system
+        FROM lue_staging.stg_unit u LEFT JOIN lue_staging.stg_building b USING (building_code)""",
+        history=UNIT_HISTORY,
+        cols={"building_code": 0, "unit_no": 0, "unit_type": 2, "bedrooms": 1, "area_sqft": 1,
+              "furnished_flag": 2, "floor_no": 0, "building_name": 1, "building_class": 1,
+              "building_age_band": 1, "locality": 1, "city": 1, "region": 1}),
     Dim("dim_tenant", "tenant_key", ["tenant_code"], story="US-6.1", scd2=True, inferred=True,
         staging=["stg_tenant"],
         source="""
