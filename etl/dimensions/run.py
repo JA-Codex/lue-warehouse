@@ -52,8 +52,22 @@ def dim_step(d: spec.Dim, now: datetime, box: dict):
                          "new members inserted (identity surrogate key); Type 1 overwritten in "
                          "place" + ("; Type 2 by the SCD2 step" if d.type2 else ""))  # fmt: skip
         r = step.result
-        r.rows_read, r.rows_written, r.rows_updated = result.read, result.inserted, result.updated
+        r.rows_read, r.rows_written, r.rows_updated = result.read, result.written, result.changed
+        if result.history_conflicts:
+            r.warning = True
+            step.warn(f"{result.history_conflicts} members' history disagrees with a stored "
+                      "version (left as stored)")  # fmt: skip
         box[d.name] = result
+
+    return run
+
+
+def holiday_step(box: dict):
+    def run(step) -> None:
+        step.result.rows_updated = box["holidays"] = load.load_holidays(step.cur)
+        step.result.rows_read = step.result.rows_updated
+        step.lineage("lue_dw.dim_date", "lue_staging.stg_holiday", "staging -> dimension",
+                     "holiday and Ramadan flags from the S2 register (US-6.4)")
 
     return run
 
@@ -85,19 +99,25 @@ def main(argv: list[str] | None = None) -> int:
     except (IngestError, NotReady) as exc:
         print(f"[FAIL] {exc}")
         return 2
-    print("=" * 78)
+    line = "=" * 96
+    print(line)
     print(f" Dimension run {run_id}")
-    print("=" * 78)
-    print(f"  {'dimension':26} {'status':8} {'read':>8} {'inserted':>9} {'updated':>8} "
-          f"{'unchanged':>10}")  # fmt: skip
+    print(line)
+    print(f"  {'dimension':26} {'status':8} {'read':>7} {'inserted':>8} {'versions':>8} "
+          f"{'inferred':>8} {'completed':>9} {'type 1':>7} {'unchanged':>9}")  # fmt: skip
     for res in results:
         x = loads.get(res.step)
-        if x is None:
+        if res.step == "dim_date_holidays":
+            print(f"  {'dim_date (holidays)':26} {res.status:8} {'':>7} {'':>8} {'':>8} {'':>8} "
+                  f"{'':>9} {loads.get('holidays', 0):>7,}")  # fmt: skip
+        elif x is None:
             print(f"  {res.step:26} {res.status:8} {res.message}")
         else:
-            print(f"  {res.step:26} {res.status:8} {x.read:>8,} {x.inserted:>9,} {x.updated:>8,} "
-                  f"{x.unchanged:>10,}")  # fmt: skip
-    print("=" * 78)
+            print(f"  {res.step:26} {res.status:8} {x.read:>7,} {x.inserted:>8,} {x.versions:>8,} "
+                  f"{x.inferred_created:>8,} {x.inferred_completed:>9,} {x.updated:>7,} "
+                  f"{x.unchanged:>9,}" + (f"  history conflicts {x.history_conflicts}"
+                                           if x.history_conflicts else ""))  # fmt: skip
+    print(line)
     return 1 if any(res.status == "Failed" for res in results) else 0
 
 
