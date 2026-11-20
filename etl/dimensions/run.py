@@ -85,7 +85,8 @@ def load_all(settings: dict | None = None):
     box: dict = {}
     try:
         now = datetime.now().replace(microsecond=0)
-        results = [r.step(d.name, "STG", dim_step(d, now, box)) for d in spec.DIMS]
+        results = [r.step("dim_date_holidays", "S2", holiday_step(box))]
+        results += [r.step(d.name, "STG", dim_step(d, now, box)) for d in spec.DIMS]
         return r.run_id, results, box
     finally:
         r.close()

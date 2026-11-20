@@ -101,6 +101,18 @@ UNIT_HISTORY = f"""
     FROM lue_staging.brz_unit b WHERE {validated('brz_unit')}"""
 
 DIMS = [
+    Dim("dim_owner", "owner_key", ["owner_code"], story="US-6.4", staging=["stg_owner", "stg_ownership"],
+        source="""
+        SELECT o.owner_code, coalesce(o.owner_name, 'Unknown') AS owner_name,
+               coalesce(o.owner_type, 'Unknown') AS owner_type,
+               CASE count(s.unit_no) WHEN 0 THEN 'None' WHEN 1 THEN '1 unit'
+                    ELSE CASE WHEN count(s.unit_no) <= 5 THEN '2–5 units' ELSE '6+ units' END END AS portfolio_size_band,
+               o.source_system
+        FROM lue_staging.stg_owner o
+        LEFT JOIN lue_staging.stg_ownership s ON s.owner_code = o.owner_code
+             AND s.valid_from <= current_date AND (s.valid_to IS NULL OR s.valid_to >= current_date)
+        GROUP BY o.owner_code, o.owner_name, o.owner_type, o.source_system""",
+        cols={"owner_name": 1, "owner_type": 1, "portfolio_size_band": 1}),
     Dim("dim_vendor", "vendor_key", ["vendor_code"], story="US-6.3", scd2=True,
         staging=["stg_vendor"],
         source="""
@@ -130,6 +142,25 @@ DIMS = [
                c.valid_from AS change_date, row_number() OVER (ORDER BY c.valid_from) AS seq
         FROM lue_staging.stg_maintenance_category c""",
         cols={"subcategory_name": 1, "category_name": 1, "default_sla_hours": 2}),
+    Dim("dim_incentive", "incentive_key", ["incentive_code"], story="US-6.4", staging=["stg_incentive_offer"],
+        source="""
+        SELECT i.offer_code AS incentive_code, coalesce(i.offer_type, 'Unknown') AS incentive_type,
+               coalesce(i.description, 'Unknown') AS incentive_description,
+               coalesce(i.discount_pct, 0) AS discount_pct, coalesce(i.rent_free_days, 0) AS rent_free_days,
+               i.source_system
+        FROM lue_staging.stg_incentive_offer i""",
+        cols={"incentive_type": 1, "incentive_description": 1, "discount_pct": 1, "rent_free_days": 1}),
+    Dim("dim_weather", "weather_key", ["city", "weather_date"], story="US-6.4", staging=["stg_weather"],
+        source="""
+        SELECT w.city, w.weather_date, coalesce(w.rainfall_mm, 0) AS rainfall_mm,
+               CASE WHEN w.rainfall_mm IS NULL THEN 'Unknown' WHEN w.rainfall_mm < 1 THEN 'None'
+                    WHEN w.rainfall_mm <= 10 THEN 'Light' ELSE 'Heavy' END AS rain_band,
+               coalesce(w.max_temp_c, 0) AS max_temp_c,
+               CASE WHEN w.max_temp_c IS NULL THEN 'Unknown' WHEN w.max_temp_c < 35 THEN 'Mild'
+                    WHEN w.max_temp_c <= 40 THEN 'Hot' ELSE 'Extreme' END AS heat_band,
+               w.source_system
+        FROM lue_staging.stg_weather w""",
+        cols={"rainfall_mm": 1, "rain_band": 1, "max_temp_c": 1, "heat_band": 1}),
     Dim("dim_unit", "unit_key", ["unit_nk"], story="US-6.3", scd2=True, staging=["stg_unit", "stg_building"],
         source=f"""
         SELECT u.building_code || '-' || u.unit_no AS unit_nk, u.building_code, u.unit_no,
@@ -156,6 +187,26 @@ DIMS = [
         FROM lue_staging.stg_tenant t""",
         history=TENANT_HISTORY,
         cols={"tenant_name": 1, "tenant_type": 2, "employer_sector": 2, "contact_channel": 1}),
+    Dim("dim_lease", "lease_key", ["lease_number"], story="US-6.4", staging=["stg_lease"],
+        depends=["dim_unit", "dim_tenant"],
+        source="""
+        SELECT l.lease_number, coalesce(l.lease_type, 'Unknown') AS lease_type, l.start_date, l.end_date,
+               coalesce(l.term_months, 0) AS term_months, coalesce(l.monthly_rent, 0) AS original_monthly_rent,
+               coalesce(l.rent_review_type, 'Unknown') AS rent_review_type, l.previous_lease_number,
+               l.source_system
+        FROM lue_staging.stg_lease l""",
+        cols={"lease_type": 0, "start_date": 0, "end_date": 0, "term_months": 0, "original_monthly_rent": 0,
+              "rent_review_type": 0, "previous_lease_number": 0}),
 ]  # fmt: skip
 BY_NAME = {d.name: d for d in DIMS}
 
+# The calendar's holiday flags from the S2 register (US-6.4): every date of dim_date, the register
+# is a full snapshot (a date it no longer lists goes back to FALSE / NULL).
+HOLIDAYS = """
+    UPDATE lue_dw.dim_date d
+    SET is_public_holiday = coalesce(h.is_public_holiday, FALSE), holiday_name = h.holiday_name,
+        is_ramadan = coalesce(h.is_ramadan, FALSE)
+    FROM lue_dw.dim_date x LEFT JOIN lue_staging.stg_holiday h ON h.holiday_date = x.full_date
+    WHERE d.date_key = x.date_key AND x.date_key > 0
+      AND (d.is_public_holiday, d.holiday_name, d.is_ramadan) IS DISTINCT FROM
+          (coalesce(h.is_public_holiday, FALSE), h.holiday_name, coalesce(h.is_ramadan, FALSE))"""

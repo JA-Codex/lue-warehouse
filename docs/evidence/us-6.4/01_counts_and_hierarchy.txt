@@ -1,0 +1,68 @@
+US-6.4 Dimension row counts and hierarchy completeness (full profile, seed 3004).
+
+           dim            | members 
+--------------------------+---------
+ dim_unit                 |    1800
+ dim_tenant               |    3836
+ dim_lease                |    5883
+ dim_owner                |     900
+ dim_vendor               |     157
+ dim_maintenance_category |      34
+ dim_incentive            |       7
+ dim_weather              |    4384
+ dim_date                 |    1461
+(9 rows)
+
+Unit hierarchy: unit -> floor -> building -> locality -> city -> region, members missing a level:
+ units | missing_a_level 
+-------+-----------------
+  1800 |               0
+(1 row)
+
+           region            |    city    | localities | buildings | units 
+-----------------------------+------------+------------+-----------+-------
+ Islamabad Capital Territory | Islamabad  |          6 |         8 |   370
+ Islamabad Capital Territory |            |          6 |         8 |   370
+ Punjab                      | Faisalabad |          3 |         6 |   251
+ Punjab                      | Lahore     |          6 |        16 |   752
+ Punjab                      |            |          9 |        22 |  1003
+ Sindh                       | Karachi    |          6 |        10 |   427
+ Sindh                       |            |          6 |        10 |   427
+                             |            |         21 |        40 |  1800
+(8 rows)
+
+Bands:
+ building_age_band | buildings 
+-------------------+-----------
+ 0–5 yrs           |         1
+ 16+ yrs           |        27
+ 6–15 yrs          |        12
+(3 rows)
+
+ portfolio_size_band | owners 
+---------------------+--------
+ 1 unit              |    353
+ 2–5 units           |    490
+ 6+ units            |     13
+ None                |     44
+(4 rows)
+
+ rain_band | heat_band | city_days 
+-----------+-----------+-----------
+ Heavy     | Extreme   |         2
+ Heavy     | Hot       |        11
+ Heavy     | Mild      |       221
+ Light     | Extreme   |         8
+ Light     | Hot       |        92
+ Light     | Mild      |       505
+ None      | Extreme   |       232
+ None      | Hot       |       600
+ None      | Mild      |      2713
+(9 rows)
+
+Calendar flags from the S2 holiday register:
+ public_holidays | ramadan_days 
+-----------------+--------------
+              59 |          116
+(1 row)
+
