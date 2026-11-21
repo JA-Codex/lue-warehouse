@@ -134,15 +134,26 @@ def test_date(cur) -> None:
     )
     cur.execute("SELECT count(DISTINCT fiscal_year_label) FROM lue_dw.dim_date WHERE date_key > 0")
     check(cur.fetchone()[0] == 4, "four fiscal years: FY2023-24 to FY2026-27")
-    check(
-        scalar(
-            cur,
-            "SELECT count(*) FROM lue_dw.dim_date WHERE date_key > 0 "
-            "AND (is_public_holiday OR is_ramadan OR holiday_name IS NOT NULL)",
-        )
-        == 0,
-        "holiday and Ramadan flags start FALSE (US-6.4 fills them)",
+    # The flags start FALSE; US-6.4 (python etl/dimensions/run.py) then sets them from
+    # lue_staging.stg_holiday. Either state is right; anything else is not.
+    flagged = scalar(
+        cur,
+        "SELECT count(*) FROM lue_dw.dim_date WHERE date_key > 0 "
+        "AND (is_public_holiday OR is_ramadan OR holiday_name IS NOT NULL)",
     )
+    if flagged == 0:
+        check(True, "holiday and Ramadan flags start FALSE (US-6.4 fills them)")
+    elif scalar(cur, "SELECT to_regclass('lue_staging.stg_holiday') IS NULL"):
+        check(False, f"{flagged} days flagged as holidays, but there is no lue_staging.stg_holiday")
+    else:
+        wrong = scalar(
+            cur,
+            "SELECT count(*) FROM lue_dw.dim_date d LEFT JOIN lue_staging.stg_holiday h "
+            "ON h.holiday_date = d.full_date WHERE d.date_key > 0 AND "
+            "(d.is_public_holiday, d.holiday_name, d.is_ramadan) IS DISTINCT FROM "
+            "(coalesce(h.is_public_holiday, FALSE), h.holiday_name, coalesce(h.is_ramadan, FALSE))",
+        )
+        check(wrong == 0, f"holiday and Ramadan flags set by US-6.4 from stg_holiday ({flagged})")
 
 
 def test_static(cur) -> None:

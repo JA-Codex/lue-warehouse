@@ -38,6 +38,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_quality_contract.py
 	$(PYTHON) scripts/test_staging_contract.py
 	$(PYTHON) scripts/test_dim_load_contract.py
+	$(PYTHON) scripts/test_fact_load_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -97,6 +98,12 @@ dims-test: ## Dimension acceptance tests (US-6.1 to US-6.5); reloads src_pms, br
 
 next-extract: ## Apply the generator's next S1 extract (tenant changes, late tenants) to src_pms (US-6.2, US-6.5)
 	$(PYTHON) scripts/db_apply_next_extract.py
+
+facts: ## Load the facts from staging and the dimensions: keys point in time, synced on the grain (E7)
+	$(PYTHON) etl/facts/run.py
+
+facts-test: ## Fact acceptance tests (US-7.1 on); needs staging and the dimensions loaded (make stage, make dims)
+	$(PYTHON) scripts/test_fact_load.py
 
 reports: ## Build the Phase 2 reports (cleaning, quality, implementation) from the warehouse into docs/reports/
 	$(PYTHON) etl/reports/build.py

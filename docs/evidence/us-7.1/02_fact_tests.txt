@@ -1,0 +1,54 @@
+US-7.1 tests (full profile, seed 3004).
+
+1. python scripts/test_fact_load_contract.py (no database, in make gen-test)
+======================================================================
+ E7 contract tests: fact spec, key lookups and loader (no database)
+======================================================================
+US-7.1 The spec against the frozen design
+  [PASS] 6 facts in the DDL: fact_lease_event, fact_maintenance_request, fact_payment, fact_rent_invoice_line, fact_unit_occupancy_daily, fact_vacancy_incentive_coverage
+  [PASS] every fact and column exists; every NOT NULL column is written; grain and required columns are written columns
+  [PASS] the source query gives every column the fact writes
+US-7.1 Key lookups
+  [PASS] SCD2 lookup: natural key and the version valid that day, half-open [effective_from, effective_to)
+  [PASS] owner lookup: the ownership period holding that day (valid_from <= day < valid_to, open period)
+  [PASS] date keys: YYYYMMDD inside the calendar, -1 outside or unknown, -2 when given for 'not yet'
+  [PASS] an unresolved key is -1 (Unknown), never a dropped row
+US-7.1 The loader's SQL
+  [PASS] source, delete, update and insert statements parse (pglast)
+  [PASS] sync on the grain: update only on a difference, insert only new grains, the surrogate *_sk left to the identity
+======================================================================
+ RESULT: 9/9 checks passed
+======================================================================
+
+2. python scripts/test_fact_load.py (database)
+======================================================================
+ E7 acceptance tests: the facts (database)
+======================================================================
+US-7.1 fact_payment: point-in-time keys
+  [PASS] one row per staged allocation (127,210 of 127,210), the same amount (5,347,289,709.00 PKR)
+  [PASS] no key left unresolved (-1): none
+  [PASS] every tenant and unit key is the version valid on the paid date
+  [PASS] every owner key is the owner of the unit on the paid date (ownership register)
+  [PASS] paid and due date keys, days past due and the reversal flag equal staging's (role-playing dates via dim_date)
+US-7.1 The key-mapping chain of one payment (the brief's evidence)
+    payment      tenant  paid on    -> tenant_key sector (version)                 -> fact row
+    PAY-0000295  T-0115  2023-07-06 ->        113 Government       1900-01-01..2024-10-10 -> INV-2023-07-0020/2 17,864.00 paid_date_key 20230706
+    PAY-0025146  T-0115  2024-10-05 ->        113 Government       1900-01-01..2024-10-10 -> INV-2024-10-2914/3 6,700.00 paid_date_key 20241005
+    PAY-0027787  T-0115  2024-11-10 ->       3804 Healthcare       2024-10-10..9999-12-31 -> INV-2024-11-2914/1 161,820.00 paid_date_key 20241110
+    PAY-0037025  T-0115  2025-05-07 ->       3804 Healthcare       2024-10-10..9999-12-31 -> INV-2025-05-2914/3 6,640.00 paid_date_key 20250507
+  [PASS] tenant T-0115: each of its 69 payment lines maps to the version valid on its paid date (2 version(s) used)
+US-7.1 Reruns and changes
+  [PASS] a rerun inserts, updates and deletes nothing
+  [PASS] a changed source row is updated in place and a removed one deleted: 1 updated, 1 deleted, nothing duplicated
+  [PASS] with staging restored, the next run puts both back (1 updated, 1 inserted)
+  [PASS] a source with a grain twice is refused and nothing changes
+======================================================================
+ RESULT: 10/10 checks passed
+======================================================================
+
+3. python scripts/test_facts.py and scripts/test_reference.py (E1, with the dimensions and fact_payment loaded): the checks E6 and E7 touch
+  [PASS] all 3 still-empty fact identity sequences are unused (next: 1)
+  [PASS] the 1 loaded facts' sequences are past their largest key
+ RESULT: 25/25 checks passed
+  [PASS] holiday and Ramadan flags set by US-6.4 from stg_holiday (173)
+ RESULT: 32/32 checks passed

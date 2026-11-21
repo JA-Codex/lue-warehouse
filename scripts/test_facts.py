@@ -181,11 +181,20 @@ def main() -> int:
     check(not extra, "no secondary indexes on the facts" + (f" (found {extra})" if extra else ""))
 
     print("Behaviour")
-    cur.execute(
-        "SELECT pg_sequence_last_value(pg_get_serial_sequence('lue_dw.' || t, k)) IS NULL "
-        "FROM (VALUES " + ", ".join(f"('{t}', '{k}')" for t, k in SURROGATE.items()) + ") v(t, k)"
-    )
-    check(all(r[0] for r in cur.fetchall()), "all 4 fact identity sequences are unused (next: 1)")
+    # E7 loads the facts, so some may already hold rows. A still-empty fact must have an unused
+    # sequence (its first row gets key 1); a loaded one's sequence must be past its largest key.
+    empty, ahead = [], []
+    for t, k in SURROGATE.items():
+        cur.execute(
+            f"SELECT count(*), max({k}), pg_sequence_last_value(pg_get_serial_sequence(%s, %s)) "
+            f"FROM lue_dw.{t}",
+            (f"lue_dw.{t}", k),
+        )
+        n, top, last = cur.fetchone()
+        (empty if n == 0 else ahead).append(last is None if n == 0 else last >= top)
+    check(all(empty), f"all {len(empty)} still-empty fact identity sequences are unused (next: 1)")
+    if ahead:
+        check(all(ahead), f"the {len(ahead)} loaded facts' sequences are past their largest key")
 
     conn.autocommit = False
     try:

@@ -49,6 +49,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-6.3 | Extend SCD2 to unit, vendor and category | Eesha (done by Hanan) | Done | 2026-11-21 | [US-6.3](US-6.3.md) | [evidence](../evidence/us-6.3/) |
 | US-6.4 | Load remaining dimensions and hierarchies | Eesha (done by Hanan) | Done | 2026-11-21 | [US-6.4](US-6.4.md) | [evidence](../evidence/us-6.4/) |
 | US-6.5 | Inferred members, late arrivals, dimension tests | Hanan | Done | 2026-11-21 | [US-6.5](US-6.5.md) | [evidence](../evidence/us-6.5/) |
+| US-7.1 | Build the fact loading framework and date-aware key mapping | Hanan | Done | 2026-11-21 | [US-7.1](US-7.1.md) | [evidence](../evidence/us-7.1/) |
 
 ## Later epics
 
@@ -96,3 +97,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-21 | Vendor rating history from the register's previous rating and change date; category SLA history from the policy's valid_from | [US-6.3](US-6.3.md) |
 | 2026-11-21 | Bands: building age as of today, owner portfolio from current ownership ('None' for no current unit), rain and heat from the dictionary's thresholds | [US-6.4](US-6.4.md) |
 | 2026-11-21 | Inferred members only on dim_tenant (the frozen DDL's is_inferred); completed in place when the record arrives | [US-6.5](US-6.5.md) |
+| 2026-11-21 | Facts load by syncing to their source on the grain (delete, update, insert) instead of ON CONFLICT: the frozen DDL has no unique key on most fact grains | [US-7.1](US-7.1.md) |
