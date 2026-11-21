@@ -13,6 +13,8 @@ Runs the brief's order as one pipeline run (one run_id in lue_audit.etl_run_log)
   transform   staging: clean, standardise, deduplicate, business fields (E5)
   dimensions  surrogate keys, SCD Type 2, hierarchies, inferred members (E6)
   facts       the six facts, then the 71 fact tests (E7)
+  reconcile   DQ-07: by month, source = warehouse + quarantined for billed, paid, tickets and lease
+              events (etl/reconcile.py, US-8.2); any unexplained variance fails it
 
 Every step writes a start and an end row to the run log with its status and counts (rows read,
 inserted, updated, rejected); each layer records its lineage (source to bronze, bronze to
@@ -40,6 +42,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from etl import reconcile  # noqa: E402
 from etl.dimensions import run as dimensions  # noqa: E402
 from etl.facts import run as facts  # noqa: E402
 from etl.ingest import run as ingest  # noqa: E402
@@ -71,6 +74,7 @@ STAGES = [
     Stage("transform", "staging (E5)"),
     Stage("dimensions", "dimensions (E6)"),
     Stage("facts", "facts and the fact tests (E7)"),
+    Stage("reconcile", "source = warehouse + quarantined (DQ-07)"),
 ]
 NAMES = [s.name for s in STAGES]
 
@@ -134,6 +138,8 @@ def layer(stage: Stage, r: Run, data: Path) -> list[StepResult]:
         return dimensions.load_all(run=r)[1]
     if stage.name == "facts":
         return facts.load_all(run=r)[1]
+    if stage.name == "reconcile":
+        return [r.step(reconcile.STEP, "DW", reconcile.step({}))]
     raise ValueError(stage.name)
 
 

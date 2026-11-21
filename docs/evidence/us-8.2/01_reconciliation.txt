@@ -1,0 +1,295 @@
+US-8.2 Source-to-warehouse reconciliation, DQ-07 (full profile, seed 3004). The warehouse emptied
+(python scripts/db_reset.py) and loaded by python etl/run_pipeline.py --skip-generate (run 1):
+
+========================================================================================================
+ Pipeline run 1: setup, deploy, reference, source, ingest, validate, transform, dimensions, facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  setup           1 Success            0           0          0         0      0.1
+  deploy          1 Success            0           0          0         0      0.1
+  reference       1 Success            0           0          0         0      0.1
+  source          1 Success            0           0          0         0      1.1
+  ingest          6 Success      467,406     467,406          0         0     13.3
+  validate        1 Warning      467,406       6,975          0     5,636    289.6
+      Warning validate_dq: 5,636 rows rejected (quarantined)
+  transform      21 Success      830,665     464,834    364,933     5,636     80.5
+  dimensions      9 Success       17,079      16,965        194         0      0.4
+  facts           7 Success    2,264,594   2,264,523     63,000         0    117.0
+  reconcile       1 Success          194           0          0         0      0.3
+========================================================================================================
+ RESULT: 49/49 steps without failure in 521 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 1
+========================================================================================================
+
+
+1. Per measure: source = warehouse + quarantined (python etl/reconcile.py)
+ Reconciliation run 2 (DQ-07: source = warehouse + quarantined, by month)
+======================================================================================================================
+  measure       months               source            warehouse      quarantined    unexplained months off
+  billed            36     5,676,652,818.00     5,676,652,818.00             0.00           0.00          0
+  paid              36     5,347,289,709.00     5,347,289,709.00             0.00           0.00          0
+  tickets           37             6,000.00             5,670.00           330.00           0.00          0
+  lease events      85             9,195.00             8,781.00           414.00           0.00          0
+======================================================================================================================
+ RESULT: Success: 194/194 measure-months reconcile
+
+2. The reconciliation table (lue_audit.reconciliation, run 2): every measure and month.
+   source_value = source; warehouse_value = warehouse + quarantined; difference = unexplained variance.
+         check_name         | source_value | warehouse_value | difference | passed 
+----------------------------+--------------+-----------------+------------+--------
+ DQ-07 billed 2023-07       | 139980600.00 |    139980600.00 |       0.00 | t
+ DQ-07 billed 2023-08       | 146234884.00 |    146234884.00 |       0.00 | t
+ DQ-07 billed 2023-09       | 143274008.00 |    143274008.00 |       0.00 | t
+ DQ-07 billed 2023-10       | 140439126.00 |    140439126.00 |       0.00 | t
+ DQ-07 billed 2023-11       | 141554348.00 |    141554348.00 |       0.00 | t
+ DQ-07 billed 2023-12       | 141799850.00 |    141799850.00 |       0.00 | t
+ DQ-07 billed 2024-01       | 143958156.00 |    143958156.00 |       0.00 | t
+ DQ-07 billed 2024-02       | 145150104.00 |    145150104.00 |       0.00 | t
+ DQ-07 billed 2024-03       | 144597562.00 |    144597562.00 |       0.00 | t
+ DQ-07 billed 2024-04       | 145045830.00 |    145045830.00 |       0.00 | t
+ DQ-07 billed 2024-05       | 145174342.00 |    145174342.00 |       0.00 | t
+ DQ-07 billed 2024-06       | 156412098.00 |    156412098.00 |       0.00 | t
+ DQ-07 billed 2024-07       | 158664828.00 |    158664828.00 |       0.00 | t
+ DQ-07 billed 2024-08       | 162587488.00 |    162587488.00 |       0.00 | t
+ DQ-07 billed 2024-09       | 159829542.00 |    159829542.00 |       0.00 | t
+ DQ-07 billed 2024-10       | 157326802.00 |    157326802.00 |       0.00 | t
+ DQ-07 billed 2024-11       | 154511438.00 |    154511438.00 |       0.00 | t
+ DQ-07 billed 2024-12       | 152871108.00 |    152871108.00 |       0.00 | t
+ DQ-07 billed 2025-01       | 151857698.00 |    151857698.00 |       0.00 | t
+ DQ-07 billed 2025-02       | 154572900.00 |    154572900.00 |       0.00 | t
+ DQ-07 billed 2025-03       | 157557764.00 |    157557764.00 |       0.00 | t
+ DQ-07 billed 2025-04       | 158187536.00 |    158187536.00 |       0.00 | t
+ DQ-07 billed 2025-05       | 159047664.00 |    159047664.00 |       0.00 | t
+ DQ-07 billed 2025-06       | 162744414.00 |    162744414.00 |       0.00 | t
+ DQ-07 billed 2025-07       | 165895098.00 |    165895098.00 |       0.00 | t
+ DQ-07 billed 2025-08       | 172599050.00 |    172599050.00 |       0.00 | t
+ DQ-07 billed 2025-09       | 170904632.00 |    170904632.00 |       0.00 | t
+ DQ-07 billed 2025-10       | 170328592.00 |    170328592.00 |       0.00 | t
+ DQ-07 billed 2025-11       | 170703684.00 |    170703684.00 |       0.00 | t
+ DQ-07 billed 2025-12       | 166998588.00 |    166998588.00 |       0.00 | t
+ DQ-07 billed 2026-01       | 171173160.00 |    171173160.00 |       0.00 | t
+ DQ-07 billed 2026-02       | 170657300.00 |    170657300.00 |       0.00 | t
+ DQ-07 billed 2026-03       | 172645194.00 |    172645194.00 |       0.00 | t
+ DQ-07 billed 2026-04       | 171967262.00 |    171967262.00 |       0.00 | t
+ DQ-07 billed 2026-05       | 171376648.00 |    171376648.00 |       0.00 | t
+ DQ-07 billed 2026-06       | 178023520.00 |    178023520.00 |       0.00 | t
+ DQ-07 lease events 2015-08 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2015-09 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2015-10 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2015-11 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2016-01 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2016-02 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2016-03 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2016-05 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2016-07 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2016-09 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2016-12 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2017-01 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2017-02 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2017-05 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2017-06 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2017-08 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2017-11 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2017-12 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2018-02 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2018-03 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2018-04 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2018-05 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2023-07 |       440.00 |          440.00 |       0.00 | t
+ DQ-07 lease events 2023-08 |       279.00 |          279.00 |       0.00 | t
+ DQ-07 lease events 2023-09 |       254.00 |          254.00 |       0.00 | t
+ DQ-07 lease events 2023-10 |       269.00 |          269.00 |       0.00 | t
+ DQ-07 lease events 2023-11 |       253.00 |          253.00 |       0.00 | t
+ DQ-07 lease events 2023-12 |       295.00 |          295.00 |       0.00 | t
+ DQ-07 lease events 2024-01 |       309.00 |          309.00 |       0.00 | t
+ DQ-07 lease events 2024-02 |       262.00 |          262.00 |       0.00 | t
+ DQ-07 lease events 2024-03 |       259.00 |          259.00 |       0.00 | t
+ DQ-07 lease events 2024-04 |       152.00 |          152.00 |       0.00 | t
+ DQ-07 lease events 2024-05 |       222.00 |          222.00 |       0.00 | t
+ DQ-07 lease events 2024-06 |       293.00 |          293.00 |       0.00 | t
+ DQ-07 lease events 2024-07 |       255.00 |          255.00 |       0.00 | t
+ DQ-07 lease events 2024-08 |       243.00 |          243.00 |       0.00 | t
+ DQ-07 lease events 2024-09 |       239.00 |          239.00 |       0.00 | t
+ DQ-07 lease events 2024-10 |       222.00 |          222.00 |       0.00 | t
+ DQ-07 lease events 2024-11 |       280.00 |          280.00 |       0.00 | t
+ DQ-07 lease events 2024-12 |       261.00 |          261.00 |       0.00 | t
+ DQ-07 lease events 2025-01 |       266.00 |          266.00 |       0.00 | t
+ DQ-07 lease events 2025-02 |       229.00 |          229.00 |       0.00 | t
+ DQ-07 lease events 2025-03 |       221.00 |          221.00 |       0.00 | t
+ DQ-07 lease events 2025-04 |       256.00 |          256.00 |       0.00 | t
+ DQ-07 lease events 2025-05 |       316.00 |          316.00 |       0.00 | t
+ DQ-07 lease events 2025-06 |       261.00 |          261.00 |       0.00 | t
+ DQ-07 lease events 2025-07 |       274.00 |          274.00 |       0.00 | t
+ DQ-07 lease events 2025-08 |       217.00 |          217.00 |       0.00 | t
+ DQ-07 lease events 2025-09 |       198.00 |          198.00 |       0.00 | t
+ DQ-07 lease events 2025-10 |       242.00 |          242.00 |       0.00 | t
+ DQ-07 lease events 2025-11 |       263.00 |          263.00 |       0.00 | t
+ DQ-07 lease events 2025-12 |       283.00 |          283.00 |       0.00 | t
+ DQ-07 lease events 2026-01 |       224.00 |          224.00 |       0.00 | t
+ DQ-07 lease events 2026-02 |       192.00 |          192.00 |       0.00 | t
+ DQ-07 lease events 2026-03 |       233.00 |          233.00 |       0.00 | t
+ DQ-07 lease events 2026-04 |       271.00 |          271.00 |       0.00 | t
+ DQ-07 lease events 2026-05 |       181.00 |          181.00 |       0.00 | t
+ DQ-07 lease events 2026-06 |         5.00 |            5.00 |       0.00 | t
+ DQ-07 lease events 2031-07 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2031-08 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2031-09 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2031-11 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2031-12 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2032-01 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2032-03 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2032-05 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2032-06 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2032-07 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2032-08 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2032-09 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2032-10 |         4.00 |            4.00 |       0.00 | t
+ DQ-07 lease events 2032-12 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2033-01 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2033-02 |         3.00 |            3.00 |       0.00 | t
+ DQ-07 lease events 2033-04 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2033-05 |         4.00 |            4.00 |       0.00 | t
+ DQ-07 lease events 2033-06 |         4.00 |            4.00 |       0.00 | t
+ DQ-07 lease events 2033-07 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2033-09 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2033-10 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2033-11 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2033-12 |         2.00 |            2.00 |       0.00 | t
+ DQ-07 lease events 2034-02 |         1.00 |            1.00 |       0.00 | t
+ DQ-07 lease events 2034-04 |         4.00 |            4.00 |       0.00 | t
+ DQ-07 lease events none    |       184.00 |          184.00 |       0.00 | t
+ DQ-07 paid 2023-07         | 130989646.00 |    130989646.00 |       0.00 | t
+ DQ-07 paid 2023-08         | 139676671.00 |    139676671.00 |       0.00 | t
+ DQ-07 paid 2023-09         | 136213322.00 |    136213322.00 |       0.00 | t
+ DQ-07 paid 2023-10         | 134359487.00 |    134359487.00 |       0.00 | t
+ DQ-07 paid 2023-11         | 132714396.00 |    132714396.00 |       0.00 | t
+ DQ-07 paid 2023-12         | 135791285.00 |    135791285.00 |       0.00 | t
+ DQ-07 paid 2024-01         | 135916194.00 |    135916194.00 |       0.00 | t
+ DQ-07 paid 2024-02         | 138000874.00 |    138000874.00 |       0.00 | t
+ DQ-07 paid 2024-03         | 137222923.00 |    137222923.00 |       0.00 | t
+ DQ-07 paid 2024-04         | 135010876.00 |    135010876.00 |       0.00 | t
+ DQ-07 paid 2024-05         | 137285975.00 |    137285975.00 |       0.00 | t
+ DQ-07 paid 2024-06         | 147681149.00 |    147681149.00 |       0.00 | t
+ DQ-07 paid 2024-07         | 150109574.00 |    150109574.00 |       0.00 | t
+ DQ-07 paid 2024-08         | 151831180.00 |    151831180.00 |       0.00 | t
+ DQ-07 paid 2024-09         | 149875502.00 |    149875502.00 |       0.00 | t
+ DQ-07 paid 2024-10         | 147678147.00 |    147678147.00 |       0.00 | t
+ DQ-07 paid 2024-11         | 141870950.00 |    141870950.00 |       0.00 | t
+ DQ-07 paid 2024-12         | 147373370.00 |    147373370.00 |       0.00 | t
+ DQ-07 paid 2025-01         | 139178245.00 |    139178245.00 |       0.00 | t
+ DQ-07 paid 2025-02         | 144411352.00 |    144411352.00 |       0.00 | t
+ DQ-07 paid 2025-03         | 149027837.00 |    149027837.00 |       0.00 | t
+ DQ-07 paid 2025-04         | 148925842.00 |    148925842.00 |       0.00 | t
+ DQ-07 paid 2025-05         | 150696478.00 |    150696478.00 |       0.00 | t
+ DQ-07 paid 2025-06         | 154019762.00 |    154019762.00 |       0.00 | t
+ DQ-07 paid 2025-07         | 158404317.00 |    158404317.00 |       0.00 | t
+ DQ-07 paid 2025-08         | 160678129.00 |    160678129.00 |       0.00 | t
+ DQ-07 paid 2025-09         | 158972785.00 |    158972785.00 |       0.00 | t
+ DQ-07 paid 2025-10         | 161616130.00 |    161616130.00 |       0.00 | t
+ DQ-07 paid 2025-11         | 159182251.00 |    159182251.00 |       0.00 | t
+ DQ-07 paid 2025-12         | 158017779.00 |    158017779.00 |       0.00 | t
+ DQ-07 paid 2026-01         | 162302708.00 |    162302708.00 |       0.00 | t
+ DQ-07 paid 2026-02         | 157777844.00 |    157777844.00 |       0.00 | t
+ DQ-07 paid 2026-03         | 164955899.00 |    164955899.00 |       0.00 | t
+ DQ-07 paid 2026-04         | 161429706.00 |    161429706.00 |       0.00 | t
+ DQ-07 paid 2026-05         | 161563903.00 |    161563903.00 |       0.00 | t
+ DQ-07 paid 2026-06         | 166527221.00 |    166527221.00 |       0.00 | t
+ DQ-07 tickets 1970-01      |        60.00 |           60.00 |       0.00 | t
+ DQ-07 tickets 2023-07      |       203.00 |          203.00 |       0.00 | t
+ DQ-07 tickets 2023-08      |       164.00 |          164.00 |       0.00 | t
+ DQ-07 tickets 2023-09      |       165.00 |          165.00 |       0.00 | t
+ DQ-07 tickets 2023-10      |       158.00 |          158.00 |       0.00 | t
+ DQ-07 tickets 2023-11      |       158.00 |          158.00 |       0.00 | t
+ DQ-07 tickets 2023-12      |       147.00 |          147.00 |       0.00 | t
+ DQ-07 tickets 2024-01      |       142.00 |          142.00 |       0.00 | t
+ DQ-07 tickets 2024-02      |       161.00 |          161.00 |       0.00 | t
+ DQ-07 tickets 2024-03      |       124.00 |          124.00 |       0.00 | t
+ DQ-07 tickets 2024-04      |       156.00 |          156.00 |       0.00 | t
+ DQ-07 tickets 2024-05      |       195.00 |          195.00 |       0.00 | t
+ DQ-07 tickets 2024-06      |       168.00 |          168.00 |       0.00 | t
+ DQ-07 tickets 2024-07      |       207.00 |          207.00 |       0.00 | t
+ DQ-07 tickets 2024-08      |       244.00 |          244.00 |       0.00 | t
+ DQ-07 tickets 2024-09      |       149.00 |          149.00 |       0.00 | t
+ DQ-07 tickets 2024-10      |       140.00 |          140.00 |       0.00 | t
+ DQ-07 tickets 2024-11      |       136.00 |          136.00 |       0.00 | t
+ DQ-07 tickets 2024-12      |       157.00 |          157.00 |       0.00 | t
+ DQ-07 tickets 2025-01      |       151.00 |          151.00 |       0.00 | t
+ DQ-07 tickets 2025-02      |       139.00 |          139.00 |       0.00 | t
+ DQ-07 tickets 2025-03      |       155.00 |          155.00 |       0.00 | t
+ DQ-07 tickets 2025-04      |       142.00 |          142.00 |       0.00 | t
+ DQ-07 tickets 2025-05      |       166.00 |          166.00 |       0.00 | t
+ DQ-07 tickets 2025-06      |       184.00 |          184.00 |       0.00 | t
+ DQ-07 tickets 2025-07      |       232.00 |          232.00 |       0.00 | t
+ DQ-07 tickets 2025-08      |       232.00 |          232.00 |       0.00 | t
+ DQ-07 tickets 2025-09      |       160.00 |          160.00 |       0.00 | t
+ DQ-07 tickets 2025-10      |       169.00 |          169.00 |       0.00 | t
+ DQ-07 tickets 2025-11      |       149.00 |          149.00 |       0.00 | t
+ DQ-07 tickets 2025-12      |       145.00 |          145.00 |       0.00 | t
+ DQ-07 tickets 2026-01      |       144.00 |          144.00 |       0.00 | t
+ DQ-07 tickets 2026-02      |       156.00 |          156.00 |       0.00 | t
+ DQ-07 tickets 2026-03      |       126.00 |          126.00 |       0.00 | t
+ DQ-07 tickets 2026-04      |       144.00 |          144.00 |       0.00 | t
+ DQ-07 tickets 2026-05      |       185.00 |          185.00 |       0.00 | t
+ DQ-07 tickets 2026-06      |       187.00 |          187.00 |       0.00 | t
+(194 rows)
+
+3. Where the quarantined rows come from (tickets: 270 lost every copy to a rule, 60 their only raised date)
+ measure | quarantined | every_copy_rejected | raised_date_rejected 
+---------+-------------+---------------------+----------------------
+ tickets |         330 |                 270 |                   60
+(1 row)
+
+   source_table    |       rule        | rows 
+-------------------+-------------------+------
+ brz_lease_event   | DQ-01 NULL        |  184
+ brz_lease_event   | DQ-05 Referential |  138
+ brz_lease_event   | DQ-06 Range       |   92
+ brz_ticket        | DQ-01 NULL        |  120
+ brz_ticket        | DQ-02 Data type   |   60
+ brz_ticket        | DQ-03 Duplicate   |   60
+ brz_ticket        | DQ-05 Referential |   90
+ brz_ticket_status | DQ-06 Range       |   60
+(8 rows)
+
+4. A deliberate failure: one lease event removed and one invoice line's amount raised by PKR 5 in the facts,
+   then the reconciliation (python etl/run_pipeline.py --only reconcile):
+ event_date_key 
+----------------
+       20230707
+(1 row)
+
+DELETE 1
+  invoice_number  | invoice_line_no | invoice_date_key 
+------------------+-----------------+------------------
+ INV-2026-06-5883 |               3 |         20260601
+(1 row)
+
+UPDATE 1
+========================================================================================================
+ Pipeline run 3: reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  reconcile       1 Failed           194           0          0         0      0.3
+      Failed  reconcile_dq07: ReconciliationError: unexplained variance in 2 of 194 measure-months: billed 2026-06 -5.00; lease events 2023-07 1
+========================================================================================================
+ STOPPED at reconcile (a critical step failed)
+ Fix it, then resume: python etl/run_pipeline.py --skip-generate --from-step reconcile
+ RESULT: 0/1 steps without failure in 0 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 3
+========================================================================================================
+   exit code: 1
+         check_name         | source_value | warehouse_value | difference | passed 
+----------------------------+--------------+-----------------+------------+--------
+ DQ-07 billed 2026-06       | 178023520.00 |    178023525.00 |       5.00 | f
+ DQ-07 lease events 2023-07 |       440.00 |          439.00 |      -1.00 | f
+(2 rows)
+
+   The facts reloaded from staging, then the reconciliation again (python etl/run_pipeline.py --only facts,reconcile):
+========================================================================================================
+ Pipeline run 4: facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  facts           7 Success    2,264,594           1     63,001         0     55.4
+  reconcile       1 Success          194           0          0         0      0.3
+========================================================================================================
+ RESULT: 8/8 steps without failure in 56 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 4
+========================================================================================================
+   exit code: 0

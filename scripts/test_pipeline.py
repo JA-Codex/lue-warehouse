@@ -9,6 +9,9 @@
           staging, the dimensions and the facts; --only and --from-step run just their stages; a
           failed critical step stops the run with exit 1 and names where to resume; a failed
           non-critical step (S5 weather) is reported and the run goes on
+  US-8.2  by month, source = warehouse + quarantined for billed, paid, tickets and lease events,
+          every row in lue_audit.reconciliation passed; a fact row removed and an amount changed
+          fail exactly their months and the step; reloading the facts restores the pass
 The warehouse is left loaded with the small profile (rerun the pipeline on your own data after).
 """
 
@@ -22,6 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from etl import reconcile  # noqa: E402
 from etl import run_pipeline as p  # noqa: E402
 from etl.ingest import run as ingest  # noqa: E402
 from etl.ingest.base import IngestError, connect  # noqa: E402
@@ -62,7 +66,7 @@ def one_command(cur, data: Path) -> None:
     steps = {s for s, *_ in log}
     check(code == 0 and "RESULT:" in out and (data / "run_manifest.json").is_file(),
           f"python etl/run_pipeline.py --profile small generates the data and runs every stage (exit {code})")
-    expected = {"generate", "setup", "deploy", "reference", "source", "validate_dq", "stage_business", "dim_date_holidays", "fact_tests"}
+    expected = {"generate", "setup", "deploy", "reference", "source", "validate_dq", "stage_business", "dim_date_holidays", "fact_tests", "reconcile_dq07"}
     check(expected <= steps and len(log) >= 45 and all(done and status in ("Success", "Warning") for _s, status, *_r, done in log),
           f"the run log holds all {len(log)} steps of run {rid}, each ended with a final status (Success or Warning)")
     by = {s: (rr, ri, ru, rj) for s, _st, rr, ri, ru, rj, _d in log}
@@ -89,7 +93,49 @@ def options(cur, data: Path) -> None:
     code, out = run(["--data", str(data), "--skip-generate", "--from-step", "dimensions"])
     cur.execute("SELECT array_agg(DISTINCT left(step, 4)) FROM lue_audit.etl_run_log WHERE run_id = %s", (last_run(cur),))
     kinds = set(cur.fetchone()[0])
-    check(code == 0 and kinds == {"dim_", "fact"}, "--from-step dimensions: the dimensions, then the facts, nothing before")
+    check(code == 0 and kinds == {"dim_", "fact", "reco"}, "--from-step dimensions: the dimensions, the facts and the reconciliation, nothing before")
+
+
+def reconciliation(cur) -> None:
+    print("US-8.2 Source-to-warehouse reconciliation (DQ-07)")
+    code, out = run(["--only", "reconcile"])
+    rid = last_run(cur)
+    cur.execute("SELECT count(*), count(*) FILTER (WHERE passed), count(*) FILTER (WHERE source_value <> warehouse_value OR difference <> 0) "
+                "FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE 'DQ-07 %%'", (rid,))
+    rows, passed, off = cur.fetchone()
+    src = connect("lue_source")
+    try:
+        with src.cursor() as sc:
+            lines = reconcile.reconcile(cur, sc)
+    finally:
+        src.close()
+    by = {m: [x for x in lines if x.measure == m] for m in reconcile.BY_NAME}
+    quarantined = {m: sum(x.quarantined for x in ls) for m, ls in by.items()}
+    check(code == 0 and rows == passed == len(lines) and off == 0 and all(by.values()),
+          f"every measure and month reconciles: {len(lines)} rows in lue_audit.reconciliation, all passed, unexplained variance 0")
+    check(quarantined["tickets"] > 0 and quarantined["lease events"] > 0
+          and all(sum(x.source for x in ls) == sum(x.warehouse + x.quarantined for x in ls) for ls in by.values()),
+          "source = warehouse + quarantined: " + ", ".join(f"{m} {sum(x.source for x in ls):,.0f} = {sum(x.warehouse for x in ls):,.0f} + {quarantined[m]:,.0f}" for m, ls in by.items()))
+    # Deliberate failures: a fact row removed, an amount changed. Exactly that month fails, the run exits 1.
+    cur.execute("SELECT lease_event_sk, event_date_key FROM lue_dw.fact_lease_event ORDER BY lease_event_sk LIMIT 1")
+    sk, key = cur.fetchone()
+    cur.execute("DELETE FROM lue_dw.fact_lease_event WHERE lease_event_sk = %s", (sk,))
+    cur.execute("UPDATE lue_dw.fact_rent_invoice_line SET billed_amount = billed_amount + 5, net_amount = net_amount + 5 "
+                "WHERE invoice_line_sk = (SELECT max(invoice_line_sk) FROM lue_dw.fact_rent_invoice_line) RETURNING invoice_date_key")
+    billed_key = cur.fetchone()[0]
+    code, out = run(["--only", "reconcile"])  # the facts are restored below, by reloading them from staging
+    rid = last_run(cur)
+    cur.execute("SELECT check_name, difference FROM lue_audit.reconciliation WHERE run_id = %s AND NOT passed ORDER BY 1", (rid,))
+    failed = cur.fetchall()
+    status = scalar(cur, "SELECT status FROM lue_audit.etl_run_log WHERE run_id = %s AND step = %s", (rid, reconcile.STEP))
+    month = lambda k: f"{str(k)[:4]}-{str(k)[4:6]}"  # noqa: E731
+    want = [(f"DQ-07 billed {month(billed_key)}", 5), (f"DQ-07 lease events {month(key)}", -1)]
+    check(code == 1 and status == "Failed" and [(n, int(d)) for n, d in failed] == sorted(want),
+          f"a fact row removed and an amount changed by PKR 5: exactly those months fail ({', '.join(n for n, _ in failed)}), the step Failed, exit 1")
+    code, out = run(["--only", "facts,reconcile"])
+    rid = last_run(cur)
+    ok = scalar(cur, "SELECT count(*) FILTER (WHERE NOT passed) FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE 'DQ-07 %%'", (rid,))
+    check(code == 0 and ok == 0, "reloading the facts from staging restores them, and the reconciliation passes again")
 
 
 def failures(cur, data: Path) -> None:
@@ -114,13 +160,13 @@ def failures(cur, data: Path) -> None:
 
     ingest.steps = weather_down
     try:
-        rid, done, stopped = p.pipeline("small", 3004, p.select(["ingest", "validate", "transform", "dimensions", "facts"], None, True), data)
+        rid, done, stopped = p.pipeline("small", 3004, p.select(["ingest", "validate", "transform", "dimensions", "facts", "reconcile"], None, True), data)
     finally:
         ingest.steps = real
     cur.execute("SELECT step, status FROM lue_audit.etl_run_log WHERE run_id = %s", (rid,))
     log = dict(cur.fetchall())
-    check(stopped is None and log.get("ingest_s5_weather") == "Failed" and log.get("fact_tests") == "Success",
-          f"S5 weather Failed (it may be cut, D19), yet every later stage ran: fact_tests {log.get('fact_tests')}")
+    check(stopped is None and log.get("ingest_s5_weather") == "Failed" and log.get("fact_tests") == "Success" and log.get("reconcile_dq07") == "Success",
+          f"S5 weather Failed (it may be cut, D19), yet every later stage ran: fact_tests {log.get('fact_tests')}, reconcile {log.get('reconcile_dq07')}")
 
 
 def main() -> int:
@@ -139,6 +185,7 @@ def main() -> int:
             with wh.cursor() as cur:
                 one_command(cur, data)
                 options(cur, data)
+                reconciliation(cur)
                 failures(cur, data)
         finally:
             wh.close()

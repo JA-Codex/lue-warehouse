@@ -45,8 +45,8 @@ def main() -> int:
     print(" E8 contract tests: the pipeline orchestrator (no database)")
     print("=" * 70)
     print("US-8.1 Stages and order")
-    order = ["generate", "setup", "deploy", "reference", "source", "ingest", "validate", "transform", "dimensions", "facts"]
-    check(p.NAMES == order, "the brief's order: generate, set up and deploy, load sources, ingest, validate, transform, dimensions, facts (tests inside)")
+    order = ["generate", "setup", "deploy", "reference", "source", "ingest", "validate", "transform", "dimensions", "facts", "reconcile"]
+    check(p.NAMES == order, "the brief's order: generate, set up and deploy, load sources, ingest, validate, transform, dimensions, facts (tests inside), reconcile")
     before = [s.name for s in p.STAGES if s.before_run]
     check(before == p.NAMES[:4] and not any(s.before_run for s in p.STAGES[4:]),
           "generate, setup, deploy and reference run before the run exists (they create the audit tables), all others inside it")
@@ -62,7 +62,7 @@ def main() -> int:
     names = lambda stages: [s.name for s in stages]  # noqa: E731
     check(names(p.select(None, None, False)) == order and names(p.select(None, None, True)) == order[1:],
           "no option: every stage; --skip-generate: all but generate")
-    check(names(p.select(None, "dimensions", False)) == ["dimensions", "facts"] and names(p.select(None, "ingest", True)) == order[5:],
+    check(names(p.select(None, "dimensions", False)) == ["dimensions", "facts", "reconcile"] and names(p.select(None, "ingest", True)) == order[5:],
           "--from-step resumes at that stage and runs the rest in order")
     check(names(p.select(["facts", "ingest"], None, False)) == ["ingest", "facts"],
           "--only runs just the named stages, in pipeline order")
@@ -84,6 +84,27 @@ def main() -> int:
           "only the S5 weather is non-critical (it may be cut, D19); every other failed step stops the run")
     a, b, c = StepResult("ingest_s5_weather", "S5", "Failed"), StepResult("ingest_s1_pms", "S1", "Failed"), StepResult("stage_unit", "STG", "Warning")
     check(p.critical_failures([a, c]) == [] and p.critical_failures([a, b]) == [b], "a Warning or a non-critical failure goes on; a critical failure stops")
+
+    print("US-8.2 Reconciliation (DQ-07)")
+    from pglast import parse_sql
+
+    from etl import reconcile
+
+    check(list(reconcile.BY_NAME) == ["billed", "paid", "tickets", "lease events"] and p.NAMES[-2:] == ["facts", "reconcile"],
+          "the plan's four measures (billed, paid, tickets, lease events), reconciled after the facts are loaded")
+    bad = []
+    for m in reconcile.MEASURES:
+        for part in ("source", "warehouse", "quarantined"):
+            try:
+                parse_sql(getattr(m, part))
+            except Exception as exc:  # noqa: BLE001
+                bad.append(f"{m.name} {part}: {exc}")
+    check(not bad, "every measure's source, warehouse and quarantined query parses (pglast)" + (f": {bad}" if bad else ""))
+    check(all("NOT EXISTS (SELECT 1 FROM lue_staging.stg_" in m.quarantined and "lue_audit.quarantine" in m.quarantined for m in reconcile.MEASURES),
+          "a quarantined row explains a difference only when its key never reached staging")
+    x = reconcile.Line("lease events", "2026-06", 10, 7, 2)
+    check(x.variance == 1 and x.check_name == "DQ-07 lease events 2026-06" and max(len(reconcile.Line(m, "2026-06", 0, 0, 0).check_name) for m in reconcile.BY_NAME) <= 60,
+          "unexplained = source - warehouse - quarantined; one check per measure and month, names within 60 characters")
 
     print("US-8.1 make targets")
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
