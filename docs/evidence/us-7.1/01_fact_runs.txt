@@ -1,0 +1,82 @@
+US-7.1 Fact loading framework and date-aware key mapping (full profile, seed 3004). Staging and the
+dimensions as left by US-6.5 (both S1 extracts applied); fact_payment emptied first
+(TRUNCATE ... RESTART IDENTITY, so the first row gets key 1).
+
+1. First load: python etl/facts/run.py
+================================================================================================
+ Fact run 177
+================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown
+  fact_payment                     Success    127,210   127,210        0        0        0        0
+================================================================================================
+
+2. Rerun with nothing changed: python etl/facts/run.py
+================================================================================================
+ Fact run 178
+================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown
+  fact_payment                     Success    127,210         0        0        0        0        0
+================================================================================================
+
+   The run log of both runs (step fact_payment):
+ run_id |     step     | rows_read | rows_inserted | rows_updated | rows_rejected | status  
+--------+--------------+-----------+---------------+--------------+---------------+---------
+    178 | fact_payment |    127210 |             0 |            0 |             0 | Success
+    177 | fact_payment |    127210 |        127210 |            0 |             0 | Success
+(2 rows)
+
+3. Staging against the fact: rows and amount
+         source         |  rows  |  amount_pkr   
+------------------------+--------+---------------
+ stg_payment_allocation | 127210 | 5347289709.00
+ fact_payment           | 127210 | 5347289709.00
+(2 rows)
+
+4. The key-mapping chain (the brief's evidence): a source payment with its tenant id, the tenant version
+   valid on the paid date, and the final fact rows. Tenant T-0115 changed sector on 2024-10-10:
+   PAY-0025146 (paid 2024-10-05, before) and PAY-0027787 (paid 2024-11-10, after).
+ payment_reference | tenant_code |  paid_on   | method_code |  amount   
+-------------------+-------------+------------+-------------+-----------
+ PAY-0025146       | T-0115      | 2024-10-05 | RAAST       | 191662.00
+ PAY-0027787       | T-0115      | 2024-11-10 | CHEQUE      | 188652.00
+(2 rows)
+
+ payment_reference | tenant_code | tenant_key | employer_sector | effective_from | effective_to | payment_alloc_sk | paid_date_key |  invoice_number  | invoice_line_no | payment_amount | unit_key | lease_key | owner_key 
+-------------------+-------------+------------+-----------------+----------------+--------------+------------------+---------------+------------------+-----------------+----------------+----------+-----------+-----------
+ PAY-0025146       | T-0115      |        113 | Government      | 1900-01-01     | 2024-10-10   |            53525 |      20241005 | INV-2024-10-2914 |               1 |      161820.00 |      795 |      2914 |       874
+ PAY-0025146       | T-0115      |        113 | Government      | 1900-01-01     | 2024-10-10   |            53526 |      20241005 | INV-2024-10-2914 |               2 |       23142.00 |      795 |      2914 |       874
+ PAY-0025146       | T-0115      |        113 | Government      | 1900-01-01     | 2024-10-10   |            53527 |      20241005 | INV-2024-10-2914 |               3 |        6700.00 |      795 |      2914 |       874
+ PAY-0027787       | T-0115      |       3804 | Healthcare      | 2024-10-10     | 9999-12-31   |            59217 |      20241110 | INV-2024-11-2914 |               1 |      161820.00 |      795 |      2914 |       874
+ PAY-0027787       | T-0115      |       3804 | Healthcare      | 2024-10-10     | 9999-12-31   |            59218 |      20241110 | INV-2024-11-2914 |               2 |       23142.00 |      795 |      2914 |       874
+ PAY-0027787       | T-0115      |       3804 | Healthcare      | 2024-10-10     | 9999-12-31   |            59219 |      20241110 | INV-2024-11-2914 |               3 |        3690.00 |      795 |      2914 |       874
+(6 rows)
+
+5. Before and after the change: T-0115's two versions, and its payments either side of 2024-10-10
+ tenant_key | tenant_code | employer_sector | effective_from | effective_to | is_current 
+------------+-------------+-----------------+----------------+--------------+------------
+        113 | T-0115      | Government      | 1900-01-01     | 2024-10-10   | f
+       3804 | T-0115      | Healthcare      | 2024-10-10     | 9999-12-31   | t
+(2 rows)
+
+ payment_reference |  paid_on   | tenant_key | employer_sector | paid_pkr  
+-------------------+------------+------------+-----------------+-----------
+ PAY-0021741       | 2024-08-06 |        113 | Government      | 197852.00
+ PAY-0023540       | 2024-09-06 |        113 | Government      | 193392.00
+ PAY-0025146       | 2024-10-05 |        113 | Government      | 191662.00
+ PAY-0027787       | 2024-11-10 |       3804 | Healthcare      | 188652.00
+ PAY-0029725       | 2024-12-17 |       3804 | Healthcare      | 191482.00
+ PAY-0031481       | 2025-01-23 |       3804 | Healthcare      | 192272.00
+(6 rows)
+
+6. Across the whole fact: tenant and unit keys outside their version's validity on the paid date, and
+   the tenants whose payments map to more than one version
+ wrong_version 
+---------------
+             0
+(1 row)
+
+ tenants_paying_under_two_versions 
+-----------------------------------
+                                13
+(1 row)
+

@@ -1,0 +1,89 @@
+US-7.4 fact_maintenance_request (full profile, seed 3004). Staging and the dimensions as left by US-6.5;
+the fact emptied first (TRUNCATE ... RESTART IDENTITY).
+
+1. First load: python etl/facts/run.py --fact fact_maintenance_request
+=========================================================================================================================
+ Fact run 391
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_maintenance_request         Success      5,670     5,670        0        0        0        0      36/36          0
+=========================================================================================================================
+
+2. Rerun with nothing changed
+=========================================================================================================================
+ Fact run 392
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_maintenance_request         Success      5,670         0        0        0        0        0      36/36          0
+=========================================================================================================================
+ run_id |           step           | rows_read | rows_inserted | rows_updated | rows_rejected | status  
+--------+--------------------------+-----------+---------------+--------------+---------------+---------
+    391 | fact_maintenance_request |      5670 |          5670 |            0 |             0 | Success
+    392 | fact_maintenance_request |      5670 |             0 |            0 |             0 | Success
+(2 rows)
+
+3. Grain: one row per request
+ rows | requests | staged_tickets 
+------+----------+----------------
+ 5670 |     5670 |           5670
+(1 row)
+
+4. Lifecycle stages: milestone keys are -2 until reached
+ request_status | requests | assigned_minus2 | resolved_minus2 | verified_minus2 | vendor_minus2 | sla_known 
+----------------+----------+-----------------+-----------------+-----------------+---------------+-----------
+ Raised         |        4 |               4 |               4 |               4 |             4 |         0
+ Assigned       |        7 |               0 |               7 |               7 |             0 |         0
+ Resolved       |      248 |               0 |               0 |             248 |             0 |       248
+ Verified       |     5411 |               0 |               0 |               0 |             0 |      5411
+(4 rows)
+
+5. SLA breach rate by category (SLA of the category version valid on the raised date)
+ category_name | sla_hours | resolved | breached | breach_pct | avg_days_to_resolve 
+---------------+-----------+----------+----------+------------+---------------------
+ Civil         |        72 |      162 |       37 |       22.8 |                2.30
+ Civil         |        96 |      580 |      117 |       20.2 |                2.89
+ Civil         |       120 |      276 |       41 |       14.9 |                3.36
+ Civil         |       168 |      122 |       21 |       17.2 |                4.83
+ Electrical    |        12 |      200 |       89 |       44.5 |                0.59
+ Electrical    |        24 |      570 |      183 |       32.1 |                0.85
+ Electrical    |        48 |      159 |       31 |       19.5 |                1.54
+ Electrical    |        72 |      189 |       32 |       16.9 |                2.07
+ HVAC          |        24 |      153 |       44 |       28.8 |                0.86
+ HVAC          |        48 |      206 |       37 |       18.0 |                1.46
+ HVAC          |        72 |      361 |       63 |       17.5 |                2.07
+ HVAC          |        96 |      210 |       29 |       13.8 |                2.64
+ Other         |        12 |      151 |       55 |       36.4 |                0.55
+ Other         |        24 |      329 |      117 |       35.6 |                0.93
+ Other         |        96 |      153 |       21 |       13.7 |                2.68
+ Pest control  |        36 |       30 |        8 |       26.7 |                1.17
+ Pest control  |        48 |      239 |       55 |       23.0 |                1.53
+ Pest control  |        72 |       92 |       19 |       20.7 |                2.29
+ Plumbing      |        12 |      204 |       89 |       43.6 |                0.60
+ Plumbing      |        24 |      277 |      103 |       37.2 |                0.95
+ Plumbing      |        36 |      162 |       41 |       25.3 |                1.21
+ Plumbing      |        48 |      578 |      134 |       23.2 |                1.50
+ Plumbing      |        72 |      256 |       45 |       17.6 |                2.16
+(23 rows)
+
+6. The same ticket at two lifecycle stages (MR-2026-00944). Staging is set back to the ticket as an earlier extract had it
+   (assigned to a vendor, not resolved), the fact loaded; then staging is restored (resolved and verified) and
+   the fact loaded again. The row is updated in place: same request_sk, no second row.
+   Run A (ticket assigned):
+  fact_maintenance_request         Success      5,670         0        1        0        0        0      36/36          0
+ request_sk | request_number | request_status |  raised  | assigned | resolved | verified | vendor_key | days_to_assign | days_to_resolve | days_to_verify | actual_cost | sla_breached | batch_id 
+------------+----------------+----------------+----------+----------+----------+----------+------------+----------------+-----------------+----------------+-------------+--------------+----------
+       5659 | MR-2026-00944  | Assigned       | 20260628 | 20260628 |       -2 |       -2 |         74 |           0.19 |                 |                |             |              |      393
+(1 row)
+
+   Run B (ticket resolved and verified):
+  fact_maintenance_request         Success      5,670         0        1        0        0        0      36/36          0
+ request_sk | request_number | request_status |  raised  | assigned | resolved | verified | vendor_key | days_to_assign | days_to_resolve | days_to_verify | actual_cost | sla_breached | batch_id 
+------------+----------------+----------------+----------+----------+----------+----------+------------+----------------+-----------------+----------------+-------------+--------------+----------
+       5659 | MR-2026-00944  | Verified       | 20260628 | 20260628 | 20260629 | 20260630 |         74 |           0.19 |            1.10 |           0.69 |     7000.00 |            0 |      394
+(1 row)
+
+ rows_for_ticket 
+-----------------
+               1
+(1 row)
+

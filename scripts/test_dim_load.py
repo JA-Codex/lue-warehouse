@@ -68,13 +68,18 @@ def key_file(name: str) -> list[dict]:
 
 
 def empty_dimensions(cur) -> None:
-    """Facts point at the dimensions: empty them first (E7 reloads them), then the members."""
+    """Facts point at the dimensions: empty them first (E7 reloads them), then the members.
+
+    The identity sequences start again at 1, as on a fresh warehouse (the special members -1 and -2
+    have fixed keys, so the next member is key 1 again; US-1.2 checks a loaded dimension starts there).
+    """
     cur.execute("SELECT string_agg('lue_dw.' || tablename, ', ') FROM pg_tables WHERE schemaname = 'lue_dw' AND tablename LIKE 'fact\\_%' ESCAPE '\\'")
     facts = cur.fetchone()[0]
     if facts:
-        cur.execute(f"TRUNCATE {facts}")
+        cur.execute(f"TRUNCATE {facts} RESTART IDENTITY")
     for d in reversed(spec.DIMS):
         cur.execute(f"DELETE FROM lue_dw.{d.name} WHERE {d.key} > 0")
+        cur.execute("SELECT setval(pg_get_serial_sequence(%s, %s), 1, false)", (f"lue_dw.{d.name}", d.key))
     cur.execute("UPDATE lue_dw.dim_date SET is_public_holiday = FALSE, holiday_name = NULL, is_ramadan = FALSE WHERE date_key > 0")
 
 

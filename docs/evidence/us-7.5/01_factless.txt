@@ -1,0 +1,58 @@
+US-7.5 fact_lease_event and fact_vacancy_incentive_coverage (full profile, seed 3004). Staging, the dimensions
+and the occupancy snapshot as left by US-7.4; both facts emptied first.
+
+1. First load: python etl/facts/run.py --fact fact_lease_event --fact fact_vacancy_incentive_coverage
+=========================================================================================================================
+ Fact run 500
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_lease_event                 Success      8,781     8,781        0        0        0        0      36/36          0
+  fact_vacancy_incentive_coverage  Success     20,177    20,177        0        0        0        0      36/36          0
+=========================================================================================================================
+
+2. Rerun with nothing changed
+=========================================================================================================================
+ Fact run 501
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_lease_event                 Success      8,781         0        0        0        0        0      36/36          0
+  fact_vacancy_incentive_coverage  Success     20,177         0        0        0        0        0      36/36          0
+=========================================================================================================================
+
+3. Counts by event type: staging against the fact
+ event_code |  event_name  | staged | loaded | difference 
+------------+--------------+--------+--------+------------
+ SIGN       | Signed       |   2292 |   2292 |          0
+ RENEW      | Renewed      |   1889 |   1889 |          0
+ NOTICE     | Notice given |   2308 |   2308 |          0
+ TERM       | Terminated   |   2292 |   2292 |          0
+(4 rows)
+
+4. Grain: one row per lease, event type and date; event_count always 1
+ rows | distinct_events | events | not_one 
+------+-----------------+--------+---------
+ 8781 |            8781 |   8781 |       0
+(1 row)
+
+5. Coverage row check: rows = the incentive windows' length in days (restricted to vacant unit-days)
+ windows | window_days | coverage_rows | vacant_in_snapshot 
+---------+-------------+---------------+--------------------
+     624 |       20177 |         20177 |              20177
+(1 row)
+
+6. Coverage by offer
+ incentive_code |  incentive_type  | units | offer_days 
+----------------+------------------+-------+------------
+ DISC10         | Discount         |   107 |       3326
+ DISC15         | Discount         |    95 |       3266
+ DISC25         | Discount         |   100 |       3262
+ FREEMAINT      | Free maintenance |   118 |       3904
+ RF15           | Rent-free days   |    77 |       2617
+ RF30           | Rent-free days   |    97 |       3282
+ RF60           | Rent-free days   |    16 |        520
+(7 rows)
+
+7. The composite primary key refuses a duplicate (inside a transaction that is rolled back)
+BEGIN
+ERROR:  duplicate key value violates unique constraint "pk_fact_vacancy_incentive_coverage"
+DETAIL:  Key (coverage_date_key, unit_key, incentive_key)=(20230701, 184, 6) already exists.
