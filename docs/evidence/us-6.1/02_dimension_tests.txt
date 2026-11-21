@@ -1,0 +1,46 @@
+======================================================================
+ E6 contract tests: dimension spec and loader (no database)
+======================================================================
+US-6.1 The spec against the frozen design
+  [PASS] 13 dimensions in the DDL; the 5 static ones of US-1.4 among them
+  [PASS] every dimension of the spec exists, once, and is not a static one: dim_tenant
+  [PASS] the surrogate key is the identity column; every column exists; every NOT NULL column is filled on insert; SCD2 and inferred flags match the DDL
+  [PASS] every column's SCD type is the data dictionary's (Phase 1 model.py): dim_tenant Type 1 ['tenant_name', 'contact_channel'], Type 2 ['tenant_type', 'employer_sector']
+  [PASS] every source reads real staging columns (docs/contracts/staging.md)
+  [PASS] load order: the static dimensions (checked first), then the independent ones, then unit, tenant and lease
+  [PASS] a dimension's dependencies load before it
+US-6.1 The loader's SQL
+  [PASS] source, insert and Type 1 statements parse (pglast)
+  [PASS] insert: never names the surrogate key (the identity assigns it), only new natural keys, a first version valid from 1900-01-01 to 9999-12-31
+  [PASS] Type 1: only when a value differs, never on the special members, never a Type 2 column
+======================================================================
+ RESULT: 10/10 checks passed
+======================================================================
+
+======================================================================
+ US-6.1 acceptance tests: the dimension loader (database)
+======================================================================
+US-6.1 The loader and the surrogate keys
+  [PASS] first load: every staged tenant is a member (3,762 of 3,762)
+  [PASS] surrogate keys from the identity: 3,762 unique, all positive (from 3763); one row per tenant code, current, valid 1900-01-01 to 9999-12-31, not inferred
+  [PASS] the special members -1 (Unknown) and -2 (Not applicable) are untouched
+  [PASS] every member carries its staged values; batch_id is the pipeline run that loaded it
+  [PASS] a rerun inserts 0 and updates 0 (3,762 unchanged); the run log agrees
+  [PASS] Type 1 (name of T-0001, contact channel of T-0002): overwritten in place, same surrogate key (3763), 2 rows updated, batch_id = the run
+  [PASS] Type 2 (tenant type of T-0001 to Corporate): left as it was, for the SCD2 step (US-6.2)
+  [PASS] a member deleted and loaded again gets a new key (T-3800: 7524 -> 7525): keys are never reused
+  [PASS] a source with a natural key twice is refused, nothing changed (dim_tenant: 1 natural keys appear twice in the source; stagi...)
+US-6.1 Evidence: business key and surrogate key side by side
+    tenant_code  tenant_key  tenant_name / type / current
+    N/A                  -2  Not applicable / N/A / True
+    Unknown              -1  Unknown / Unknown / True
+    T-0001             3763  Maryam Dar / Individual / True
+    T-0002             3764  Saad Mirza / Individual / True
+    T-0003             3765  Omar Mahmood / Individual / True
+    T-0004             3766  Anum Rizvi / Individual / True
+    T-0005             3767  Saba Sheikh / Individual / True
+  [PASS] the query lists the special members first, then tenants with their keys
+  [PASS] the dimensions hold staging again
+======================================================================
+ RESULT: 11/11 checks passed
+======================================================================

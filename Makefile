@@ -37,6 +37,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_ingest_contract.py
 	$(PYTHON) scripts/test_quality_contract.py
 	$(PYTHON) scripts/test_staging_contract.py
+	$(PYTHON) scripts/test_dim_load_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -49,9 +50,6 @@ weather: ## Download the S5 weather once into data/weather_cache.json; resumes i
 
 weather-check: ## Check data/weather_cache.json covers every city and day; no network (US-2.5)
 	$(PYTHON) etl/refresh_weather.py --check
-
-reports: ## Stub: generate the report PDFs (E9, E14)
-	@echo "reports: not implemented yet"
 
 db-setup: ## Create databases, roles and schemas; safe to re-run (US-1.1)
 	$(PYTHON) scripts/db_setup.py
@@ -90,6 +88,18 @@ stage: ## Load staging incrementally, record the evidence, compare with the answ
 
 staging-test: ## Staging acceptance tests (US-5.1 to US-5.4); reloads src_pms, bronze and staging (about 7 minutes)
 	$(PYTHON) scripts/test_staging.py
+
+dims: ## Load the dimensions from staging: new members get surrogate keys, Type 1 overwritten (E6)
+	$(PYTHON) etl/dimensions/run.py
+
+dims-test: ## Dimension acceptance tests (US-6.1 to US-6.5); reloads src_pms, bronze, staging and the dimensions
+	$(PYTHON) scripts/test_dim_load.py
+
+next-extract: ## Apply the generator's next S1 extract (tenant changes, late tenants) to src_pms (US-6.2, US-6.5)
+	$(PYTHON) scripts/db_apply_next_extract.py
+
+reports: ## Build the Phase 2 reports (cleaning, quality, implementation) from the warehouse into docs/reports/
+	$(PYTHON) etl/reports/build.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)
 	$(PYTHON) scripts/db_reset.py
