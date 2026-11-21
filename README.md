@@ -281,6 +281,59 @@ answer key. The database tests of US-2.2 to US-2.4 need it. The six business pat
 vendor, summer move-ins, offers that shorten vacancies, leak tickets after rain, renewal churn in Karachi) are in both;
 `python scripts/check_patterns.py --data <folder>` measures them (full profile: all six must show their effect).
 
+## 6. Pipeline
+
+`run_pipeline.py` is the one-command rebuild.  It runs every ETL stage in
+order, records per-step timing, and prints a summary table when done.
+
+### Quick usage
+
+```bash
+# Run the full pipeline (data already in data/):
+python run_pipeline.py
+
+# Full profile:
+python run_pipeline.py --profile full
+
+# Resume after a failed step:
+python run_pipeline.py --from-step ingest
+
+# Run a single step only:
+python run_pipeline.py --only reports
+
+# Skip data generation and go straight to db-setup:
+python run_pipeline.py --skip-generate
+```
+
+`make rebuild` runs `db_reset.py` then the pipeline with `--skip-generate`
+(small profile by default):
+
+```bash
+make rebuild                    # small profile, seed 3004
+make rebuild PROFILE=full       # full profile
+make rebuild PROFILE=full SEED=42
+```
+
+### Pipeline steps
+
+| Step | Description |
+|---|---|
+| `generate` | Generate seeded source data into `data/` (skipped with `--skip-generate`) |
+| `db-setup` | Create databases, roles and schemas |
+| `db-deploy` | Deploy `sql/10_ddl` DDL (dimensions, facts, staging, audit) |
+| `db-load-ref` | Load `dim_date` and static reference dimensions |
+| `db-load-source` | Load generated S1 data into `lue_source.src_pms` |
+| `ingest` | Land all six sources in bronze with reconciliation (E3) |
+| `validate` | Run the 109 DQ rules on bronze, quarantine rejects (E4) |
+| `stage` | Clean, standardise, deduplicate into staging (E5) |
+| `dims` | Load dimensions: surrogate keys, SCD2, inferred members (E6) |
+| `facts` | Load 6 facts from staging and dimensions; run 71 fact tests (E7) |
+| `reports` | Build Phase 2 PDFs into `docs/reports/` (E9) |
+
+Critical steps (`db-setup` through `facts`) fail the run on error.
+Non-critical steps (`generate`, `reports`) log the error and continue.
+Logs are appended to `logs/pipeline.log`.
+
 ## Change control for the frozen Phase 1 pack
 
 `docs/phase1/` matches `MANIFEST.sha256`, and CI fails if any file there changes. A design change needs a dated row in

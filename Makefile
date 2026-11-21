@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline pipeline-test test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -9,10 +9,18 @@ setup: ## Set up environment dependencies and test database connection (US-0.4)
 	$(PYTHON) -m pip install -r requirements.txt
 	$(PYTHON) scripts/test_connection.py
 
-rebuild: ## Stub: full rebuild of databases, data, pipeline and marts (E9)
-	@echo "rebuild: not implemented yet (grows with each epic; must always pass on main)"
+rebuild: ## Full rebuild: reset db, generate data, run complete pipeline (E8/US-8.1)
+	$(PYTHON) scripts/db_reset.py
+	$(PYTHON) run_pipeline.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) --skip-generate
 
-test: lint sqlcheck manifest contract gen-test ## Everything CI runs
+pipeline: ## Run the full pipeline without regenerating data (E8)
+	$(PYTHON) run_pipeline.py --skip-generate
+
+pipeline-test: ## Offline pipeline contract tests (US-8.1 to US-8.4)
+	$(PYTHON) scripts/test_pipeline_contract.py
+	$(PYTHON) scripts/test_pipeline_timing.py
+
+test: lint sqlcheck manifest contract gen-test pipeline-test ## Everything CI runs
 
 lint: ## Ruff on our own Python (docs/ is excluded)
 	ruff check etl scripts
