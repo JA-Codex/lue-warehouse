@@ -1,0 +1,89 @@
+US-7.3 fact_unit_occupancy_daily (full profile, seed 3004). Staging, the dimensions and the money facts as
+left by US-7.2; the snapshot emptied first (TRUNCATE).
+
+1. Full load: python etl/facts/run.py --fact fact_unit_occupancy_daily
+=========================================================================================================================
+ Fact run 326
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_unit_occupancy_daily        Success  1,972,800 1,972,800        0        0        0        0      36/36     63,000
+=========================================================================================================================
+   wall clock: 98 s
+
+2. Rerun with nothing changed (the refresh rewrites the last 35 days, D14): python etl/facts/run.py
+=========================================================================================================================
+ Fact run 327
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_rent_invoice_line           Success    129,885         0        0        0        0        0      36/36          0
+  fact_payment                     Success    127,210         0        0        0        0        0      36/36          0
+  fact_unit_occupancy_daily        Success  1,972,800         0        0        0        0        0      36/36     63,000
+=========================================================================================================================
+   wall clock: 41 s
+
+   Load duration in the run log (step fact_unit_occupancy_daily; rows_updated holds the refreshed rows):
+ run_id |           step            | rows_read | rows_inserted | rows_updated | rows_rejected | status  | seconds 
+--------+---------------------------+-----------+---------------+--------------+---------------+---------+---------
+    326 | fact_unit_occupancy_daily |   1972800 |       1972800 |        63000 |             0 | Success |      97
+    327 | fact_rent_invoice_line    |    129885 |             0 |            0 |             0 | Success |       2
+    327 | fact_payment              |    127210 |             0 |            0 |             0 | Success |       2
+    327 | fact_unit_occupancy_daily |   1972800 |             0 |        63000 |             0 | Success |      36
+(4 rows)
+
+3. Grain check: units x days of the fixed window 2023-07-01 to 2026-06-30, zero duplicates
+ units | days | expected |  rows   | distinct_unit_days | first_day | last_day 
+-------+------+----------+---------+--------------------+-----------+----------
+  1800 | 1096 |  1972800 | 1972800 |            1972800 |  20230701 | 20260630
+(1 row)
+
+4. Rows per partition (one month each; the default partition and the months after the window stay empty)
+             partition             | approx_rows 
+-----------------------------------+-------------
+ fact_unit_occupancy_daily_2023_07 |       55800
+ fact_unit_occupancy_daily_2024_02 |       52200
+ fact_unit_occupancy_daily_2026_06 |       54000
+ fact_unit_occupancy_daily_2026_07 |          -1
+ fact_unit_occupancy_daily_default |          -1
+(5 rows)
+
+             partition             | exact_rows | expected 
+-----------------------------------+------------+----------
+ fact_unit_occupancy_daily_2024_02 |      52200 |    52200
+ default                           |          0 |        0
+(2 rows)
+
+5. Monthly reconciliation of run 327 (lue_audit.reconciliation): unit-days = units x days
+ months | passed | min_unit_days | max_unit_days |   total    
+--------+--------+---------------+---------------+------------
+     36 |     36 |      50400.00 |      55800.00 | 1972800.00
+(1 row)
+
+6. Occupancy and arrears by quarter-end day (semi-additive: summed across units on one day only)
+ full_date  | occupied | vacant | occupancy_pct |  rent_roll   |   arrears   
+------------+----------+--------+---------------+--------------+-------------
+ 2023-09-30 |     1528 |    272 |          84.9 | 114059500.00 | 21830678.00
+ 2024-03-31 |     1501 |    299 |          83.4 | 115942500.00 | 51016916.00
+ 2024-09-30 |     1584 |    216 |          88.0 | 127536000.00 | 74024382.00
+ 2025-03-31 |     1513 |    287 |          84.1 | 127207500.00 | 80293674.00
+ 2025-09-30 |     1554 |    246 |          86.3 | 136843000.00 | 91448771.00
+ 2026-03-31 |     1524 |    276 |          84.7 | 139234000.00 | 93696310.00
+ 2026-06-30 |     1499 |    301 |          83.3 | 140589000.00 | 83115790.00
+(7 rows)
+
+7. One unit across a vacancy and a new lease (vacant days keep their row: tenant and lease -2)
+ lease_number | tenant_code | start_date |  end_date  | monthly_rent |   status   
+--------------+-------------+------------+------------+--------------+------------
+ L-2024-02725 | T-2051      | 2024-05-01 | 2025-03-31 |     56000.00 | Terminated
+ L-2025-04170 | T-2858      | 2025-05-01 | 2026-03-31 |     60000.00 | Terminated
+(2 rows)
+
+ full_date  | unit_key | tenant_key | lease_key | owner_key | is_occupied | contract_rent | current_lease_arrears 
+------------+----------+------------+-----------+-----------+-------------+---------------+-----------------------
+ 2025-03-31 |     1334 |       2027 |      2725 |       104 |           1 |      56000.00 |                  0.00
+ 2025-04-01 |     1334 |         -2 |        -2 |       104 |           0 |          0.00 |                  0.00
+ 2025-04-02 |     1334 |         -2 |        -2 |       104 |           0 |          0.00 |                  0.00
+ 2025-04-30 |     1334 |         -2 |        -2 |       104 |           0 |          0.00 |                  0.00
+ 2025-05-01 |     1334 |       2825 |      4170 |       104 |           1 |      60000.00 |                  0.00
+ 2025-05-02 |     1334 |       2825 |      4170 |       104 |           1 |      60000.00 |                  0.00
+(6 rows)
+

@@ -53,7 +53,9 @@ def fact_step(f: spec.Fact, now: datetime, box: dict):
                          "keys resolved point in time (SCD2 version and owner valid on the event "
                          "date); synced to the source on its grain")  # fmt: skip
         r = step.result
-        r.rows_read, r.rows_written, r.rows_updated = result.read, result.inserted, result.updated + result.deleted
+        r.rows_read, r.rows_written = result.read, result.inserted
+        # D14: the occupancy refresh rewrites its last 35 days every run; reported, never hidden
+        r.rows_updated = result.updated + result.deleted + result.refreshed
         r.rows_rejected = result.rejected
         if result.unknown or result.rejected:
             r.warning = True
@@ -70,8 +72,12 @@ def fact_step(f: spec.Fact, now: datetime, box: dict):
     return run
 
 
-def load_all(settings: dict | None = None):
-    """One run. Returns (run_id, step results, {fact: FactLoad})."""
+def load_all(settings: dict | None = None, only: list[str] | None = None):
+    """One run of every fact, or of the facts named in `only` (in load order).
+    Returns (run_id, step results, {fact: FactLoad})."""
+    unknown = sorted(set(only or []) - set(spec.BY_NAME))
+    if unknown:
+        raise NotReady(f"no such fact: {', '.join(unknown)} (facts: {', '.join(spec.BY_NAME)})")
     probe = connect(WAREHOUSE_DB, settings)
     probe.autocommit = True
     try:
@@ -83,7 +89,8 @@ def load_all(settings: dict | None = None):
     box: dict = {}
     try:
         now = datetime.now().replace(microsecond=0)
-        results = [r.step(f.name, "STG", fact_step(f, now, box)) for f in spec.FACTS]
+        chosen = [f for f in spec.FACTS if not only or f.name in only]
+        results = [r.step(f.name, "STG", fact_step(f, now, box)) for f in chosen]
         return r.run_id, results, box
     finally:
         r.close()
@@ -91,25 +98,26 @@ def load_all(settings: dict | None = None):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.parse_args(argv)
+    ap.add_argument("--fact", action="append", metavar="NAME", help="load only this fact (repeatable); default: all")
+    args = ap.parse_args(argv)
     try:
-        run_id, results, loads = load_all()
+        run_id, results, loads = load_all(only=args.fact)
     except (IngestError, NotReady) as exc:
         print(f"[FAIL] {exc}")
         return 2
-    line = "=" * 110
+    line = "=" * 121
     print(line)
     print(f" Fact run {run_id}")
     print(line)
     print(f"  {'fact':32} {'status':8} {'read':>9} {'inserted':>9} {'updated':>8} {'deleted':>8} "
-          f"{'rejected':>8} {'unknown':>8} {'months ok':>10}")  # fmt: skip
+          f"{'rejected':>8} {'unknown':>8} {'months ok':>10} {'refreshed':>10}")  # fmt: skip
     for res in results:
         x = loads.get(res.step)
         if x is None:
             print(f"  {res.step:32} {res.status:8} {res.message}")
             continue
         print(f"  {res.step:32} {res.status:8} {x.read:>9,} {x.inserted:>9,} {x.updated:>8,} {x.deleted:>8,} "
-              f"{x.rejected:>8,} {x.unknown:>8,} {f'{len(x.months) - len(x.months_off)}/{len(x.months)}':>10}"
+              f"{x.rejected:>8,} {x.unknown:>8,} {f'{len(x.months) - len(x.months_off)}/{len(x.months)}':>10} {x.refreshed:>10,}"
               + (f"  -1 keys: {x.unknown_keys}" if x.unknown_keys else "")
               + (f"  months off: {', '.join(x.months_off[:6])}" if x.months_off else ""))  # fmt: skip
     print(line)

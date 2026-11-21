@@ -15,22 +15,27 @@
           the invoice date; zero grain duplicates in both facts; net billed and paid equal staging in
           every month (an independent query and the run's lue_audit.reconciliation rows); reversals
           are negative and reduce collected; a fact amount off by PKR 1 fails its month
+  US-7.3  one occupancy row per unit per day of the fixed window, load duration in the run log,
+          unit-days reconciled by month; vacant days -2 and 0; lease, rent, tenant and owner of
+          the day; arrears against a direct computation; a rerun rewrites the last 35 days with
+          identical values; a late payment in those days corrects the arrears
 At the end the facts hold staging again and staging is as it was.
 """
 
 # ruff: noqa: E501  (SQL text: long lines read better)
 
 import sys
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from etl.facts import load, spec  # noqa: E402
+from etl.facts import keys, load, spec  # noqa: E402
 from etl.facts import run as facts  # noqa: E402
 from etl.ingest.base import IngestError, connect  # noqa: E402
 
 results: list[bool] = []
+MONEY = ["fact_rent_invoice_line", "fact_payment"]  # US-7.1 and US-7.2 load these only (the snapshot is slow)
 
 
 def check(ok: bool, text: str) -> None:
@@ -46,7 +51,7 @@ def scalar(cur, sql: str, args=None):
 def payment_tests(cur) -> None:
     print("US-7.1 fact_payment: point-in-time keys")
     cur.execute("TRUNCATE lue_dw.fact_payment RESTART IDENTITY")
-    _r, res, loads = facts.load_all()
+    _r, res, loads = facts.load_all(only=["fact_payment"])
     x = loads["fact_payment"]
     staged, total = (cur.execute("SELECT count(*), sum(allocated_amount) FROM lue_staging.stg_payment_allocation") or cur.fetchone())
     loaded, fact_total = (cur.execute("SELECT count(*), sum(payment_amount) FROM lue_dw.fact_payment") or cur.fetchone())
@@ -103,7 +108,7 @@ def payment_tests(cur) -> None:
     check(bool(chain) and ok, f"tenant {code}: each of its {len(chain)} payment lines maps to the version valid on its paid date ({len(versions)} version(s) used)")
 
     print("US-7.1 Reruns and changes")
-    _r, res, loads = facts.load_all()
+    _r, res, loads = facts.load_all(only=["fact_payment"])
     x = loads["fact_payment"]
     check(x.inserted == x.updated == x.deleted == 0, "a rerun inserts, updates and deletes nothing")
     cur.execute("SELECT payment_reference, invoice_number, line_no, allocated_amount, allocation_source, paid_at, due_date, days_past_due, is_reversal FROM lue_staging.stg_payment_allocation ORDER BY 1, 2, 3 LIMIT 2")
@@ -111,7 +116,7 @@ def payment_tests(cur) -> None:
     cur.execute("UPDATE lue_staging.stg_payment_allocation SET allocated_amount = allocated_amount + 1 WHERE payment_reference = %s AND invoice_number = %s AND line_no = %s", (r1, i1, l1))
     cur.execute("DELETE FROM lue_staging.stg_payment_allocation WHERE payment_reference = %s AND invoice_number = %s AND line_no = %s", keep2[:3])
     try:
-        _r, res, loads = facts.load_all()
+        _r, res, loads = facts.load_all(only=["fact_payment"])
         x = loads["fact_payment"]
         amount = scalar(cur, "SELECT payment_amount FROM lue_dw.fact_payment WHERE payment_reference = %s AND invoice_number = %s AND invoice_line_no = %s", (r1, i1, l1))
         gone = scalar(cur, "SELECT count(*) FROM lue_dw.fact_payment WHERE payment_reference = %s AND invoice_number = %s AND invoice_line_no = %s", keep2[:3])
@@ -120,7 +125,7 @@ def payment_tests(cur) -> None:
     finally:
         cur.execute("UPDATE lue_staging.stg_payment_allocation SET allocated_amount = %s WHERE payment_reference = %s AND invoice_number = %s AND line_no = %s", (a1, r1, i1, l1))
         cur.execute("INSERT INTO lue_staging.stg_payment_allocation (payment_reference, invoice_number, line_no, allocated_amount, allocation_source, paid_at, due_date, days_past_due, is_reversal) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", keep2)
-    _r, res, loads = facts.load_all()
+    _r, res, loads = facts.load_all(only=["fact_payment"])
     x = loads["fact_payment"]
     check(x.updated == 1 and x.inserted == 1, "with staging restored, the next run puts both back (1 updated, 1 inserted)")
 
@@ -145,7 +150,7 @@ def payment_tests(cur) -> None:
 def invoice_tests(cur) -> None:
     print("US-7.2 fact_rent_invoice_line")
     cur.execute("TRUNCATE lue_dw.fact_rent_invoice_line RESTART IDENTITY")
-    run_id, res, loads = facts.load_all()
+    run_id, res, loads = facts.load_all(only=MONEY)
     x = loads["fact_rent_invoice_line"]
     status = {r.step: r.status for r in res}
     cur.execute("SELECT count(*), sum(billed_amount), sum(tax_amount), sum(discount_amount), sum(net_amount) FROM lue_staging.stg_invoice_line")
@@ -214,9 +219,130 @@ def invoice_tests(cur) -> None:
     finally:
         conn.close()
     check(len(broken) == 1, f"a fact amount changed by PKR 1 makes exactly its month fail the reconciliation ({broken})")
-    _r, res, loads = facts.load_all()
+    _r, res, loads = facts.load_all(only=MONEY)
     check(all(x.inserted == x.updated == x.deleted == 0 and not x.months_off for x in loads.values()),
-          "a rerun of both facts inserts, updates and deletes nothing, and every month still reconciles")
+          "a rerun of both money facts inserts, updates and deletes nothing, and every month still reconciles")
+
+
+OCC = "fact_unit_occupancy_daily"
+# A content fingerprint of the snapshot without the technical columns (D14: values, not load times)
+OCC_HASH = ("SELECT count(*), sum(hashtextextended(concat_ws('|', snapshot_date_key, unit_key, tenant_key, lease_key, owner_key, "
+            "is_occupied, contract_rent, current_lease_arrears, source_system), 0)) FROM lue_dw.fact_unit_occupancy_daily")
+
+
+def occupancy_tests(cur) -> None:
+    print("US-7.3 fact_unit_occupancy_daily: the full load")
+    cur.execute(f"TRUNCATE lue_dw.{OCC}")
+    run_id, res, loads = facts.load_all(only=[OCC])
+    x = loads[OCC]
+    seconds = scalar(cur, "SELECT round(extract(epoch FROM ended_at - started_at)) FROM lue_audit.etl_run_log WHERE run_id = %s AND step = %s", (run_id, OCC))
+    first, last = keys.DATA_WINDOW
+    units = scalar(cur, "SELECT count(*) FROM lue_staging.stg_unit")
+    days = scalar(cur, f"SELECT DATE '{last}' - DATE '{first}' + 1")
+    rows = scalar(cur, f"SELECT count(*) FROM lue_dw.{OCC}")
+    check({r.step: r.status for r in res}[OCC] == "Success" and rows == units * days == x.inserted and x.unknown == 0,
+          f"one row per unit per day of the fixed window {first} to {last} (never today): {units:,} units x {days:,} days = {rows:,}; no -1 key")
+    check(seconds is not None and seconds < 600, f"full load duration recorded in the run log: {seconds} s (under 10 minutes on a laptop)")
+    check(len(x.months) == 36 and not x.months_off, f"unit-days reconcile in every month ({len(x.months) - len(x.months_off)}/{len(x.months)})")
+    dup = scalar(cur, f"SELECT count(*) - count(DISTINCT (f.snapshot_date_key, u.unit_nk)) FROM lue_dw.{OCC} f JOIN lue_dw.dim_unit u USING (unit_key)")
+    stray = scalar(cur, "SELECT (SELECT count(*) FROM lue_dw.fact_unit_occupancy_daily_default) + "
+                        "(SELECT count(*) FROM lue_dw.fact_unit_occupancy_daily WHERE snapshot_date_key > %s)", (int(last.replace('-', '')),))
+    check(dup == 0 and stray == 0, "zero grain duplicates (snapshot day, unit); nothing in the default partition or after the window")
+    cur.execute(f"""SELECT count(*) FILTER (WHERE is_occupied = 0 AND (tenant_key <> -2 OR lease_key <> -2 OR contract_rent <> 0 OR current_lease_arrears <> 0)),
+                           count(*) FILTER (WHERE is_occupied = 1 AND (tenant_key < 0 OR lease_key < 0)), sum(is_occupied),
+                           count(*) FILTER (WHERE current_lease_arrears < 0) FROM lue_dw.{OCC}""")
+    bad_vacant, bad_occupied, occupied, negative = cur.fetchone()
+    lease_days = scalar(cur, f"SELECT coalesce(sum(greatest(0, least(end_date, DATE '{last}') - greatest(start_date, DATE '{first}') + 1)), 0) FROM lue_staging.stg_lease")
+    check(bad_vacant == bad_occupied == negative == 0 and occupied == lease_days,
+          f"a vacant day has tenant and lease -2, rent and arrears 0; occupied days = the leases' days in the window ({occupied:,}); no negative arrears")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{OCC} f JOIN lue_dw.dim_date d ON d.date_key = f.snapshot_date_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key
+        LEFT JOIN lue_dw.dim_lease dl ON dl.lease_key = f.lease_key AND f.is_occupied = 1
+        LEFT JOIN lue_staging.stg_lease l ON l.lease_number = dl.lease_number
+        LEFT JOIN lue_dw.dim_tenant t ON t.tenant_key = f.tenant_key AND f.is_occupied = 1
+        WHERE NOT (d.full_date >= u.effective_from AND d.full_date < u.effective_to)
+           OR (f.is_occupied = 1 AND (l.lease_number IS NULL OR NOT d.full_date BETWEEN l.start_date AND l.end_date
+               OR t.tenant_code IS DISTINCT FROM l.tenant_code OR f.contract_rent <> l.monthly_rent
+               OR NOT (d.full_date >= t.effective_from AND d.full_date < t.effective_to)))""")
+    check(wrong == 0, "unit version valid that day; the active lease, its rent, and its tenant in the version valid that day")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{OCC} f JOIN lue_dw.dim_date d ON d.date_key = f.snapshot_date_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key JOIN lue_dw.dim_owner o ON o.owner_key = f.owner_key
+        WHERE NOT EXISTS (SELECT 1 FROM lue_staging.stg_ownership r WHERE r.building_code = u.building_code AND r.unit_no = u.unit_no
+                          AND r.owner_code = o.owner_code AND r.valid_from <= d.full_date AND (r.valid_to IS NULL OR d.full_date < r.valid_to))""")
+    check(wrong == 0, "every owner key is the unit's owner that day (ownership register)")
+    # Arrears against a direct per-row computation (correlated, slow, obviously right) on a sample
+    cur.execute(f"""
+        WITH s AS (SELECT d.full_date, dl.lease_number, f.current_lease_arrears FROM lue_dw.{OCC} f TABLESAMPLE SYSTEM (2) REPEATABLE (3004)
+                   JOIN lue_dw.dim_date d ON d.date_key = f.snapshot_date_key JOIN lue_dw.dim_lease dl ON dl.lease_key = f.lease_key
+                   WHERE f.is_occupied = 1 LIMIT 3000)
+        SELECT count(*), count(*) FILTER (WHERE s.current_lease_arrears <> e.v), count(*) FILTER (WHERE e.v > 0) FROM s CROSS JOIN LATERAL (
+          SELECT coalesce((SELECT sum(il.net_amount) FROM lue_staging.stg_invoice_line il JOIN lue_staging.stg_invoice i USING (invoice_number)
+                           WHERE i.lease_number = s.lease_number AND il.due_date < s.full_date), 0)
+               - coalesce((SELECT sum(a.allocated_amount) FROM lue_staging.stg_payment_allocation a
+                           JOIN lue_staging.stg_invoice_line il ON il.invoice_number = a.invoice_number AND il.line_no = a.line_no
+                           JOIN lue_staging.stg_invoice i ON i.invoice_number = a.invoice_number
+                           WHERE i.lease_number = s.lease_number AND il.due_date < s.full_date AND a.paid_at::date <= s.full_date), 0) AS v) e""")
+    sampled, wrong, owing = cur.fetchone()
+    check(sampled > 0 and wrong == 0,
+          f"arrears = net of the lease's lines past due minus what was paid on them by that day: {sampled:,} sampled days agree with a direct computation ({owing:,} owing)")
+
+    print("US-7.3 The 35-day refresh (NFR-08, D14)")
+    before = (cur.execute(OCC_HASH) or cur.fetchone())
+    _r, res, loads = facts.load_all(only=[OCC])
+    x = loads[OCC]
+    after = (cur.execute(OCC_HASH) or cur.fetchone())
+    check(x.inserted == x.updated == x.deleted == 0 and x.refreshed == units * 35 and after == before,
+          f"a rerun with no changes: 0 inserted, updated, deleted; the refresh rewrote {x.refreshed:,} rows (units x 35 days) and the values hash identically")
+    # A late payment, dated inside the last 35 days, against a line already past due and still open
+    end = date.fromisoformat(last)
+    paid = end - timedelta(days=10)
+    cur.execute("""
+        SELECT il.invoice_number, il.line_no, i.lease_number, il.net_amount - coalesce(sum(a.allocated_amount), 0) AS open
+        FROM lue_staging.stg_invoice_line il JOIN lue_staging.stg_invoice i USING (invoice_number)
+        JOIN lue_staging.stg_lease l ON l.lease_number = i.lease_number AND %(paid)s BETWEEN l.start_date AND l.end_date
+        LEFT JOIN lue_staging.stg_payment_allocation a ON a.invoice_number = il.invoice_number AND a.line_no = il.line_no
+        WHERE il.due_date < %(paid)s GROUP BY 1, 2, 3, il.net_amount HAVING il.net_amount - coalesce(sum(a.allocated_amount), 0) > 0
+        ORDER BY 4 DESC, 1, 2 LIMIT 1""", {"paid": paid})
+    line = cur.fetchone()
+    if line is None:
+        check(True, "late payment: no lease in this data owes on a past-due line in the last 35 days (nothing to correct)")
+        return
+    inv, ln, lease, open_ = line
+    amount = min(open_, 10000)
+    cur.execute("SELECT f.unit_key FROM lue_dw.fact_unit_occupancy_daily f JOIN lue_dw.dim_lease dl USING (lease_key) WHERE dl.lease_number = %s AND f.snapshot_date_key = %s",
+                (lease, int(paid.strftime("%Y%m%d"))))
+    unit_key = cur.fetchone()[0]
+    window = [paid - timedelta(days=2), paid - timedelta(days=1), paid, paid + timedelta(days=1), end]
+    show = [int(d.strftime("%Y%m%d")) for d in window]
+
+    def arrears() -> dict:
+        cur.execute(f"SELECT snapshot_date_key, current_lease_arrears FROM lue_dw.{OCC} WHERE unit_key = %s AND snapshot_date_key = ANY(%s)", (unit_key, show))
+        return dict(cur.fetchall())
+
+    was = arrears()
+    ref = "PAY-TEST-LATE"
+    cur.execute("INSERT INTO lue_staging.stg_payment (payment_reference, tenant_code, paid_at, method_code, amount, status, is_reversal, source_system) "
+                "SELECT %s, l.tenant_code, %s, 'CASH', %s, 'Cleared', FALSE, 'S1' FROM lue_staging.stg_lease l WHERE l.lease_number = %s", (ref, paid, amount, lease))
+    cur.execute("INSERT INTO lue_staging.stg_payment_allocation (payment_reference, invoice_number, line_no, allocated_amount, allocation_source, paid_at, due_date, days_past_due, is_reversal) "
+                "SELECT %s, invoice_number, line_no, %s, 'test', %s, due_date, %s - due_date, FALSE FROM lue_staging.stg_invoice_line WHERE invoice_number = %s AND line_no = %s",
+                (ref, amount, paid, paid, inv, ln))
+    try:
+        _r, res, loads = facts.load_all(only=[OCC])
+        now = arrears()
+        print(f"    late payment {ref}: PKR {amount:,.2f} on {paid} against {inv}/{ln} (lease {lease}, unit_key {unit_key})")
+        print(f"    {'day':10} {'arrears before':>16} {'after refresh':>16}")
+        for k in show:
+            print(f"    {k:<10} {was[k]:>16,.2f} {now[k]:>16,.2f}")
+        moved = all(now[k] == was[k] - amount for k in show if k >= show[2]) and all(now[k] == was[k] for k in show if k < show[2])
+        check(moved and loads[OCC].updated == (end - paid).days + 1,
+              f"a late payment dated {paid} (inside the last 35 days) lowers that lease's arrears from that day by PKR {amount:,.2f}, earlier days unchanged")
+    finally:
+        cur.execute("DELETE FROM lue_staging.stg_payment_allocation WHERE payment_reference = %s", (ref,))
+        cur.execute("DELETE FROM lue_staging.stg_payment WHERE payment_reference = %s", (ref,))
+    _r, res, loads = facts.load_all(only=[OCC])
+    check((cur.execute(OCC_HASH) or cur.fetchone()) == before, "with the payment removed from staging the next run restores the snapshot exactly (same hash)")
 
 
 def main() -> int:
@@ -238,6 +364,7 @@ def main() -> int:
                 return 1
             payment_tests(cur)
             invoice_tests(cur)
+            occupancy_tests(cur)
     finally:
         wh.close()
     print("=" * 70)

@@ -6,7 +6,8 @@
 The fact spec (etl/facts/spec.py) against the frozen DDL (sql/10_ddl/02_facts.sql): every fact and
 column exists, every NOT NULL column is filled, the grain columns are written (and are the DDL's
 UNIQUE key where it has one); the key lookups are point in time with half-open versions; every
-statement the loader builds parses (pglast); the money facts reconcile to staging by month.
+statement the loader builds parses (pglast); the money facts reconcile to staging by month; the
+occupancy snapshot covers the generator's window month by month and refreshes its last 35 days.
 """
 
 # ruff: noqa: E501  (long assertions and messages read better on one line)
@@ -111,6 +112,7 @@ def main() -> int:
     errors = []
     for f in spec.FACTS:
         stmts = [("source", f.source), ("delete", load.delete_sql(f)), ("update", load.update_sql(f)), ("insert", load.insert_sql(f))]
+        stmts += [(f"prepare {i + 1}", s) for i, s in enumerate(f.prepare)]
         if f.monthly:
             stmts.append(("monthly reconciliation", load.monthly_sql(f)))
         for name, sql in stmts:
@@ -129,6 +131,27 @@ def main() -> int:
           "the invoice and payment facts load first and both declare a monthly reconciliation to staging")
     long = [f"{f.name} 2026-06 {f.monthly[0]}" for f in spec.FACTS if f.monthly and len(f"{f.name} 2026-06 {f.monthly[0]}") > 60]
     check(not long, "every reconciliation check name fits lue_audit.reconciliation.check_name (60)" + (f": {long}" if long else ""))
+
+    print("US-7.3 The periodic snapshot")
+    from etl.generator_config import WINDOW_END, WINDOW_START
+
+    occ = spec.BY_NAME.get("fact_unit_occupancy_daily")
+    check(keys.DATA_WINDOW == (WINDOW_START.isoformat(), WINDOW_END.isoformat()),
+          f"the snapshot window {keys.DATA_WINDOW[0]} to {keys.DATA_WINDOW[1]} is the generator's data window (fixed, never today)")
+    check(occ is not None and occ.period == "snapshot_date_key" and occ.grain == ["snapshot_date_key", "unit_key"]
+          and occ.refresh_days == 35 and occ.resolved == ["unit_key"] and occ.monthly is not None,
+          "fact_unit_occupancy_daily: grain = its primary key (snapshot day, unit), loaded by month, last 35 days refreshed, unit never -1, unit-days reconciled")
+    within = "BETWEEN %(first_key)s AND %(last_key)s"
+    check(occ is not None and all(within in s for s in (load.delete_sql(occ), load.update_sql(occ), load.insert_sql(occ)))
+          and within not in load.update_sql(spec.BY_NAME["fact_payment"]),
+          "a periodic snapshot's delete, update and insert name the month loaded (one partition each); other facts are not restricted")
+    ms = load.months(*keys.DATA_WINDOW)
+    check(len(ms) == 36 and ms[0][0].isoformat() == keys.DATA_WINDOW[0] and ms[-1][1].isoformat() == keys.DATA_WINDOW[1]
+          and all((b - a).days >= 27 and (ms[i + 1][0] - b).days == 1 for i, (a, b) in enumerate(ms[:-1])),
+          f"the window splits into {len(ms)} whole, contiguous months")
+    src = occ.source if occ else ""
+    check("generate_series" in src and "LEFT JOIN lue_staging.stg_lease" in src and "THEN -2" in src and "OVER w" in " ".join(occ.prepare if occ else []),
+          "every unit and day from generate_series, the lease LEFT JOINed (vacant days stay, -2), arrears by window sums")
     print("=" * 70)
     ok = results and all(results)
     print(f" RESULT: {sum(results)}/{len(results)} checks passed" + ("" if ok else " - FAILED"))

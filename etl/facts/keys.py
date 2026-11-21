@@ -26,6 +26,10 @@ from __future__ import annotations
 CALENDAR = ("2023-07-01", "2027-06-30")
 UNKNOWN, NOT_APPLICABLE = -1, -2
 
+# The data window of the sources (etl/generator_config.py WINDOW_START, WINDOW_END; CI checks they
+# agree). A periodic snapshot covers exactly these days, never up to today (US-7.3).
+DATA_WINDOW = ("2023-07-01", "2026-06-30")
+
 
 def date_key(expr: str, missing: int = UNKNOWN) -> str:
     d = f"({expr})::date"
