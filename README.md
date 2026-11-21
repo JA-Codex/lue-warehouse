@@ -53,7 +53,7 @@ take a machine with PostgreSQL to a loaded, tested warehouse and the two reports
 
        python scripts/run_ci.py
 
-5. **Build the warehouse** on the small profile (2 buildings, 3 months; about a minute). The pipeline generates the
+5. **Build the warehouse** on the small profile (2 buildings, 3 months; under a minute). The pipeline generates the
    data, creates the databases, roles and schemas, deploys the DDL and loads every layer in one run, ending with the
    source-to-warehouse reconciliation (DQ-07). On a machine that already has an LUE warehouse, reset it first
    (`python scripts/db_reset.py`; together the two are `make rebuild`):

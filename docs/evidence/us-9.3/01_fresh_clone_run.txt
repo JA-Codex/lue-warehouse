@@ -1,0 +1,258 @@
+US-9.3 fresh-clone rehearsal, 2026-11-21 23:05 UTC; Linux, PostgreSQL 16.15
+
+==================================================================
+$ Step 0: empty PostgreSQL (no LUE databases or roles)
+==================================================================
+LUE databases: 0, LUE roles: 0
+
+==================================================================
+$ git clone -q <e9-reports branch, local copy> lue-warehouse && cd lue-warehouse && git checkout -q a1030e9 && git log --oneline -1
+==================================================================
+a1030e9 US-9.3 Package the Phase 2 submission: load scripts as SQL, checklist, README
+[exit 0, 1s]
+
+==================================================================
+$ python3.11 -m venv .venv; source .venv/bin/activate && python --version && pip install -q -r requirements.txt -r requirements-ci.txt && echo installed
+==================================================================
+Python 3.11.18
+installed
+[exit 0, 12s]
+
+==================================================================
+$ cp .env.example .env && sed -i "s/^PGPASSWORD=.*/PGPASSWORD=<superuser password>/; s/^PGPORT=.*/PGPORT=5433/" .env && echo '.env: PGPASSWORD and PGPORT set'
+==================================================================
+.env: PGPASSWORD and PGPORT set
+[exit 0, 0s]
+
+==================================================================
+$ python scripts/test_connection.py
+==================================================================
+[INFO] Loaded environment from ~/rehearsal/lue-warehouse/.env
+======================================================================
+ LUE Warehouse - Local Environment & PostgreSQL Connection Test (US-0.4)
+======================================================================
+Timestamp:       2026-11-22 04:05:40
+Operating System:Linux 6.18.44-fc-v726 (x86_64)
+Python Version:  3.11.18 (~/rehearsal/lue-warehouse/.venv/bin/python)
+psycopg2 Version:2.9.13 (dt dec pq3 ext lo64)
+----------------------------------------------------------------------
+Target Connection Parameters:
+  Host:          localhost
+  Port:          5433
+  User:          postgres
+  Password:      ********
+  Database:      lue_warehouse
+----------------------------------------------------------------------
+[INFO] Target database 'lue_warehouse' does not exist yet (expected prior to US-1.1).
+[INFO] Connecting to default maintenance database 'postgres' instead...
+[PASS] Connected successfully to database: 'postgres'
+[PASS] Server Version:
+       PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+[INFO] Session: database='postgres', user='postgres', server_addr='127.0.0.1:5433'
+----------------------------------------------------------------------
+Testing throwaway table operations: table '_lue_conn_test_tmp'...
+  [PASS] CREATE TABLE _lue_conn_test_tmp succeeded.
+  [PASS] INSERT INTO _lue_conn_test_tmp succeeded (id=1, time=2026-11-22 04:05:40.689156+05:00).
+  [PASS] SELECT verification passed (read back marker: 'US-0.4 local environment check').
+  [PASS] DROP TABLE _lue_conn_test_tmp clean-up succeeded.
+======================================================================
+ RESULT: ALL LOCAL ENVIRONMENT CHECKS PASSED (US-0.4)
+======================================================================
+[exit 0, 0s]
+
+==================================================================
+$ python scripts/run_ci.py 2>&1 | grep -E '^>>|RESULT|ALL PASSED|FAILED|^sql:|^manifest:|^contract:|PASS$'
+==================================================================
+>> [1/19] python -m ruff check etl scripts
+>> [2/19] python scripts/ci_checks.py --sql
+sql: parsed 25 file(s), 0 failure(s)
+RESULT: PASS
+>> [3/19] python scripts/ci_checks.py --manifest
+manifest: 54 file(s) checked, 0 problem(s)
+RESULT: PASS
+>> [4/19] python scripts/check_contract.py
+contract: 29 table(s) checked against the pack, 0 problem(s); 0 pack table(s) not deployed yet
+>> [5/19] python scripts/export_load_sql.py --check
+>> [6/19] python scripts/test_generator.py
+ RESULT: 39/39 checks passed
+>> [7/19] python scripts/test_master_data.py
+ RESULT: 129/129 checks passed
+>> [8/19] python scripts/test_leases.py
+ RESULT: 114/114 checks passed
+>> [9/19] python scripts/test_payments.py
+ RESULT: 80/80 checks passed
+>> [10/19] python scripts/test_tickets.py
+ RESULT: 69/69 checks passed
+>> [11/19] python scripts/test_weather.py
+ RESULT: 56/56 checks passed
+>> [12/19] python scripts/test_defects.py
+ RESULT: 71/71 checks passed
+>> [13/19] python scripts/test_ingest_contract.py
+ RESULT: 17/17 checks passed
+>> [14/19] python scripts/test_quality_contract.py
+ RESULT: 20/20 checks passed
+>> [15/19] python scripts/test_staging_contract.py
+ RESULT: 36/36 checks passed
+>> [16/19] python scripts/test_dim_load_contract.py
+ RESULT: 19/19 checks passed
+>> [17/19] python scripts/test_fact_load_contract.py
+ RESULT: 26/26 checks passed
+>> [18/19] python scripts/test_pipeline_contract.py
+ RESULT: 22/22 checks passed
+>> [19/19] python scripts/test_submission_contract.py
+ RESULT: 10/10 checks passed
+ALL PASSED: 19 checks in 148s
+[exit 0, 148s]
+
+==================================================================
+$ python etl/run_pipeline.py --profile small
+==================================================================
+2026-11-22 04:08:09 INFO event=run_start run_id=1
+2026-11-22 04:08:09 INFO step=check_generation source=PIPE status=Success rows_read=1 rows_written=0 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:10 INFO step=source source=PIPE status=Success rows_read=0 rows_written=0 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.buildings target=brz_building rows_read=2 rows_written=2 batch_id=1
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.units target=brz_unit rows_read=90 rows_written=90 batch_id=2
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.tenants target=brz_tenant rows_read=119 rows_written=119 batch_id=3
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.leases target=brz_lease rows_read=85 rows_written=85 batch_id=4
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.lease_events target=brz_lease_event rows_read=26 rows_written=26 batch_id=5
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.invoices target=brz_invoice rows_read=222 rows_written=222 batch_id=6
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.invoice_lines target=brz_invoice_line rows_read=516 rows_written=516 batch_id=7
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.payments target=brz_payment rows_read=225 rows_written=225 batch_id=8
+2026-11-22 04:08:10 INFO step=ingest_s1_pms table=src_pms.payment_allocations target=brz_payment_allocation rows_read=465 rows_written=465 batch_id=9
+2026-11-22 04:08:10 INFO step=ingest_s1_pms source=S1 status=Success rows_read=1750 rows_written=1750 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:10 INFO step=ingest_s2_registers source=S2 status=Success rows_read=365 rows_written=365 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:10 INFO step=ingest_s3_settlements source=S3 status=Success rows_read=140 rows_written=140 rows_rejected=0 seconds=0.3
+2026-11-22 04:08:10 INFO step=ingest_s4_tickets source=S4 status=Success rows_read=203 rows_written=203 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:10 INFO step=ingest_s5_weather source=S5 status=Success rows_read=4384 rows_written=4384 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:10 INFO step=ingest_s6_incentives source=S6 status=Success rows_read=12 rows_written=12 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:10 INFO step=validate_dq source=bronze status=Warning rows_read=6854 rows_written=33 rows_rejected=25 seconds=0.2
+2026-11-22 04:08:10 INFO step=stage_building source=S1 status=Success rows_read=2 rows_written=2 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:10 INFO step=stage_unit source=S1 status=Success rows_read=90 rows_written=90 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_tenant source=S1 status=Success rows_read=119 rows_written=119 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:11 INFO step=stage_lease source=S1 status=Success rows_read=85 rows_written=85 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_lease_event source=S1 status=Success rows_read=26 rows_written=23 rows_rejected=3 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_invoice source=S1 status=Success rows_read=222 rows_written=222 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:11 INFO step=stage_invoice_line source=S1 status=Success rows_read=516 rows_written=516 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:11 INFO step=stage_payment source=S1 status=Success rows_read=225 rows_written=225 rows_rejected=0 seconds=0.1
+2026-11-22 04:08:11 INFO step=stage_payment_allocation source=S1 status=Success rows_read=465 rows_written=449 rows_rejected=16 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_settlement source=S3 status=Success rows_read=140 rows_written=139 rows_rejected=1 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_owner source=S2 status=Success rows_read=40 rows_written=40 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_ownership source=S2 status=Success rows_read=106 rows_written=106 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_vendor source=S2 status=Success rows_read=12 rows_written=12 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_maintenance_category source=S2 status=Success rows_read=34 rows_written=34 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_holiday source=S2 status=Success rows_read=173 rows_written=173 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:11 INFO step=stage_ticket source=S4 status=Success rows_read=42 rows_written=36 rows_rejected=5 seconds=0.1
+2026-11-22 04:08:11 INFO step=stage_ticket_status source=S4 status=Success rows_read=140 rows_written=140 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=stage_weather source=S5 status=Success rows_read=4384 rows_written=4384 rows_rejected=0 seconds=0.5
+2026-11-22 04:08:12 INFO step=stage_incentive_offer source=S6 status=Success rows_read=7 rows_written=7 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=stage_incentive_log source=S6 status=Success rows_read=5 rows_written=5 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=stage_business source=STG status=Success rows_read=1467 rows_written=17 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/cleaning_evidence_S1.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/cleaning_evidence_S2.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/cleaning_evidence_S3.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/cleaning_evidence_S4.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/cleaning_evidence_S5.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/cleaning_evidence_S6.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/count_bridge.csv
+2026-11-22 04:08:12 INFO event=evidence file=~/rehearsal/lue-warehouse/data/staging_evidence/distinct_values.csv
+2026-11-22 04:08:12 INFO step=dim_date_holidays source=S2 status=Success rows_read=173 rows_written=0 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_owner source=STG status=Success rows_read=40 rows_written=40 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_vendor source=STG status=Success rows_read=12 rows_written=13 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_maintenance_category source=STG status=Success rows_read=30 rows_written=34 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_incentive source=STG status=Success rows_read=7 rows_written=7 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_weather source=STG status=Success rows_read=4384 rows_written=4384 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_unit source=STG status=Success rows_read=90 rows_written=90 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_tenant source=STG status=Success rows_read=119 rows_written=120 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=dim_lease source=STG status=Success rows_read=85 rows_written=85 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=fact_rent_invoice_line source=STG status=Success rows_read=516 rows_written=516 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=fact_payment source=STG status=Success rows_read=466 rows_written=466 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=fact_maintenance_request source=STG status=Success rows_read=36 rows_written=36 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=fact_lease_event source=STG status=Success rows_read=23 rows_written=23 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:12 INFO step=fact_vacancy_incentive_coverage source=STG status=Success rows_read=157 rows_written=157 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:15 INFO step=fact_unit_occupancy_daily source=STG status=Success rows_read=98640 rows_written=98640 rows_rejected=0 seconds=3.2
+2026-11-22 04:08:16 INFO step=fact_tests source=DW status=Success rows_read=71 rows_written=0 rows_rejected=0 seconds=0.4
+2026-11-22 04:08:16 INFO step=reconcile_dq07 source=DW status=Success rows_read=15 rows_written=0 rows_rejected=0 seconds=0.0
+2026-11-22 04:08:16 INFO event=run_end run_id=1 steps=51 failed=0
+========================================================================================================
+ Pipeline run 1: generate, setup, deploy, reference, source, ingest, validate, transform, dimensions, facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  generate        1 Success            0           0          0         0      0.4
+  setup           1 Success            0           0          0         0      0.2
+  deploy          1 Success            0           0          0         0      0.3
+  reference       1 Success            0           0          0         0      0.1
+  source          2 Success            1           0          0         0      0.1
+  ingest          6 Success        6,854       6,854          0         0      0.6
+  validate        1 Warning        6,854          33          0        25      0.2
+      Warning validate_dq: 25 rows rejected (quarantined)
+  transform      21 Success        8,300       6,824      1,467        25      1.1
+  dimensions      9 Success        4,940       4,773        178         0      0.1
+  facts           7 Success       99,909      99,838      3,150         0      3.8
+  reconcile       1 Success           15           0          0         0      0.0
+========================================================================================================
+ RESULT: 51/51 steps without failure in 7 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 1
+========================================================================================================
+[exit 0, 8s]
+
+==================================================================
+$ python scripts/test_reports.py
+==================================================================
+======================================================================
+ E9 acceptance tests: the Phase 2 reports (database)
+======================================================================
+US-9.1 The Data Cleaning Report
+  [PASS] python etl/reports/build.py writes the Data Cleaning Report (4 pages)
+  [PASS] rows rejected: 25 in the findings = 25 in quarantine = 25 in the run log; every finding of every batch counted
+  [PASS] every staging table: the rows in the report = the rows in the table = the rows the run log inserted (20 tables)
+  [PASS] the cleaning evidence is the run that built staging (run 1, 285 evidence rows), not an empty rerun
+  [PASS] the answer key: 32 of 32 planted defects detected, 0 false positives; every cleaning check passes
+US-9.2 The Data Quality Report
+  [PASS] python etl/reports/build.py writes the Data Quality Report (7 pages)
+  [PASS] accuracy: the DQ-07 reconciliation of run 1, 15 measure-months of billed, paid, tickets and lease events, all passed, unexplained 0
+  [PASS] integrity: the fact tests of run 1, 0 rows in 41 orphan checks; the query the report quotes is in 02_fact_tests.sql and returns 0
+  [PASS] SCD continuity: 30 tests of the four Type 2 dimensions and 17 others, all 0 violations
+  [PASS] the pipeline run it describes (run 1) reached the reconciliation; failed steps, if any, are non-critical and named (none); its fact counts are the tables'
+US-9.1, US-9.2 Nothing typed
+  [PASS] the counts the reports print (rules, tables, foreign keys, quarantine, planted defects) are not typed into the generator
+======================================================================
+ RESULT: 11/11 checks passed
+======================================================================
+[exit 0, 1s]
+
+==================================================================
+$ python scripts/test_load_sql.py
+==================================================================
+======================================================================
+ US-9.3 acceptance tests: the dimension and fact load scripts (database)
+======================================================================
+The files
+  [PASS] sql/30_dimensions/02_dimension_loads.sql equals what the loaders run
+  [PASS] sql/40_facts/01_fact_loads.sql equals what the loaders run
+  [PASS] both files equal what the loaders run (re-exported from the specs)
+Facts: sql/40_facts/01_fact_loads.sql
+  [PASS] on empty facts it builds the 6 facts the loader built: 99,838 rows, every column equal
+  [PASS] run on the loaded facts it changes nothing (D14) but the occupancy refresh: 90 units x 35 days = 3,150 rows
+Dimensions: sql/30_dimensions/02_dimension_loads.sql
+  [PASS] run on the loaded dimensions it changes nothing (8 dimensions, 0 rows)
+  [PASS] it re-creates the members of dim_owner, dim_incentive, dim_weather, dim_lease with their values (4,524 rows, new surrogate keys)
+  [PASS] it puts back corrupted Type 1 values (dim_vendor.vendor_name, dim_maintenance_category.subcategory_name, dim_unit.building_name, dim_tenant.tenant_name: 5 rows each), every version left as it was
+======================================================================
+ RESULT: 6/6 checks passed
+======================================================================
+[exit 0, 4s]
+
+==================================================================
+$ python etl/reports/build.py --out data/reports && ls -l data/reports
+==================================================================
+written data/reports/LUE_Data_Cleaning_Report.pdf
+written data/reports/LUE_Data_Quality_Report.pdf
+total 48
+-rw-r--r-- 1 root root 18105 Nov 22 04:08 LUE_Data_Cleaning_Report.pdf
+-rw-r--r-- 1 root root 28503 Nov 22 04:08 LUE_Data_Quality_Report.pdf
+[exit 0, 1s]
+
+==================================================================
+$ git status --short && echo 'working tree clean'
+==================================================================
+working tree clean
+[exit 0, 0s]
