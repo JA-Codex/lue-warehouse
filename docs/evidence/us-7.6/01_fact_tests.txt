@@ -1,0 +1,156 @@
+US-7.6 Automated grain, orphan and value checks (full profile, seed 3004). Staging, the dimensions and all
+six facts as left by US-7.5.
+
+1. A full run ends with the test step: python etl/facts/run.py
+=========================================================================================================================
+ Fact run 584
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_rent_invoice_line           Success    129,885         0        0        0        0        0      36/36          0
+  fact_payment                     Success    127,210         0        0        0        0        0      36/36          0
+  fact_maintenance_request         Success      5,670         0        0        0        0        0      36/36          0
+  fact_lease_event                 Success      8,781         0        0        0        0        0      36/36          0
+  fact_vacancy_incentive_coverage  Success     20,177         0        0        0        0        0      36/36          0
+  fact_unit_occupancy_daily        Success  1,972,800         0        0        0        0        0      36/36     63,000
+  fact_tests                       Success  71 of 71 tests passed (grain, orphans, values)
+=========================================================================================================================
+  Rows on the special members (not orphans): key -1 Unknown / -2 Not applicable
+    fact_maintenance_request         assigned_date_key 0/4, resolved_date_key 0/11, verified_date_key 0/259, tenant_key 0/945, vendor_key 0/4
+    fact_unit_occupancy_daily        tenant_key 0/305,222, lease_key 0/305,222
+=========================================================================================================================
+   exit code: 0
+
+   The run log, step fact_tests (rows_read = tests run):
+ run_id |    step    | rows_read | status  
+--------+------------+-----------+---------
+    584 | fact_tests |        71 | Success
+(1 row)
+
+   Its pass or fail per test in lue_audit.reconciliation (expected 0, found):
+              fact               | tests | orphan_checks | passed | violations 
+---------------------------------+-------+---------------+--------+------------
+ fact_lease_event                |     8 |             6 |      8 |       0.00
+ fact_maintenance_request        |    18 |            11 |     18 |       0.00
+ fact_payment                    |    14 |             8 |     14 |       0.00
+ fact_rent_invoice_line          |    12 |             7 |     12 |       0.00
+ fact_unit_occupancy_daily       |    12 |             5 |     12 |       0.00
+ fact_vacancy_incentive_coverage |     7 |             4 |      7 |       0.00
+(6 rows)
+
+2. The tests themselves: psql -d lue_warehouse -f sql/90_tests/02_fact_tests.sql
+                             test                             | violations 
+--------------------------------------------------------------+------------
+ fact_lease_event: event_count is 1                           |          0
+ fact_lease_event: no orphan event_date_key                   |          0
+ fact_lease_event: no orphan lease_event_type_key             |          0
+ fact_lease_event: no orphan lease_key                        |          0
+ fact_lease_event: no orphan owner_key                        |          0
+ fact_lease_event: no orphan tenant_key                       |          0
+ fact_lease_event: no orphan unit_key                         |          0
+ fact_lease_event: one row per lease, type and date (grain)   |          0
+ fact_maintenance_request: SLA flag 0/1 if resolved, or NULL  |          0
+ fact_maintenance_request: milestone dates in order           |          0
+ fact_maintenance_request: no milestone skipped               |          0
+ fact_maintenance_request: no negative duration or cost       |          0
+ fact_maintenance_request: no orphan assigned_date_key        |          0
+ fact_maintenance_request: no orphan maint_category_key       |          0
+ fact_maintenance_request: no orphan owner_key                |          0
+ fact_maintenance_request: no orphan raised_date_key          |          0
+ fact_maintenance_request: no orphan request_flags_key        |          0
+ fact_maintenance_request: no orphan resolved_date_key        |          0
+ fact_maintenance_request: no orphan tenant_key               |          0
+ fact_maintenance_request: no orphan unit_key                 |          0
+ fact_maintenance_request: no orphan vendor_key               |          0
+ fact_maintenance_request: no orphan verified_date_key        |          0
+ fact_maintenance_request: no orphan weather_key              |          0
+ fact_maintenance_request: one row per request (grain)        |          0
+ fact_maintenance_request: status matches its milestones      |          0
+ fact_maintenance_request: vendor -2 exactly until assigned   |          0
+ fact_payment: a receipt is positive, a reversal negative     |          0
+ fact_payment: days past due = paid date - due date           |          0
+ fact_payment: every allocation is to a loaded invoice line   |          0
+ fact_payment: no invoice line paid more than its net         |          0
+ fact_payment: no orphan charge_type_key                      |          0
+ fact_payment: no orphan due_date_key                         |          0
+ fact_payment: no orphan lease_key                            |          0
+ fact_payment: no orphan owner_key                            |          0
+ fact_payment: no orphan paid_date_key                        |          0
+ fact_payment: no orphan payment_method_key                   |          0
+ fact_payment: no orphan tenant_key                           |          0
+ fact_payment: no orphan unit_key                             |          0
+ fact_payment: one row per payment allocation (grain)         |          0
+ fact_payment: settlement lag not negative                    |          0
+ fact_rent_invoice_line: due on or after the invoice date     |          0
+ fact_rent_invoice_line: line numbers from 1                  |          0
+ fact_rent_invoice_line: net = billed + tax - discount        |          0
+ fact_rent_invoice_line: no negative amount                   |          0
+ fact_rent_invoice_line: no orphan charge_type_key            |          0
+ fact_rent_invoice_line: no orphan due_date_key               |          0
+ fact_rent_invoice_line: no orphan invoice_date_key           |          0
+ fact_rent_invoice_line: no orphan lease_key                  |          0
+ fact_rent_invoice_line: no orphan owner_key                  |          0
+ fact_rent_invoice_line: no orphan tenant_key                 |          0
+ fact_rent_invoice_line: no orphan unit_key                   |          0
+ fact_rent_invoice_line: one row per invoice line (grain)     |          0
+ fact_unit_occupancy_daily: every day holds every unit once   |          0
+ fact_unit_occupancy_daily: every day inside the data window  |          0
+ fact_unit_occupancy_daily: is_occupied is 0 or 1             |          0
+ fact_unit_occupancy_daily: no negative rent or arrears       |          0
+ fact_unit_occupancy_daily: no orphan lease_key               |          0
+ fact_unit_occupancy_daily: no orphan owner_key               |          0
+ fact_unit_occupancy_daily: no orphan snapshot_date_key       |          0
+ fact_unit_occupancy_daily: no orphan tenant_key              |          0
+ fact_unit_occupancy_daily: no orphan unit_key                |          0
+ fact_unit_occupancy_daily: occupied = a tenant and a lease   |          0
+ fact_unit_occupancy_daily: one row per unit and day (grain)  |          0
+ fact_unit_occupancy_daily: vacant: keys -2, rent, arrears 0  |          0
+ fact_vacancy_incentive_coverage: days inside the data window |          0
+ fact_vacancy_incentive_coverage: no orphan coverage_date_key |          0
+ fact_vacancy_incentive_coverage: no orphan incentive_key     |          0
+ fact_vacancy_incentive_coverage: no orphan owner_key         |          0
+ fact_vacancy_incentive_coverage: no orphan unit_key          |          0
+ fact_vacancy_incentive_coverage: one row per key (grain)     |          0
+ fact_vacancy_incentive_coverage: only on vacant unit-days    |          0
+(71 rows)
+
+3. A deliberate failure: one lease event duplicated and committed, then a run of that fact with the tests
+   (python etl/facts/run.py --fact fact_lease_event --tests). The test step fails and records which test.
+INSERT 0 1
+=========================================================================================================================
+ Fact run 585
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_lease_event                 Warning      8,781         0        0        0        0        0      35/36          0  months off: 2023-07
+  fact_tests                       Failed   70 of 71 tests passed (grain, orphans, values): FactError: 1 of 71 fact tests found violations: fact_lease_event: one row per lease, type and date (grain) (1)
+=========================================================================================================================
+  Rows on the special members (not orphans): key -1 Unknown / -2 Not applicable
+    fact_maintenance_request         assigned_date_key 0/4, resolved_date_key 0/11, verified_date_key 0/259, tenant_key 0/945, vendor_key 0/4
+    fact_unit_occupancy_daily        tenant_key 0/305,222, lease_key 0/305,222
+=========================================================================================================================
+   exit code: 1
+ run_id |       step       | rows_read | status  
+--------+------------------+-----------+---------
+    585 | fact_lease_event |      8781 | Warning
+    585 | fact_tests       |        71 | Failed
+(2 rows)
+
+                         check_name                         | expected | found  | passed 
+------------------------------------------------------------+----------+--------+--------
+ fact_lease_event 2023-07 events by event month             |   430.00 | 431.00 | f
+ fact_lease_event: one row per lease, type and date (grain) |     0.00 |   1.00 | f
+(2 rows)
+
+   The duplicate removed; the next run passes:
+DELETE 1
+=========================================================================================================================
+ Fact run 586
+=========================================================================================================================
+  fact                             status        read  inserted  updated  deleted rejected  unknown  months ok  refreshed
+  fact_lease_event                 Success      8,781         0        0        0        0        0      36/36          0
+  fact_tests                       Success  71 of 71 tests passed (grain, orphans, values)
+=========================================================================================================================
+  Rows on the special members (not orphans): key -1 Unknown / -2 Not applicable
+    fact_maintenance_request         assigned_date_key 0/4, resolved_date_key 0/11, verified_date_key 0/259, tenant_key 0/945, vendor_key 0/4
+    fact_unit_occupancy_daily        tenant_key 0/305,222, lease_key 0/305,222
+=========================================================================================================================
+   exit code: 0

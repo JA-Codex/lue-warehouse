@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from etl.facts import keys, load, spec  # noqa: E402
+from etl.facts import checks, keys, load, spec  # noqa: E402
 
 results: list[bool] = []
 TECH = ["source_system", "batch_id", "loaded_at"]
@@ -153,6 +153,24 @@ def main() -> int:
     check(cov is not None and cov.grain == ["coverage_date_key", "unit_key", "incentive_key"] and set(cov.resolved) == set(cov.grain)
           and "generate_series(o.start_date, o.end_date" in cov.source and "WHERE sl.lease_number IS NULL" in cov.source,
           "fact_vacancy_incentive_coverage: grain = its composite primary key; each window expanded by day, vacant unit-days only")
+
+    print("US-7.6 The fact tests (sql/90_tests/02_fact_tests.sql)")
+    from pglast import ast, parse_sql
+
+    fks = []
+    for raw in parse_sql((ROOT / "sql" / "10_ddl" / "02_facts.sql").read_text(encoding="utf-8")):
+        s = raw.stmt
+        if isinstance(s, ast.CreateStmt) and not s.partbound:
+            fks += [(s.relation.relname, e.fk_attrs[0].sval) for e in s.tableElts
+                    if isinstance(e, ast.Constraint) and e.contype.name == "CONSTR_FOREIGN"]
+    text = checks.TESTS_SQL.read_text(encoding="utf-8")
+    names = re.findall(r"^SELECT '([^']+)'", text, flags=re.M)
+    missing = [f"{f}.{c}" for f, c in fks if f"{f}: no orphan {c}" not in names]
+    check(len(fks) == 41 and not missing, f"an orphan check for each of the DDL's {len(fks)} fact foreign keys" + (f": missing {missing[:4]}" if missing else ""))
+    grain = [f.name for f in spec.FACTS if not any(n.startswith(f"{f.name}: ") and "(grain)" in n for n in names)]
+    check(not grain, "a grain (duplicate) test for every fact" + (f": missing {grain}" if grain else ""))
+    check(len(names) == len(set(names)) and max(map(len, names)) <= 60 and len(names) == text.count("UNION ALL") + 1,
+          f"{len(names)} tests, unique names of at most 60 characters (reconciliation.check_name), one per query")
 
     print("US-7.3 The periodic snapshot")
     from etl.generator_config import WINDOW_END, WINDOW_START

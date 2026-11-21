@@ -19,7 +19,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Staging (E5): clean, standardise, deduplicate, business fields, incremental merge, cleaning evidence | US-5.1 to US-5.4 (Done) |
 | Dimensions (E6): loader and surrogate keys, SCD Type 2, hierarchies, inferred members, dimension tests | US-6.1 to US-6.5 (Done) |
 | Phase 2 reports: Data Cleaning, Data Quality, Implementation (generated, `make reports`) | Done |
-| Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts | US-7.1 to US-7.5 (Done); US-7.6 in progress |
+| Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
 | Marts, Phase 3 reports | Pending |
 
 ## Layout
@@ -131,16 +131,16 @@ make staging-test E5 acceptance tests: 35 PASS lines (reloads src_pms, bronze an
 make dims        load the dimensions from staging: surrogate keys, SCD2 versions, inferred members (E6)
 make next-extract apply the generator's next S1 extract (s1/changes, s1/late_arriving) to src_pms
 make dims-test   E6 acceptance tests: 22 PASS lines (reloads src_pms, bronze, staging, dimensions; about 3 minutes)
-make facts       load the facts from staging and the dimensions: keys point in time, synced on the grain (E7;
-                 about 1.5 minutes the first time, the occupancy snapshot is 1.97 million rows)
-make facts-test  E7 acceptance tests: 49 PASS lines (needs make stage and make dims first; about 6 minutes)
+make facts       load the 6 facts from staging and the dimensions, then the 71 fact tests (sql/90_tests/
+                 02_fact_tests.sql; a violation fails the run); about 2 minutes the first time (E7)
+make facts-test  E7 acceptance tests: 57 PASS lines (needs make stage and make dims first; about 6 minutes)
 make reports     build the Phase 2 reports from the warehouse: docs/reports/LUE_Data_Cleaning_Report.pdf,
                  LUE_Data_Quality_Report.pdf, LUE_Phase2_Implementation.pdf (every number read, none typed)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 23)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)

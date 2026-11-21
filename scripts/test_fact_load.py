@@ -25,6 +25,9 @@
   US-7.5  lease events by type match staging, one per lease, type and date, keys of the event date;
           incentive coverage rows = the windows' days on vacant unit-days, each a vacant day in the
           occupancy snapshot; the composite primary key refuses a duplicate
+  US-7.6  a full run ends with the fact tests (grain, an orphan check per foreign key, values), each
+          recorded in lue_audit.reconciliation; -1 and -2 reported apart; each of four deliberately
+          corrupted rows fails exactly its test; committed, it fails the run's test step
 At the end the facts hold staging again and staging is as it was.
 """
 
@@ -36,7 +39,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from etl.facts import keys, load, spec  # noqa: E402
+from etl.facts import checks, keys, load, spec  # noqa: E402
 from etl.facts import run as facts  # noqa: E402
 from etl.ingest.base import IngestError, connect  # noqa: E402
 
@@ -407,6 +410,63 @@ def factless_tests(cur) -> None:
     check(all(v.inserted == v.updated == v.deleted == 0 for v in loads.values()), "a rerun of both inserts, updates and deletes nothing")
 
 
+def fact_check_tests(cur) -> None:
+    print("US-7.6 Grain, orphan and value checks (sql/90_tests/02_fact_tests.sql)")
+    run_id, res, box = facts.load_all()
+    step = {r.step: r for r in res}
+    tests = box.get(facts.TESTS, {}).get("tests", [])
+    fks = scalar(cur, "SELECT count(*) FROM pg_constraint c JOIN pg_class r ON r.oid = c.conrelid JOIN pg_namespace s ON s.oid = r.relnamespace "
+                      "WHERE c.contype = 'f' AND c.conparentid = 0 AND s.nspname = 'lue_dw' AND r.relname LIKE 'fact%%'")
+    orphan = [n for n, _ in tests if ": no orphan " in n]
+    check(step.get(facts.TESTS) is not None and step[facts.TESTS].status == "Success" and tests and all(v == 0 for _, v in tests)
+          and len(orphan) == fks == 41,
+          f"a full run ends with the fact tests: {len(tests)} tests, 0 violations; an orphan check for each of the {fks} fact foreign keys")
+    cur.execute("SELECT count(*), count(*) FILTER (WHERE passed) FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE '%%: %%' AND check_name NOT LIKE '%% 20__-__ %%'", (run_id,))
+    logged, passed = cur.fetchone()
+    check(logged == passed == len(tests), f"each test wrote its pass or fail to lue_audit.reconciliation ({logged} rows, {passed} passed)")
+    special = box[facts.TESTS]["special"]
+    check(special.get(OCC, {}).get("tenant_key", (0, 0))[0] == 0 and all(a == 0 for used in special.values() for a, _ in used.values()),
+          "the special members are reported apart, not as orphans: no -1 key in any fact; -2 where a role does not apply ("
+          + ", ".join(f"{f.replace('fact_', '')} {sum(b for _, b in u.values()):,}" for f, u in special.items()) + ")")
+
+    # Deliberately corrupted rows, each inside a transaction that is rolled back: the matching test,
+    # and only it, must find the row.
+    corruptions = [
+        ("a duplicated lease event", f"INSERT INTO lue_dw.{LE} (event_date_key, unit_key, tenant_key, lease_key, owner_key, lease_event_type_key, event_count, source_system, batch_id, loaded_at) "
+                                     f"SELECT event_date_key, unit_key, tenant_key, lease_key, owner_key, lease_event_type_key, event_count, source_system, batch_id, loaded_at FROM lue_dw.{LE} LIMIT 1",
+         "fact_lease_event: one row per lease, type and date (grain)"),
+        ("a receipt with a negative amount", "UPDATE lue_dw.fact_payment SET payment_amount = -payment_amount WHERE payment_alloc_sk = (SELECT min(payment_alloc_sk) FROM lue_dw.fact_payment WHERE NOT is_reversal)",
+         "fact_payment: a receipt is positive, a reversal negative"),
+        ("a vacant day with a rent", f"UPDATE lue_dw.{OCC} SET contract_rent = 1 WHERE (snapshot_date_key, unit_key) = (SELECT snapshot_date_key, unit_key FROM lue_dw.{OCC} WHERE snapshot_date_key = 20240115 AND is_occupied = 0 LIMIT 1)",
+         "fact_unit_occupancy_daily: vacant: keys -2, rent, arrears 0"),
+        ("a ticket verified before it was resolved", f"UPDATE lue_dw.{MR} SET verified_date_key = 20230701 WHERE request_sk = (SELECT min(request_sk) FROM lue_dw.{MR} WHERE request_status = 'Verified' AND resolved_date_key > 20230701)",
+         "fact_maintenance_request: milestone dates in order"),
+    ]
+    conn = connect("lue_warehouse")
+    try:
+        for label, sql, expect in corruptions:
+            with conn.cursor() as c:
+                c.execute(sql)
+                hit = c.rowcount
+                failed = [name for name, n in checks.run_tests(c) if n]
+            conn.rollback()
+            check(hit == 1 and failed == [expect], f"{label}: exactly the test '{expect}' fails" + ("" if failed == [expect] else f" (failed: {failed})"))
+    finally:
+        conn.close()
+    # Committed for one run: the pipeline's test step fails, records it, and the next run passes
+    cur.execute(corruptions[0][1])
+    try:
+        run_id, res, box = facts.load_all(only=[LE], tests=True)
+        step = {r.step: r for r in res}[facts.TESTS]
+        bad = scalar(cur, "SELECT count(*) FROM lue_audit.reconciliation WHERE run_id = %s AND NOT passed AND check_name = %s", (run_id, corruptions[0][2]))
+    finally:
+        cur.execute(f"DELETE FROM lue_dw.{LE} WHERE lease_event_sk = (SELECT max(lease_event_sk) FROM lue_dw.{LE})")
+    print(f"    run {run_id}: {step.step} {step.status}: {step.message[:150]}")
+    _r, res, box = facts.load_all(only=[LE], tests=True)
+    check(step.status == "Failed" and corruptions[0][2] in step.message and bad == 1 and {r.step: r.status for r in res}[facts.TESTS] == "Success",
+          "with the duplicate committed the run's fact_tests step Fails and records the failing test; once removed the next run passes")
+
+
 OCC = "fact_unit_occupancy_daily"
 # A content fingerprint of the snapshot without the technical columns (D14: values, not load times)
 OCC_HASH = ("SELECT count(*), sum(hashtextextended(concat_ws('|', snapshot_date_key, unit_key, tenant_key, lease_key, owner_key, "
@@ -550,6 +610,7 @@ def main() -> int:
             maintenance_tests(cur)
             occupancy_tests(cur)
             factless_tests(cur)
+            fact_check_tests(cur)
     finally:
         wh.close()
     print("=" * 70)
