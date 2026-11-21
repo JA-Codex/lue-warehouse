@@ -144,6 +144,16 @@ def main() -> int:
     check("WHEN sl.lease_number IS NULL THEN -2" in src and keys.weather("dx", "du.city", "t.raised_at") in src and "dim_request_flags" in src,
           "tenant -2 when no lease is active on the raised date (raised by staff); weather of the unit's city that day; the flags junk key")
 
+    print("US-7.5 The factless facts")
+    le, cov = spec.BY_NAME.get("fact_lease_event"), spec.BY_NAME.get("fact_vacancy_incentive_coverage")
+    check(sorted(spec.BY_NAME) == sorted(tables), f"every fact of the DDL is in the spec ({len(spec.FACTS)} of {len(tables)}): E7 loads all of them")
+    check(le is not None and le.grain == ["lease_key", "lease_event_type_key", "event_date_key"] and set(le.resolved) == set(le.grain)
+          and "1::smallint AS event_count" in le.source,
+          "fact_lease_event: one row per lease, event type and date (none of them -1); event_count always 1 (ck_event_count)")
+    check(cov is not None and cov.grain == ["coverage_date_key", "unit_key", "incentive_key"] and set(cov.resolved) == set(cov.grain)
+          and "generate_series(o.start_date, o.end_date" in cov.source and "WHERE sl.lease_number IS NULL" in cov.source,
+          "fact_vacancy_incentive_coverage: grain = its composite primary key; each window expanded by day, vacant unit-days only")
+
     print("US-7.3 The periodic snapshot")
     from etl.generator_config import WINDOW_END, WINDOW_START
 

@@ -22,6 +22,9 @@
   US-7.4  one maintenance row per ticket; milestones -2 until reached; durations, SLA (category
           version on the raised date), vendor, tenant, flags and weather; a rerun changes nothing;
           a ticket progressing from assigned to verified updates its row, never duplicates it
+  US-7.5  lease events by type match staging, one per lease, type and date, keys of the event date;
+          incentive coverage rows = the windows' days on vacant unit-days, each a vacant day in the
+          occupancy snapshot; the composite primary key refuses a duplicate
 At the end the facts hold staging again and staging is as it was.
 """
 
@@ -331,6 +334,79 @@ def maintenance_tests(cur) -> None:
     check(final == before, "with staging back as it was, the snapshot is exactly as before (same content hash)")
 
 
+LE, COV = "fact_lease_event", "fact_vacancy_incentive_coverage"
+
+
+def factless_tests(cur) -> None:
+    print("US-7.5 fact_lease_event")
+    cur.execute(f"TRUNCATE lue_dw.{LE} RESTART IDENTITY")
+    cur.execute(f"TRUNCATE lue_dw.{COV}")
+    _r, res, loads = facts.load_all(only=[LE, COV])
+    status = {r.step: r.status for r in res}
+    x, c = loads[LE], loads[COV]
+    cur.execute(f"""
+        SELECT s.event_code, s.n, coalesce(w.n, 0) FROM (SELECT event_code, count(*) n FROM lue_staging.stg_lease_event GROUP BY 1) s
+        LEFT JOIN (SELECT t.event_code, sum(f.event_count) n FROM lue_dw.{LE} f JOIN lue_dw.dim_lease_event_type t USING (lease_event_type_key) GROUP BY 1) w
+        USING (event_code) ORDER BY 1""")
+    by_type = cur.fetchall()
+    check(status[LE] == "Success" and by_type and all(s == w for _, s, w in by_type) and x.unknown == 0 and not x.months_off,
+          "events by type match staging: " + ", ".join(f"{e} {s:,}" for e, s, _ in by_type) + "; no -1 key; every month reconciles")
+    cur.execute(f"SELECT count(*), count(*) FILTER (WHERE event_count <> 1), count(DISTINCT (lease_key, lease_event_type_key, event_date_key)) FROM lue_dw.{LE}")
+    rows, not_one, distinct = cur.fetchone()
+    check(not_one == 0 and distinct == rows, f"event_count is always 1 (SUM = events); one row per lease, event type and date ({rows:,})")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{LE} f JOIN lue_dw.dim_date d ON d.date_key = f.event_date_key
+        JOIN lue_dw.dim_lease dl ON dl.lease_key = f.lease_key JOIN lue_dw.dim_lease_event_type et ON et.lease_event_type_key = f.lease_event_type_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key JOIN lue_dw.dim_tenant tn ON tn.tenant_key = f.tenant_key
+        JOIN lue_dw.dim_owner o ON o.owner_key = f.owner_key JOIN lue_staging.stg_lease l ON l.lease_number = dl.lease_number
+        JOIN lue_staging.stg_unit su ON su.unit_id = l.unit_id
+        WHERE NOT EXISTS (SELECT 1 FROM lue_staging.stg_lease_event e WHERE e.lease_number = dl.lease_number AND e.event_code = et.event_code AND e.event_date = d.full_date)
+           OR u.unit_nk <> su.building_code || '-' || su.unit_no OR NOT (d.full_date >= u.effective_from AND d.full_date < u.effective_to)
+           OR tn.tenant_code <> l.tenant_code OR NOT (d.full_date >= tn.effective_from AND d.full_date < tn.effective_to)
+           OR NOT EXISTS (SELECT 1 FROM lue_staging.stg_ownership r WHERE r.building_code = u.building_code AND r.unit_no = u.unit_no
+                          AND r.owner_code = o.owner_code AND r.valid_from <= d.full_date AND (r.valid_to IS NULL OR d.full_date < r.valid_to))""")
+    check(wrong == 0, "every row is a staged event; the lease's unit and tenant in the version valid on the event date; the owner that day")
+
+    print("US-7.5 fact_vacancy_incentive_coverage")
+    windows, window_days = (cur.execute("SELECT count(*), coalesce(sum(end_date - start_date + 1), 0) FROM lue_staging.stg_incentive_log") or cur.fetchone())
+    occupied = scalar(cur, """
+        SELECT count(*) FROM lue_staging.stg_incentive_log o JOIN lue_staging.stg_unit su ON su.building_code = o.building_code AND su.unit_no = o.unit_no
+        CROSS JOIN LATERAL generate_series(o.start_date, o.end_date, interval '1 day') g
+        WHERE EXISTS (SELECT 1 FROM lue_staging.stg_lease l WHERE l.unit_id = su.unit_id AND g::date BETWEEN l.start_date AND l.end_date)""")
+    rows = scalar(cur, f"SELECT count(*) FROM lue_dw.{COV}")
+    check(status[COV] == "Success" and rows == window_days - occupied == c.inserted and c.unknown == 0 and not c.months_off,
+          f"coverage rows = the incentive windows' length in days on vacant unit-days: {windows:,} windows, {window_days:,} days, "
+          f"{occupied:,} on an occupied day, {rows:,} rows")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{COV} f JOIN lue_dw.dim_date d ON d.date_key = f.coverage_date_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key JOIN lue_dw.dim_incentive i ON i.incentive_key = f.incentive_key
+        JOIN lue_dw.dim_owner o ON o.owner_key = f.owner_key
+        WHERE NOT EXISTS (SELECT 1 FROM lue_staging.stg_incentive_log g WHERE g.building_code = u.building_code AND g.unit_no = u.unit_no
+                          AND g.offer_code = i.incentive_code AND d.full_date BETWEEN g.start_date AND g.end_date)
+           OR NOT (d.full_date >= u.effective_from AND d.full_date < u.effective_to)
+           OR NOT EXISTS (SELECT 1 FROM lue_staging.stg_ownership r WHERE r.building_code = u.building_code AND r.unit_no = u.unit_no
+                          AND r.owner_code = o.owner_code AND r.valid_from <= d.full_date AND (r.valid_to IS NULL OR d.full_date < r.valid_to))""")
+    check(wrong == 0, "every row is a day inside a posted window of that offer on that unit; unit version and owner of that day")
+    if scalar(cur, f"SELECT count(*) FROM lue_dw.{OCC}"):
+        clash = scalar(cur, f"""SELECT count(*) FROM lue_dw.{COV} f LEFT JOIN lue_dw.{OCC} o
+                                ON o.snapshot_date_key = f.coverage_date_key AND o.unit_key = f.unit_key WHERE o.is_occupied IS DISTINCT FROM 0""")
+        check(clash == 0, "across facts: every coverage day is a vacant day of that unit in fact_unit_occupancy_daily")
+    conn = connect("lue_warehouse")
+    try:
+        with conn.cursor() as k:
+            try:
+                k.execute(f"INSERT INTO lue_dw.{COV} SELECT * FROM lue_dw.{COV} LIMIT 1")
+                state = ""
+            except Exception as exc:  # noqa: BLE001
+                state = getattr(exc, "pgcode", "") or ""
+        conn.rollback()
+    finally:
+        conn.close()
+    check(state == "23505", "the composite primary key (day, unit, incentive) refuses a duplicate row (unique violation)")
+    _r, res, loads = facts.load_all(only=[LE, COV])
+    check(all(v.inserted == v.updated == v.deleted == 0 for v in loads.values()), "a rerun of both inserts, updates and deletes nothing")
+
+
 OCC = "fact_unit_occupancy_daily"
 # A content fingerprint of the snapshot without the technical columns (D14: values, not load times)
 OCC_HASH = ("SELECT count(*), sum(hashtextextended(concat_ws('|', snapshot_date_key, unit_key, tenant_key, lease_key, owner_key, "
@@ -473,6 +549,7 @@ def main() -> int:
             invoice_tests(cur)
             maintenance_tests(cur)
             occupancy_tests(cur)
+            factless_tests(cur)
     finally:
         wh.close()
     print("=" * 70)

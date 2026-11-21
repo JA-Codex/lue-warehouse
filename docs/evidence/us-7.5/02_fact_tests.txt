@@ -1,0 +1,130 @@
+US-7.5 tests (full profile, seed 3004).
+
+1. python scripts/test_fact_load_contract.py (no database, in make gen-test)
+======================================================================
+ E7 contract tests: fact spec, key lookups and loader (no database)
+======================================================================
+US-7.1 The spec against the frozen design
+  [PASS] 6 facts in the DDL: fact_lease_event, fact_maintenance_request, fact_payment, fact_rent_invoice_line, fact_unit_occupancy_daily, fact_vacancy_incentive_coverage
+  [PASS] every fact and column exists; every NOT NULL column is written; grain and required columns are written columns
+  [PASS] the source query gives every column the fact writes
+  [PASS] a fact with a UNIQUE constraint in the DDL has it on exactly its grain (uq_invoice_line: invoice_number, invoice_line_no)
+US-7.1 Key lookups
+  [PASS] SCD2 lookup: natural key and the version valid that day, half-open [effective_from, effective_to)
+  [PASS] owner lookup: the ownership period holding that day (valid_from <= day < valid_to, open period)
+  [PASS] date keys: YYYYMMDD inside the calendar, -1 outside or unknown, -2 when given for 'not yet'
+  [PASS] an unresolved key is -1 (Unknown), never a dropped row
+US-7.1 The loader's SQL
+  [PASS] source, delete, update, insert and reconciliation statements parse (pglast)
+  [PASS] sync on the grain: update only on a difference, insert only new grains, the surrogate *_sk left to the identity
+US-7.2 Monthly reconciliation
+  [PASS] the invoice and payment facts load first and both declare a monthly reconciliation to staging
+  [PASS] every reconciliation check name fits lue_audit.reconciliation.check_name (60)
+US-7.4 The accumulating snapshot
+  [PASS] fact_maintenance_request: one row per request number; assigned, resolved and verified date keys -2 until reached (the dictionary), raised -1 if unknown
+  [PASS] SLA from the category version valid on the raised date; vendor version on the assigned date, -2 until assigned
+  [PASS] tenant -2 when no lease is active on the raised date (raised by staff); weather of the unit's city that day; the flags junk key
+US-7.5 The factless facts
+  [PASS] every fact of the DDL is in the spec (6 of 6): E7 loads all of them
+  [PASS] fact_lease_event: one row per lease, event type and date (none of them -1); event_count always 1 (ck_event_count)
+  [PASS] fact_vacancy_incentive_coverage: grain = its composite primary key; each window expanded by day, vacant unit-days only
+US-7.3 The periodic snapshot
+  [PASS] the snapshot window 2023-07-01 to 2026-06-30 is the generator's data window (fixed, never today)
+  [PASS] fact_unit_occupancy_daily: grain = its primary key (snapshot day, unit), loaded by month, last 35 days refreshed, unit never -1, unit-days reconciled
+  [PASS] a periodic snapshot's delete, update and insert name the month loaded (one partition each); other facts are not restricted
+  [PASS] the window splits into 36 whole, contiguous months
+  [PASS] every unit and day from generate_series, the lease LEFT JOINed (vacant days stay, -2), arrears by window sums
+======================================================================
+ RESULT: 23/23 checks passed
+======================================================================
+
+2. python scripts/test_fact_load.py (database; US-7.1 to US-7.5)
+======================================================================
+ E7 acceptance tests: the facts (database)
+======================================================================
+US-7.1 fact_payment: point-in-time keys
+  [PASS] one row per staged allocation (127,210 of 127,210), the same amount (5,347,289,709.00 PKR)
+  [PASS] no key left unresolved (-1): none
+  [PASS] every tenant and unit key is the version valid on the paid date
+  [PASS] every owner key is the owner of the unit on the paid date (ownership register)
+  [PASS] paid and due date keys, days past due and the reversal flag equal staging's (role-playing dates via dim_date)
+US-7.1 The key-mapping chain of one payment (the brief's evidence)
+    payment      tenant  paid on    -> tenant_key sector (version)                 -> fact row
+    PAY-0000295  T-0115  2023-07-06 ->        113 Government       1900-01-01..2024-10-10 -> INV-2023-07-0020/2 17,864.00 paid_date_key 20230706
+    PAY-0025146  T-0115  2024-10-05 ->        113 Government       1900-01-01..2024-10-10 -> INV-2024-10-2914/3 6,700.00 paid_date_key 20241005
+    PAY-0027787  T-0115  2024-11-10 ->       3804 Healthcare       2024-10-10..9999-12-31 -> INV-2024-11-2914/1 161,820.00 paid_date_key 20241110
+    PAY-0037025  T-0115  2025-05-07 ->       3804 Healthcare       2024-10-10..9999-12-31 -> INV-2025-05-2914/3 6,640.00 paid_date_key 20250507
+  [PASS] tenant T-0115: each of its 69 payment lines maps to the version valid on its paid date (2 version(s) used)
+US-7.1 Reruns and changes
+  [PASS] a rerun inserts, updates and deletes nothing
+  [PASS] a changed source row is updated in place and a removed one deleted: 1 updated, 1 deleted, nothing duplicated
+  [PASS] with staging restored, the next run puts both back (1 updated, 1 inserted)
+  [PASS] a source with a grain twice is refused and nothing changes
+US-7.2 fact_rent_invoice_line
+  [PASS] one row per staged invoice line (129,885), billed, tax, discount and net equal staging (net 5,676,652,818.00 PKR); no -1 key
+  [PASS] fact_rent_invoice_line: zero grain duplicates (invoice_number, invoice_line_no)
+  [PASS] fact_payment: zero grain duplicates (payment_reference, invoice_number, invoice_line_no)
+  [PASS] invoice date, lease, and the lease's tenant and unit in the version valid on the invoice date
+  [PASS] every owner key is the unit's owner on the invoice date
+US-7.2 Monthly reconciliation to staging
+    month     net billed: staging             fact      paid: staging             fact
+    2023-07        139,980,600.00   139,980,600.00     130,989,646.00   130,989,646.00
+    2023-08        146,234,884.00   146,234,884.00     139,676,671.00   139,676,671.00
+    2023-09        143,274,008.00   143,274,008.00     136,213,322.00   136,213,322.00
+    ...
+    2026-04        171,967,262.00   171,967,262.00     161,429,706.00   161,429,706.00
+    2026-05        171,376,648.00   171,376,648.00     161,563,903.00   161,563,903.00
+    2026-06        178,023,520.00   178,023,520.00     166,527,221.00   166,527,221.00
+  [PASS] net billed and paid equal staging in every one of 36 months
+  [PASS] the run wrote one passing reconciliation row per month and fact to lue_audit.reconciliation ({'fact_rent_invoice_line': 36, 'fact_payment': 36})
+  [PASS] reversals are negative amounts and reduce collected: 5,391,828,597.00 received -44,538,888.00 reversed = 5,347,289,709.00 PKR
+  [PASS] a fact amount changed by PKR 1 makes exactly its month fail the reconciliation (['2023-07'])
+  [PASS] a rerun of both money facts inserts, updates and deletes nothing, and every month still reconciles
+US-7.4 fact_maintenance_request: the accumulating snapshot
+  [PASS] one row per request: 5,670 rows, 5,670 request numbers, 5,670 staged tickets; tickets by raised month reconcile
+  [PASS] no key left unresolved (-1): none
+  [PASS] milestone date keys are the staged dates, -2 until reached (assigned/resolved/verified): Assigned 7 (-2: 0/7/7), Raised 4 (-2: 4/4/4), Resolved 248 (-2: 0/0/248), Verified 5,411 (-2: 0/0/0)
+  [PASS] days to assign, resolve (from raised) and verify (from resolved), recomputed from the timestamps; costs as staged; NULL until reached
+  [PASS] SLA breach: hours to resolve > the SLA hours of the category version valid on the raised date (1,411 of 5,659 resolved breached; NULL while open)
+  [PASS] unit at the raised date; vendor at the assigned date (-2 until assigned); tenant of the lease active that day (-2 for 945 raised on a vacant unit); flags; the city's weather that day
+  [PASS] every owner key is the unit's owner on the raised date (who pays the cost)
+US-7.4 A ticket progressing between two runs
+  [PASS] a rerun neither duplicates nor changes any row, completed ones included (same content hash)
+    request_sk | request_number | status | raised | assigned | resolved | verified | vendor | d_assign | d_resolve | d_verify | actual_cost | sla_breached
+    run 1, assigned: 5659 | MR-2026-00944 | Assigned | 20260628 | 20260628 | -2 | -2 | 74 | 0.19 |  |  |  | 
+    run 2, verified: 5659 | MR-2026-00944 | Verified | 20260628 | 20260628 | 20260629 | 20260630 | 74 | 0.19 | 1.10 | 0.69 | 7000.00 | 0
+  [PASS] ticket MR-2026-00944: at the Assigned stage resolved and verified are -2; when it is verified the same row (request_sk 5659) is updated, not duplicated
+  [PASS] with staging back as it was, the snapshot is exactly as before (same content hash)
+US-7.3 fact_unit_occupancy_daily: the full load
+  [PASS] one row per unit per day of the fixed window 2023-07-01 to 2026-06-30 (never today): 1,800 units x 1,096 days = 1,972,800; no -1 key
+  [PASS] full load duration recorded in the run log: 87 s (under 10 minutes on a laptop)
+  [PASS] unit-days reconcile in every month (36/36)
+  [PASS] zero grain duplicates (snapshot day, unit); nothing in the default partition or after the window
+  [PASS] a vacant day has tenant and lease -2, rent and arrears 0; occupied days = the leases' days in the window (1,667,578); no negative arrears
+  [PASS] unit version valid that day; the active lease, its rent, and its tenant in the version valid that day
+  [PASS] every owner key is the unit's owner that day (ownership register)
+  [PASS] arrears = net of the lease's lines past due minus what was paid on them by that day: 3,000 sampled days agree with a direct computation (521 owing)
+US-7.3 The 35-day refresh (NFR-08, D14)
+  [PASS] a rerun with no changes: 0 inserted, updated, deleted; the refresh rewrote 63,000 rows (units x 35 days) and the values hash identically
+    late payment PAY-TEST-LATE: PKR 10,000.00 on 2026-06-20 against INV-2026-05-5689/1 (lease L-2026-05689, unit_key 75)
+    day          arrears before    after refresh
+    20260618       1,735,244.00     1,735,244.00
+    20260619       1,735,244.00     1,735,244.00
+    20260620       1,735,244.00     1,725,244.00
+    20260621       1,735,244.00     1,725,244.00
+    20260630       1,735,244.00     1,725,244.00
+  [PASS] a late payment dated 2026-06-20 (inside the last 35 days) lowers that lease's arrears from that day by PKR 10,000.00, earlier days unchanged
+  [PASS] with the payment removed from staging the next run restores the snapshot exactly (same hash)
+US-7.5 fact_lease_event
+  [PASS] events by type match staging: NOTICE 2,308, RENEW 1,889, SIGN 2,292, TERM 2,292; no -1 key; every month reconciles
+  [PASS] event_count is always 1 (SUM = events); one row per lease, event type and date (8,781)
+  [PASS] every row is a staged event; the lease's unit and tenant in the version valid on the event date; the owner that day
+US-7.5 fact_vacancy_incentive_coverage
+  [PASS] coverage rows = the incentive windows' length in days on vacant unit-days: 624 windows, 20,177 days, 0 on an occupied day, 20,177 rows
+  [PASS] every row is a day inside a posted window of that offer on that unit; unit version and owner of that day
+  [PASS] across facts: every coverage day is a vacant day of that unit in fact_unit_occupancy_daily
+  [PASS] the composite primary key (day, unit, incentive) refuses a duplicate row (unique violation)
+  [PASS] a rerun of both inserts, updates and deletes nothing
+======================================================================
+ RESULT: 49/49 checks passed
+======================================================================

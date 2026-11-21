@@ -53,6 +53,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-7.2 | Load fact_rent_invoice_line and fact_payment | Ahmad Waqar (done by Hanan) | Done | 2026-11-21 | [US-7.2](US-7.2.md) | [evidence](../evidence/us-7.2/) |
 | US-7.3 | Load fact_unit_occupancy_daily | Hanan | Done | 2026-11-21 | [US-7.3](US-7.3.md) | [evidence](../evidence/us-7.3/) |
 | US-7.4 | Load fact_maintenance_request | Junaid (done by Hanan) | Done | 2026-11-21 | [US-7.4](US-7.4.md) | [evidence](../evidence/us-7.4/) |
+| US-7.5 | Load fact_lease_event and fact_vacancy_incentive_coverage | Eesha (done by Hanan) | Done | 2026-11-21 | [US-7.5](US-7.5.md) | [evidence](../evidence/us-7.5/) |
 
 ## Later epics
 
@@ -104,3 +105,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-21 | Money facts reconcile to staging by month of their own date (invoice date, paid date), one lue_audit.reconciliation row per month; the D17 cohort rate is a mart measure | [US-7.2](US-7.2.md) |
 | 2026-11-21 | The occupancy snapshot syncs every month each run and refreshes its last 35 days; refreshed rows are reported in rows_updated (the D14 exception); arrears by window sums over per-lease balance changes | [US-7.3](US-7.3.md) |
 | 2026-11-21 | Maintenance milestones not reached are -2 (the dictionary), not -1 (the plan's wording); tenant from the lease active on the raised date, -2 when raised by staff | [US-7.4](US-7.4.md) |
+| 2026-11-21 | Incentive coverage keeps vacant unit-days only (the dictionary); lease events keyed by lease, type and date, enforced by the loader | [US-7.5](US-7.5.md) |

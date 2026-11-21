@@ -173,6 +173,62 @@ FACTS = [
         {scd2('dim_vendor', 'dv', 't.vendor_code', 't.assigned_at')}
         {flags('df', 't.is_emergency', 't.is_recurring', 't.is_tenant_caused')}
         {weather('dx', 'du.city', 't.raised_at')}"""),
+    # US-7.5: factless. One row per lifecycle event of a lease (its natural key: lease, event type,
+    # date; all three in the grain, so none may be -1); unit, tenant and owner on the event date.
+    Fact("fact_lease_event", ["lease_key", "lease_event_type_key", "event_date_key"], story="US-7.5",
+         staging=["stg_lease_event", "stg_lease", "stg_unit", "stg_ownership"],
+         resolved=["lease_key", "lease_event_type_key", "event_date_key"],
+         cols=["event_date_key", "unit_key", "tenant_key", "lease_key", "owner_key", "lease_event_type_key", "event_count"],
+         monthly=("events by event month",
+                  "SELECT to_char(d.full_date, 'YYYY-MM') AS month, sum(f.event_count) AS amount FROM lue_dw.fact_lease_event f "
+                  "JOIN lue_dw.dim_date d ON d.date_key = f.event_date_key GROUP BY 1",
+                  "SELECT to_char(event_date, 'YYYY-MM') AS month, count(*) AS amount FROM lue_staging.stg_lease_event GROUP BY 1"),
+         source=f"""
+        SELECT {date_key('e.event_date')} AS event_date_key,
+               {key('du', 'unit_key')} AS unit_key,
+               {key('dt', 'tenant_key')} AS tenant_key,
+               {key('dl', 'lease_key')} AS lease_key,
+               {key('dw', 'owner_key')} AS owner_key,
+               {key('de', 'lease_event_type_key')} AS lease_event_type_key,
+               1::smallint AS event_count,
+               'S1' AS source_system
+        FROM lue_staging.stg_lease_event e
+        LEFT JOIN lue_staging.stg_lease sl ON sl.lease_number = e.lease_number
+        LEFT JOIN lue_staging.stg_unit su ON su.unit_id = sl.unit_id
+        {scd2('dim_unit', 'du', UNIT_NK, 'e.event_date')}
+        {scd2('dim_tenant', 'dt', 'sl.tenant_code', 'e.event_date')}
+        {plain('dim_lease', 'dl', 'e.lease_number')}
+        {owner('dw', 'su.building_code', 'su.unit_no', 'e.event_date')}
+        {plain('dim_lease_event_type', 'de', 'e.event_code')}"""),
+    # US-7.5: factless coverage. Each S6 window (an offer posted on a unit, start to end date) expanded
+    # to its days with generate_series, kept on the days the unit is vacant (the dictionary: "restricted
+    # to vacant unit-days"); the owner of the unit that day approved it. Grain = the primary key.
+    Fact("fact_vacancy_incentive_coverage", ["coverage_date_key", "unit_key", "incentive_key"], story="US-7.5",
+         staging=["stg_incentive_log", "stg_unit", "stg_lease", "stg_ownership"],
+         resolved=["coverage_date_key", "unit_key", "incentive_key"],
+         cols=["coverage_date_key", "unit_key", "incentive_key", "owner_key"],
+         monthly=("offer-days by month",
+                  "SELECT to_char(d.full_date, 'YYYY-MM') AS month, count(*) AS amount FROM lue_dw.fact_vacancy_incentive_coverage f "
+                  "JOIN lue_dw.dim_date d ON d.date_key = f.coverage_date_key GROUP BY 1",
+                  "SELECT to_char(g.day, 'YYYY-MM') AS month, count(*) AS amount FROM lue_staging.stg_incentive_log o "
+                  "JOIN lue_staging.stg_unit su ON su.building_code = o.building_code AND su.unit_no = o.unit_no "
+                  "CROSS JOIN LATERAL (SELECT s::date AS day FROM generate_series(o.start_date, o.end_date, interval '1 day') s) g "
+                  "WHERE NOT EXISTS (SELECT 1 FROM lue_staging.stg_lease sl WHERE sl.unit_id = su.unit_id AND g.day BETWEEN sl.start_date AND sl.end_date) "
+                  "GROUP BY 1"),
+         source=f"""
+        SELECT {date_key('g.day')} AS coverage_date_key,
+               {key('du', 'unit_key')} AS unit_key,
+               {key('di', 'incentive_key')} AS incentive_key,
+               {key('dw', 'owner_key')} AS owner_key,
+               'S6' AS source_system
+        FROM lue_staging.stg_incentive_log o
+        LEFT JOIN lue_staging.stg_unit su ON su.building_code = o.building_code AND su.unit_no = o.unit_no
+        CROSS JOIN LATERAL (SELECT s::date AS day FROM generate_series(o.start_date, o.end_date, interval '1 day') s) g
+        LEFT JOIN lue_staging.stg_lease sl ON sl.unit_id = su.unit_id AND g.day BETWEEN sl.start_date AND sl.end_date
+        {scd2('dim_unit', 'du', "o.building_code || '-' || o.unit_no", 'g.day')}
+        {plain('dim_incentive', 'di', 'o.offer_code')}
+        {owner('dw', 'o.building_code', 'o.unit_no', 'g.day')}
+        WHERE sl.lease_number IS NULL"""),
     # US-7.3: every unit on every day of the data window, occupied or vacant. The lease active that
     # day (start_date <= day <= end_date; end_date is the actual end, a termination included), and
     # its arrears from _occ_balance: per lease, a line's net counts from the day after it is due and
