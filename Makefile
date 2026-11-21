@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -9,8 +9,12 @@ setup: ## Set up environment dependencies and test database connection (US-0.4)
 	$(PYTHON) -m pip install -r requirements.txt
 	$(PYTHON) scripts/test_connection.py
 
-rebuild: ## Stub: full rebuild of databases, data, pipeline and marts (E9)
-	@echo "rebuild: not implemented yet (grows with each epic; must always pass on main)"
+rebuild: ## Reset the warehouse, generate the data and run the whole pipeline: make rebuild [PROFILE=full] [SEED=n] (US-8.1)
+	$(PYTHON) scripts/db_reset.py
+	$(PYTHON) etl/run_pipeline.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004)
+
+pipeline: ## Run the whole pipeline on the data already in data/, one run_id (US-8.1); FROM=stage resumes there
+	$(PYTHON) etl/run_pipeline.py --skip-generate $(if $(FROM),--from-step $(FROM),)
 
 test: lint sqlcheck manifest contract gen-test ## Everything CI runs
 
@@ -39,6 +43,7 @@ gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
 	$(PYTHON) scripts/test_staging_contract.py
 	$(PYTHON) scripts/test_dim_load_contract.py
 	$(PYTHON) scripts/test_fact_load_contract.py
+	$(PYTHON) scripts/test_pipeline_contract.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)

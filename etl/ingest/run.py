@@ -39,25 +39,30 @@ def steps(data: Path) -> dict:
     }
 
 
-def run(data: Path, only: list[str] | None = None, settings: dict | None = None) -> tuple:
-    """Run the chosen sources; returns (run_id, step results, reconciliation rows)."""
+def run(data: Path, only: list[str] | None = None, settings: dict | None = None,
+        run: Run | None = None) -> tuple:
+    """Run the chosen sources; returns (run_id, step results, reconciliation rows). Inside a
+    pipeline run (US-8.1) pass `run`: its steps join that run, which the caller closes."""
     chosen = [s for s in SOURCES if not only or s in only]
-    r = Run(settings)
+    r = run or Run(settings)
     try:
         table = steps(data)
+        results = []
         for source in chosen:
             name, fn = table[source]
-            r.step(name, source, fn)
+            results.append(r.step(name, source, fn))
         with r.audit.cursor() as cur:
             cur.execute(
                 "SELECT check_name, source_value, warehouse_value, difference, passed "
-                "FROM lue_audit.reconciliation WHERE run_id = %s ORDER BY check_name",
+                "FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE 'brz\\_%%' "
+                "ORDER BY check_name",
                 (r.run_id,),
             )
             checks = cur.fetchall()
-        return r.run_id, r.results, checks
+        return r.run_id, results, checks
     finally:
-        r.close()
+        if run is None:
+            r.close()
 
 
 def main(argv: list[str] | None = None) -> int:

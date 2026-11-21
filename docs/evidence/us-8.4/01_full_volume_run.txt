@@ -1,0 +1,156 @@
+US-8.4 Full-volume run and baseline timings (full profile, seed 3004). One command from an empty warehouse:
+make rebuild PROFILE=full (python scripts/db_reset.py, then python etl/run_pipeline.py --profile full --seed 3004).
+Machine: the project's Linux build container (PostgreSQL 16); a laptop is in the same range.
+
+/tmp/claude-0/-home-claude/db8f5b8c-4ce8-5c3b-9375-b7df4d39a1d1/scratchpad/ci311/bin/python scripts/db_reset.py
+======================================================================
+ LUE Warehouse - reset lue_warehouse (the source database is not touched)
+======================================================================
+======================================================================
+ LUE Warehouse - create databases, roles and schemas (US-1.1)
+======================================================================
+======================================================================
+ RESULT: SETUP COMPLETE. Check it with: python scripts/test_db_setup.py
+======================================================================
+======================================================================
+ LUE Warehouse - deploy 10 DDL file(s) as lue_etl to lue_warehouse
+======================================================================
+======================================================================
+ RESULT: DEPLOY COMPLETE. Check it with: python scripts/test_dimensions.py
+======================================================================
+======================================================================
+ LUE Warehouse - load reference dimensions as lue_etl into lue_warehouse
+======================================================================
+======================================================================
+ RESULT: REFERENCE LOAD COMPLETE. Check it with: python scripts/test_reference.py
+======================================================================
+======================================================================
+ US-1.5 smoke test: is the whole warehouse in place?
+======================================================================
+Objects
+Reference data
+Audit tables
+======================================================================
+ RESULT: 12/12 checks passed
+======================================================================
+======================================================================
+ RESULT: RESET COMPLETE. The warehouse is rebuilt and the smoke test passed.
+======================================================================
+/tmp/claude-0/-home-claude/db8f5b8c-4ce8-5c3b-9375-b7df4d39a1d1/scratchpad/ci311/bin/python etl/run_pipeline.py --profile full --seed 3004
+========================================================================================================
+ Pipeline run 1: generate, setup, deploy, reference, source, ingest, validate, transform, dimensions, facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  generate        1 Success            0           0          0         0     15.6
+  setup           1 Success            0           0          0         0      0.2
+  deploy          1 Success            0           0          0         0      0.1
+  reference       1 Success            0           0          0         0      0.1
+  source          2 Success            1           0          0         0      1.1
+  ingest          6 Success      467,406     467,406          0         0     13.3
+  validate        1 Warning      467,406       6,975          0     5,636     32.4
+      Warning validate_dq: 5,636 rows rejected (quarantined)
+  transform      21 Success      830,665     464,834    364,933     5,636     79.1
+  dimensions      9 Success       17,079      16,965        194         0      0.3
+  facts           7 Success    2,264,594   2,264,523     63,000         0    118.0
+  reconcile       1 Success          194           0          0         0      0.3
+========================================================================================================
+ RESULT: 51/51 steps without failure in 279 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 1
+========================================================================================================
+   make rebuild: exit 0, 280 s wall clock (the reset included)
+
+1. Timing per step (lue_audit.etl_run_log, run 1), slowest first
+              step               | status  | rows_read | rows_inserted | rows_updated | rows_rejected | seconds 
+---------------------------------+---------+-----------+---------------+--------------+---------------+---------
+ fact_unit_occupancy_daily       | Success |   1972800 |       1972800 |        63000 |             0 |      79
+ validate_dq                     | Warning |    467406 |          6975 |            0 |          5636 |      32
+ fact_tests                      | Success |        71 |             0 |            0 |             0 |      25
+ generate                        | Success |         0 |             0 |            0 |             0 |      16
+ stage_ticket                    | Success |      6120 |          5670 |            0 |           390 |      14
+ stage_payment                   | Success |     59679 |         59679 |            0 |             0 |      11
+ stage_business                  | Success |    364933 |          4798 |       364933 |             0 |      10
+ stage_invoice                   | Success |     54774 |         54774 |            0 |             0 |      10
+ stage_invoice_line              | Success |    129885 |        129885 |            0 |             0 |      10
+ stage_payment_allocation        | Success |    126852 |        122412 |            0 |          4440 |       8
+ fact_payment                    | Success |    127210 |        127210 |            0 |             0 |       7
+ ingest_s3_settlements           | Success |     36967 |         36967 |            0 |             0 |       7
+ fact_rent_invoice_line          | Success |    129885 |        129885 |            0 |             0 |       5
+ ingest_s1_pms                   | Success |    391870 |        391870 |            0 |             0 |       5
+ stage_settlement                | Success |     36967 |         36606 |            0 |           361 |       5
+ stage_ticket_status             | Success |     22406 |         22406 |            0 |             0 |       4
+ stage_lease                     | Success |      5883 |          5883 |            0 |             0 |       3
+ stage_tenant                    | Success |      3762 |          3762 |            0 |             0 |       2
+ fact_maintenance_request        | Success |      5670 |          5670 |            0 |             0 |       1
+ fact_vacancy_incentive_coverage | Success |     20177 |         20177 |            0 |             0 |       1
+ ingest_s2_registers             | Success |      3323 |          3323 |            0 |             0 |       1
+ ingest_s4_tickets               | Success |     30200 |         30200 |            0 |             0 |       1
+ source                          | Success |         0 |             0 |            0 |             0 |       1
+ stage_lease_event               | Success |      9195 |          8781 |            0 |           414 |       1
+ stage_unit                      | Success |      1800 |          1800 |            0 |             0 |       1
+ stage_weather                   | Success |      4384 |          4384 |            0 |             0 |       1
+ check_generation                | Success |         1 |             0 |            0 |             0 |       0
+ deploy                          | Success |         0 |             0 |            0 |             0 |       0
+ dim_date_holidays               | Success |       173 |             0 |          173 |             0 |       0
+ dim_incentive                   | Success |         7 |             7 |            0 |             0 |       0
+ dim_lease                       | Success |      5883 |          5883 |            0 |             0 |       0
+ dim_maintenance_category        | Success |        30 |            34 |            4 |             0 |       0
+ dim_owner                       | Success |       900 |           900 |            0 |             0 |       0
+ dim_tenant                      | Success |      3762 |          3800 |            0 |             0 |       0
+ dim_unit                        | Success |      1800 |          1800 |            0 |             0 |       0
+ dim_vendor                      | Success |       140 |           157 |           17 |             0 |       0
+ dim_weather                     | Success |      4384 |          4384 |            0 |             0 |       0
+ fact_lease_event                | Success |      8781 |          8781 |            0 |             0 |       0
+ ingest_s5_weather               | Success |      4384 |          4384 |            0 |             0 |       0
+ ingest_s6_incentives            | Success |       662 |           662 |            0 |             0 |       0
+ reconcile_dq07                  | Success |       194 |             0 |            0 |             0 |       0
+ reference                       | Success |         0 |             0 |            0 |             0 |       0
+ setup                           | Success |         0 |             0 |            0 |             0 |       0
+ stage_building                  | Success |        40 |            40 |            0 |             0 |       0
+ stage_holiday                   | Success |       173 |           173 |            0 |             0 |       0
+ stage_incentive_log             | Success |       655 |           624 |            0 |            31 |       0
+ stage_incentive_offer           | Success |         7 |             7 |            0 |             0 |       0
+ stage_maintenance_category      | Success |        34 |            34 |            0 |             0 |       0
+ stage_owner                     | Success |       900 |           900 |            0 |             0 |       0
+ stage_ownership                 | Success |      2076 |          2076 |            0 |             0 |       0
+ stage_vendor                    | Success |       140 |           140 |            0 |             0 |       0
+(51 rows)
+
+2. Timing per stage
+      stage       | steps |  read   | inserted | seconds | pct  
+------------------+-------+---------+----------+---------+------
+ generate         |     1 |       0 |        0 |      16 |  6.1
+ source           |     1 |       0 |        0 |       1 |  0.4
+ check_generation |     1 |       1 |        0 |       0 |  0.0
+ reference        |     1 |       0 |        0 |       0 |  0.0
+ setup            |     1 |       0 |        0 |       0 |  0.0
+ deploy           |     1 |       0 |        0 |       0 |  0.0
+ ingest           |     6 |  467406 |   467406 |      14 |  5.4
+ validate         |     1 |  467406 |     6975 |      32 | 12.3
+ transform        |    21 |  830665 |   464834 |      80 | 30.7
+ dimensions       |     9 |   17079 |    16965 |       0 |  0.0
+ facts            |     7 | 2264594 |  2264523 |     118 | 45.2
+ reconcile        |     1 |     194 |        0 |       0 |  0.0
+(12 rows)
+
+ pipeline_seconds 
+------------------
+              279
+(1 row)
+
+3. Row counts: the facts against the brief's minimum of 10,000 rows
+              fact               |  rows   
+---------------------------------+---------
+ fact_rent_invoice_line          |  129885
+ fact_payment                    |  127210
+ fact_unit_occupancy_daily       | 1972800
+ fact_maintenance_request        |    5670
+ fact_lease_event                |    8781
+ fact_vacancy_incentive_coverage |   20177
+ all six facts                   | 2264523
+(7 rows)
+
+4. The reconciliation of this run (DQ-07) and the fact tests
+ dq07_rows | dq07_passed | fact_tests | fact_tests_passed 
+-----------+-------------+------------+-------------------
+       194 |         194 |         71 |                71
+(1 row)
+

@@ -134,8 +134,10 @@ def business_step(now: datetime, box: dict):
     return run
 
 
-def stage(full: bool = False, folder: Path | None = EVIDENCE, settings: dict | None = None):
-    """One staging run. Returns (run_id, step results, loads, business result, bridge rows)."""
+def stage(full: bool = False, folder: Path | None = EVIDENCE, settings: dict | None = None,
+          run: Run | None = None):
+    """One staging run. Returns (run_id, step results, loads, business result, bridge rows).
+    Inside a pipeline run (US-8.1) pass `run`: the steps join that run, which the caller closes."""
     probe = connect(WAREHOUSE_DB, settings)
     probe.autocommit = True
     try:
@@ -143,7 +145,7 @@ def stage(full: bool = False, folder: Path | None = EVIDENCE, settings: dict | N
             check_ready(cur)
     finally:
         probe.close()
-    r = Run(settings)
+    r = run or Run(settings)
     box: dict = {}
     try:
         with r.audit.cursor() as cur:
@@ -159,6 +161,9 @@ def stage(full: bool = False, folder: Path | None = EVIDENCE, settings: dict | N
         for t in spec.TABLES:
             results.append(r.step(step_name(t.name), t.source_system, table_step(t, now, box)))
         results.append(r.step("stage_business", "STG", business_step(now, box)))
+        with r.audit.cursor() as cur:  # fresh statistics for the dimensions and facts (US-8.4)
+            for t in spec.TABLES:
+                cur.execute(f"ANALYZE lue_staging.{t.name}")
         with r.audit.cursor() as cur:
             bridge = evidence.bridge(cur)
             if folder is not None:
@@ -167,7 +172,8 @@ def stage(full: bool = False, folder: Path | None = EVIDENCE, settings: dict | N
         biz = box.pop("_business", None)
         return r.run_id, results, box, biz, bridge
     finally:
-        r.close()
+        if run is None:
+            r.close()
 
 
 def main(argv: list[str] | None = None) -> int:

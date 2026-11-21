@@ -20,6 +20,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Dimensions (E6): loader and surrogate keys, SCD Type 2, hierarchies, inferred members, dimension tests | US-6.1 to US-6.5 (Done) |
 | Phase 2 reports: Data Cleaning, Data Quality, Implementation (generated, `make reports`) | Done |
 | Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
+| Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
 | Marts, Phase 3 reports | Pending |
 
 ## Layout
@@ -117,7 +118,6 @@ Two small additions to the plan's layout, recorded here as deviations: `scripts/
 make help        list the targets
 make setup       install dependencies and run PostgreSQL connection test (US-0.4)
 make test        lint + SQL parse + frozen-pack + DDL contract check + generator tests (what CI runs)
-make rebuild     stub until the pipeline exists; must always pass on main
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
 make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
@@ -134,13 +134,20 @@ make dims-test   E6 acceptance tests: 22 PASS lines (reloads src_pms, bronze, st
 make facts       load the 6 facts from staging and the dimensions, then the 71 fact tests (sql/90_tests/
                  02_fact_tests.sql; a violation fails the run); about 2 minutes the first time (E7)
 make facts-test  E7 acceptance tests: 57 PASS lines (needs make stage and make dims first; about 6 minutes)
+make rebuild     reset the warehouse, generate the data and run the whole pipeline (PROFILE=full for the full
+                 profile, about 5 minutes): python scripts/db_reset.py, then python etl/run_pipeline.py --profile small
+make pipeline    run the whole pipeline on the data in data/ (one run_id; FROM=stage resumes at a stage);
+                 options: --profile, --seed, --skip-generate, --from-step, --only, --data (python etl/run_pipeline.py -h)
+                 the last stage reconciles source = warehouse + quarantined by month (DQ-07; alone: python etl/reconcile.py)
+                 E8 acceptance tests: python scripts/test_pipeline.py (21 PASS lines; resets the warehouse)
+                 a rerun changes nothing, a failed step is resumed with FROM=stage: see Recovery below
 make reports     build the Phase 2 reports from the warehouse: docs/reports/LUE_Data_Cleaning_Report.pdf,
                  LUE_Data_Quality_Report.pdf, LUE_Phase2_Implementation.pdf (every number read, none typed)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -172,6 +179,30 @@ Role passwords come from `.env` (`LUE_ETL_PASSWORD`, `LUE_READER_PASSWORD`) and 
 On Windows, `make` is not installed by default. Either run the checks directly
 (`pip install -r requirements-ci.txt`, then `ruff check etl scripts` and `python scripts/ci_checks.py`)
 or use Git Bash with `make` installed.
+
+## Recovery (US-8.3)
+
+The pipeline is safe to rerun and safe to resume.
+
+- **Rerun.** On unchanged inputs a second `python etl/run_pipeline.py --skip-generate` inserts, updates and rejects
+  nothing in any step, and every table hashes identically (D14). The one declared exception is the occupancy snapshot:
+  every run rewrites its last 35 days (NFR-08), with the same values unless a source changed; the run log shows them as
+  `rows_updated` of `fact_unit_occupancy_daily`.
+- **A failed step.** Each step is one transaction: a step that fails leaves nothing of itself behind (no partial rows),
+  and the steps before it stay committed. A failed critical step stops the run, exit 1; the terminal names the stage and
+  prints the command to resume.
+- **Resume.** Fix the cause (the message in the run log says what failed), then run the printed command:
+
+      python etl/run_pipeline.py --skip-generate --from-step <stage>
+
+  It starts at that stage and runs the rest; every step is idempotent, so rerunning a stage that half ran is safe. Check
+  the run with `SELECT step, status, rows_read, rows_inserted, rows_updated, rows_rejected FROM lue_audit.etl_run_log
+  WHERE run_id = <run>` and finish when the last stage, reconcile, passes.
+- **Other generated data.** A warehouse holds one generation of the data (profile, seed, content hash). A run on another
+  one stops at `check_generation` before anything changes; to switch, reset first: `python scripts/db_reset.py`, or
+  `make rebuild PROFILE=full`.
+- **A broken database** (a disk full, a dropped table): `python scripts/db_reset.py`, then
+  `python etl/run_pipeline.py --skip-generate` rebuilds everything from the generated data.
 
 ## How we work
 

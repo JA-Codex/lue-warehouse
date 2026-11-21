@@ -1,0 +1,228 @@
+US-8.3 Idempotency and failure recovery (full profile, seed 3004). The warehouse emptied (python scripts/db_reset.py).
+
+1. First run: python etl/run_pipeline.py --skip-generate
+========================================================================================================
+ Pipeline run 1: setup, deploy, reference, source, ingest, validate, transform, dimensions, facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  setup           1 Success            0           0          0         0      0.2
+  deploy          1 Success            0           0          0         0      0.1
+  reference       1 Success            0           0          0         0      0.1
+  source          2 Success            1           0          0         0      1.2
+  ingest          6 Success      467,406     467,406          0         0     15.1
+  validate        1 Warning      467,406       6,975          0     5,636    292.8
+      Warning validate_dq: 5,636 rows rejected (quarantined)
+  transform      21 Success      830,665     464,834    364,933     5,636     80.9
+  dimensions      9 Success       17,079      16,965        194         0      0.3
+  facts           7 Success    2,264,594   2,264,523     63,000         0    113.3
+  reconcile       1 Success          194           0          0         0      0.4
+========================================================================================================
+ RESULT: 50/50 steps without failure in 524 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 1
+========================================================================================================
+
+2. Second run on unchanged inputs: python etl/run_pipeline.py --skip-generate
+========================================================================================================
+ Pipeline run 2: setup, deploy, reference, source, ingest, validate, transform, dimensions, facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  setup           1 Success            0           0          0         0      0.2
+  deploy          1 Success            0           0          0         0      0.1
+  reference       1 Success            0           0          0         0      0.1
+  source          2 Success            1           0          0         0      1.3
+  ingest          6 Success      467,406           0          0         0     10.1
+  validate        1 Success            0           0          0         0      1.9
+  transform      21 Success            0           0          0         0      6.3
+  dimensions      9 Success       16,906           0          0         0      0.3
+  facts           7 Success    2,264,594           0     63,000         0     53.0
+  reconcile       1 Success          194           0          0         0      0.3
+========================================================================================================
+ RESULT: 50/50 steps without failure in 92 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 2
+========================================================================================================
+
+   Counts of the second run (run 2), every step: 0 inserted, 0 updated, 0 rejected, but the declared occupancy refresh
+              step               | rows_read | rows_inserted | rows_updated | rows_rejected | status  
+---------------------------------+-----------+---------------+--------------+---------------+---------
+ check_generation                |         1 |             0 |            0 |             0 | Success
+ deploy                          |         0 |             0 |            0 |             0 | Success
+ reference                       |         0 |             0 |            0 |             0 | Success
+ setup                           |         0 |             0 |            0 |             0 | Success
+ source                          |         0 |             0 |            0 |             0 | Success
+ ingest_s1_pms                   |    391870 |             0 |            0 |             0 | Success
+ ingest_s2_registers             |      3323 |             0 |            0 |             0 | Success
+ ingest_s3_settlements           |     36967 |             0 |            0 |             0 | Success
+ ingest_s4_tickets               |     30200 |             0 |            0 |             0 | Success
+ ingest_s5_weather               |      4384 |             0 |            0 |             0 | Success
+ ingest_s6_incentives            |       662 |             0 |            0 |             0 | Success
+ validate_dq                     |         0 |             0 |            0 |             0 | Success
+ stage_building                  |         0 |             0 |            0 |             0 | Success
+ stage_business                  |         0 |             0 |            0 |             0 | Success
+ stage_holiday                   |         0 |             0 |            0 |             0 | Success
+ stage_incentive_log             |         0 |             0 |            0 |             0 | Success
+ stage_incentive_offer           |         0 |             0 |            0 |             0 | Success
+ stage_invoice                   |         0 |             0 |            0 |             0 | Success
+ stage_invoice_line              |         0 |             0 |            0 |             0 | Success
+ stage_lease                     |         0 |             0 |            0 |             0 | Success
+ stage_lease_event               |         0 |             0 |            0 |             0 | Success
+ stage_maintenance_category      |         0 |             0 |            0 |             0 | Success
+ stage_owner                     |         0 |             0 |            0 |             0 | Success
+ stage_ownership                 |         0 |             0 |            0 |             0 | Success
+ stage_payment                   |         0 |             0 |            0 |             0 | Success
+ stage_payment_allocation        |         0 |             0 |            0 |             0 | Success
+ stage_settlement                |         0 |             0 |            0 |             0 | Success
+ stage_tenant                    |         0 |             0 |            0 |             0 | Success
+ stage_ticket                    |         0 |             0 |            0 |             0 | Success
+ stage_ticket_status             |         0 |             0 |            0 |             0 | Success
+ stage_unit                      |         0 |             0 |            0 |             0 | Success
+ stage_vendor                    |         0 |             0 |            0 |             0 | Success
+ stage_weather                   |         0 |             0 |            0 |             0 | Success
+ dim_date_holidays               |         0 |             0 |            0 |             0 | Success
+ dim_incentive                   |         7 |             0 |            0 |             0 | Success
+ dim_lease                       |      5883 |             0 |            0 |             0 | Success
+ dim_maintenance_category        |        30 |             0 |            0 |             0 | Success
+ dim_owner                       |       900 |             0 |            0 |             0 | Success
+ dim_tenant                      |      3762 |             0 |            0 |             0 | Success
+ dim_unit                        |      1800 |             0 |            0 |             0 | Success
+ dim_vendor                      |       140 |             0 |            0 |             0 | Success
+ dim_weather                     |      4384 |             0 |            0 |             0 | Success
+ fact_rent_invoice_line          |    129885 |             0 |            0 |             0 | Success
+ fact_payment                    |    127210 |             0 |            0 |             0 | Success
+ fact_lease_event                |      8781 |             0 |            0 |             0 | Success
+ fact_maintenance_request        |      5670 |             0 |            0 |             0 | Success
+ fact_unit_occupancy_daily       |   1972800 |             0 |        63000 |             0 | Success
+ fact_vacancy_incentive_coverage |     20177 |             0 |            0 |             0 | Success
+ fact_tests                      |        71 |             0 |            0 |             0 | Success
+ reconcile_dq07                  |       194 |             0 |            0 |             0 | Success
+(50 rows)
+
+ steps | all_zero |                not_zero                 
+-------+----------+-----------------------------------------
+    50 |       49 | fact_unit_occupancy_daily updated 63000
+(1 row)
+
+   Content hashes, first run against second run:
+   62 tables compared (bronze, staging, warehouse; batch_id, loaded_at, run_id, staged_at left out): 0 differ 
+   table                                               rows        hash after run 1        hash after run 2
+   lue_dw.dim_charge_type                                 8   -24950711649912467106   -24950711649912467106
+   lue_dw.dim_date                                    1,463  -173953267628367683740  -173953267628367683740
+   lue_dw.dim_incentive                                   9    -9042196304079523660    -9042196304079523660
+   lue_dw.dim_lease                                   5,885   -28139915989797046327   -28139915989797046327
+   lue_dw.dim_lease_event_type                            6     4009589346080256468     4009589346080256468
+   lue_dw.dim_maintenance_category                       36    40652362729524973975    40652362729524973975
+   lue_dw.dim_owner                                     902  -232262368731138803036  -232262368731138803036
+   lue_dw.dim_payment_method                              8   -10782006451576903556   -10782006451576903556
+   lue_dw.dim_request_flags                               8   -29089795651922613293   -29089795651922613293
+   lue_dw.dim_tenant                                  3,802  -500122482131738256028  -500122482131738256028
+   lue_dw.dim_unit                                    1,802     2237439612237663077     2237439612237663077
+   lue_dw.dim_vendor                                    159     -657309143371040997     -657309143371040997
+   lue_dw.dim_weather                                 4,386    92980490099332336930    92980490099332336930
+   lue_dw.fact_lease_event                            8,781  -285854101533656953902  -285854101533656953902
+   lue_dw.fact_maintenance_request                    5,670   226149247075493089235   226149247075493089235
+   lue_dw.fact_payment                              127,210  -3694277642036656180725  -3694277642036656180725
+   lue_dw.fact_rent_invoice_line                    129,885   917174530922737529821   917174530922737529821
+   lue_dw.fact_unit_occupancy_daily               1,972,800  8077140202038092217567  8077140202038092217567
+   lue_dw.fact_vacancy_incentive_coverage            20,177   754219512979117666421   754219512979117666421
+   lue_staging.brz_building                              40    45648184606218397747    45648184606218397747
+   lue_staging.brz_holiday                              173   -12732502994069112496   -12732502994069112496
+   lue_staging.brz_incentive_log                        655   129860211484168197613   129860211484168197613
+   lue_staging.brz_incentive_offer                        7    19202755709849166337    19202755709849166337
+   lue_staging.brz_invoice                           54,774  -839512695138971015400  -839512695138971015400
+   lue_staging.brz_invoice_line                     129,885  -1934101339918172344595  -1934101339918172344595
+   lue_staging.brz_lease                              5,883   146313809313760655794   146313809313760655794
+   lue_staging.brz_lease_event                        9,195   -54940087778932548882   -54940087778932548882
+   lue_staging.brz_owner                                900   -92800023896724091997   -92800023896724091997
+   lue_staging.brz_ownership                          2,076  -150673724276317175398  -150673724276317175398
+   lue_staging.brz_payment                           59,679  -1623951829908823691631  -1623951829908823691631
+   lue_staging.brz_payment_allocation               126,852  1328930852978452394295  1328930852978452394295
+   lue_staging.brz_settlement                        36,967   245414638792755635693   245414638792755635693
+   lue_staging.brz_sla_policy                            34    23032256705684741490    23032256705684741490
+   lue_staging.brz_tenant                             3,762   386592564246745241723   386592564246745241723
+   lue_staging.brz_ticket                             6,120   215963905913747130758   215963905913747130758
+   lue_staging.brz_ticket_status                     24,080  -139161865343424470090  -139161865343424470090
+   lue_staging.brz_unit                               1,800    73739141545553868492    73739141545553868492
+   lue_staging.brz_vendor                               140   -94291294683557065419   -94291294683557065419
+   lue_staging.brz_weather                            4,384  -541243011771631003373  -541243011771631003373
+   lue_staging.city                                       4   -12535134703085870791   -12535134703085870791
+   lue_staging.payment_method                             6     -154334242703626923     -154334242703626923
+   lue_staging.stg_building                              40   -32587088012052957330   -32587088012052957330
+   lue_staging.stg_holiday                              173     5661742769022362399     5661742769022362399
+   lue_staging.stg_incentive_log                        624    52186135860883577836    52186135860883577836
+   lue_staging.stg_incentive_offer                        7   -10653513094716301312   -10653513094716301312
+   lue_staging.stg_invoice                           54,774   744510281402174782804   744510281402174782804
+   lue_staging.stg_invoice_line                     129,885   598002265770928837404   598002265770928837404
+   lue_staging.stg_lease                              5,883  -275464908226298446158  -275464908226298446158
+   lue_staging.stg_lease_event                        8,781   423323336628193269582   423323336628193269582
+   lue_staging.stg_maintenance_category                  34    48309999534746610290    48309999534746610290
+   lue_staging.stg_owner                                900    18178233263142474165    18178233263142474165
+   lue_staging.stg_ownership                          2,076   -24644594335705773017   -24644594335705773017
+   lue_staging.stg_payment                           59,679  2698965075888088417281  2698965075888088417281
+   lue_staging.stg_payment_allocation               127,210  1120251942109509944731  1120251942109509944731
+   lue_staging.stg_settlement                        36,606  -226873619322674238362  -226873619322674238362
+   lue_staging.stg_tenant                             3,762  -146470319567910770234  -146470319567910770234
+   lue_staging.stg_ticket                             5,670   294250750759464917494   294250750759464917494
+   lue_staging.stg_ticket_status                     22,406  -624641730108913200342  -624641730108913200342
+   lue_staging.stg_unit                               1,800   281958729505075198119   281958729505075198119
+   lue_staging.stg_vendor                               140   -27959846626958275077   -27959846626958275077
+   lue_staging.stg_weather                            4,384  -484023828925592504016  -484023828925592504016
+   lue_staging.vocabulary                                71    11371332302767528260    11371332302767528260
+
+3. A failure in the fact load: a crash injected inside the fact_payment step, after its rows are written
+   and before its transaction commits (python etl/run_pipeline.py --skip-generate --from-step facts):
+========================================================================================================
+ Pipeline run 3: facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  facts           7 Failed     2,137,384           0     63,000         0     59.6
+      Failed  fact_payment: RuntimeError: simulated crash after writing 127,210 rows of fact_payment
+========================================================================================================
+ STOPPED at facts (a critical step failed); not run: reconcile
+ Fix it, then resume: python etl/run_pipeline.py --skip-generate --from-step facts
+ RESULT: 6/7 steps without failure in 60 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 3
+========================================================================================================
+   exit code: 1
+              step               | status  | rows_read | rows_inserted 
+---------------------------------+---------+-----------+---------------
+ fact_rent_invoice_line          | Success |    129885 |             0
+ fact_payment                    | Failed  |         0 |             0
+ fact_lease_event                | Success |      8781 |             0
+ fact_maintenance_request        | Success |      5670 |             0
+ fact_vacancy_incentive_coverage | Success |     20177 |             0
+ fact_unit_occupancy_daily       | Success |   1972800 |             0
+ fact_tests                      | Success |        71 |             0
+(7 rows)
+
+ fact_payment_rows_after_the_crash 
+-----------------------------------
+                                 0
+(1 row)
+
+4. The recovery: resume where it stopped (python etl/run_pipeline.py --skip-generate --from-step facts)
+========================================================================================================
+ Pipeline run 4: facts, reconcile
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  facts           7 Success    2,264,594     127,210     63,000         0     62.4
+  reconcile       1 Success          194           0          0         0      0.3
+========================================================================================================
+ RESULT: 8/8 steps without failure in 63 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 4
+========================================================================================================
+   exit code: 0
+   The recovery run log (run 4):
+              step               | status  | rows_read | rows_inserted | rows_updated 
+---------------------------------+---------+-----------+---------------+--------------
+ fact_rent_invoice_line          | Success |    129885 |             0 |            0
+ fact_payment                    | Success |    127210 |        127210 |            0
+ fact_maintenance_request        | Success |      5670 |             0 |            0
+ fact_lease_event                | Success |      8781 |             0 |            0
+ fact_unit_occupancy_daily       | Success |   1972800 |             0 |        63000
+ fact_vacancy_incentive_coverage | Success |     20177 |             0 |            0
+ fact_tests                      | Success |        71 |             0 |            0
+ reconcile_dq07                  | Success |       194 |             0 |            0
+(8 rows)
+
+   After the recovery against before the crash (fact_payment's surrogate keys left out: a rolled-back insert uses up identity values):
+   62 tables: 0 differ besides fact_payment 
+ fact_payment | staged_allocations |  fact_amount  | staged_amount 
+--------------+--------------------+---------------+---------------
+       127210 |             127210 | 5347289709.00 | 5347289709.00
+(1 row)
+
