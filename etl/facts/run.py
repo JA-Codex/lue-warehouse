@@ -95,10 +95,12 @@ def tests_step(box: dict):
     return run
 
 
-def load_all(settings: dict | None = None, only: list[str] | None = None, tests: bool | None = None):
+def load_all(settings: dict | None = None, only: list[str] | None = None, tests: bool | None = None,
+             run: Run | None = None):
     """One run of every fact, or of the facts named in `only` (in load order), then the fact tests
     (by default after a full run only). Returns (run_id, step results, box): box maps each fact
-    loaded to its FactLoad, and "fact_tests" (when they ran) to {"tests", "special"}."""
+    loaded to its FactLoad, and "fact_tests" (when they ran) to {"tests", "special"}. Inside a
+    pipeline run (US-8.1) pass `run`: the steps join that run, which the caller closes."""
     unknown = sorted(set(only or []) - set(spec.BY_NAME))
     if unknown:
         raise NotReady(f"no such fact: {', '.join(unknown)} (facts: {', '.join(spec.BY_NAME)})")
@@ -109,7 +111,7 @@ def load_all(settings: dict | None = None, only: list[str] | None = None, tests:
             check_ready(cur)
     finally:
         probe.close()
-    r = Run(settings)
+    r = run or Run(settings)
     box: dict = {}
     try:
         now = datetime.now().replace(microsecond=0)
@@ -119,7 +121,8 @@ def load_all(settings: dict | None = None, only: list[str] | None = None, tests:
             results.append(r.step(TESTS, "DW", tests_step(box)))
         return r.run_id, results, box
     finally:
-        r.close()
+        if run is None:
+            r.close()
 
 
 def main(argv: list[str] | None = None) -> int:

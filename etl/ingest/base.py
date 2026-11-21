@@ -307,6 +307,12 @@ class Run:
         self.results.append(result)
         return result
 
+    def record(self, result: StepResult, started: datetime, ended: datetime) -> None:
+        """Log a step that ran before this run existed (the pipeline's setup steps, US-8.1): the
+        audit tables are created by those very steps, so their rows are written afterwards."""
+        self._log_row(result, started, ended)
+        self.results.append(result)
+
     def close(self) -> None:
         failed = sum(r.status == "Failed" for r in self.results)
         self.log.info(kv(event="run_end", run_id=self.run_id, steps=len(self.results),

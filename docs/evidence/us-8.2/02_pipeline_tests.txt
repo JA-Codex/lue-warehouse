@@ -1,0 +1,70 @@
+US-8.2 tests.
+
+1. python scripts/test_pipeline_contract.py (no database, in make gen-test)
+======================================================================
+ E8 contract tests: the pipeline orchestrator (no database)
+======================================================================
+US-8.1 Stages and order
+  [PASS] the brief's order: generate, set up and deploy, load sources, ingest, validate, transform, dimensions, facts (tests inside), reconcile
+  [PASS] generate, setup, deploy and reference run before the run exists (they create the audit tables), all others inside it
+  [PASS] every setup stage's script exists; the ETL layers run in process
+  [PASS] every layer can join one pipeline run (one run_id): ingest.run yes, quality.validate yes, staging.stage yes, dimensions.load_all yes, facts.load_all yes
+US-8.1 Options
+  [PASS] no option: every stage; --skip-generate: all but generate
+  [PASS] --from-step resumes at that stage and runs the rest in order
+  [PASS] --only runs just the named stages, in pipeline order
+  [PASS] an unknown stage, --only with --from-step, or nothing left to run is refused (exit 2)
+  [PASS] options --profile, --seed, --data, --skip-generate, --from-step and --only
+  [PASS] the generator gets the profile, seed and data folder; the source load the data folder; both with this Python
+US-8.1 Critical steps
+  [PASS] only the S5 weather is non-critical (it may be cut, D19); every other failed step stops the run
+  [PASS] a Warning or a non-critical failure goes on; a critical failure stops
+US-8.2 Reconciliation (DQ-07)
+  [PASS] the plan's four measures (billed, paid, tickets, lease events), reconciled after the facts are loaded
+  [PASS] every measure's source, warehouse and quarantined query parses (pglast)
+  [PASS] a quarantined row explains a difference only when its key never reached staging
+  [PASS] unexplained = source - warehouse - quarantined; one check per measure and month, names within 60 characters
+US-8.1 make targets
+  [PASS] make pipeline runs the pipeline; make rebuild resets the warehouse, then generates and runs it
+======================================================================
+ RESULT: 17/17 checks passed
+======================================================================
+
+2. python scripts/test_pipeline.py (database; resets the warehouse, generates the small profile into a temporary folder)
+======================================================================
+ E8 acceptance tests: the pipeline (database)
+======================================================================
+US-8.1 One command: an empty warehouse to a loaded one
+  [PASS] scripts/db_reset.py leaves an empty warehouse (no tenants, no facts)
+      stage       steps status          read    inserted    updated  rejected  seconds
+      generate        1 Success            0           0          0         0      0.4
+      setup           1 Success            0           0          0         0      0.1
+      deploy          1 Success            0           0          0         0      0.1
+      reference       1 Success            0           0          0         0      0.1
+      source          1 Success            0           0          0         0      0.2
+      ingest          6 Success        6,854       6,854          0         0      0.7
+      validate        1 Warning        6,854          33          0        25      0.3
+      transform      21 Success        8,300       6,824      1,467        25      1.3
+      dimensions      9 Success        4,940       4,773        178         0      0.1
+      facts           7 Success       99,909      99,838      3,150         0      4.6
+      reconcile       1 Success           15           0          0         0      0.0
+  [PASS] python etl/run_pipeline.py --profile small generates the data and runs every stage (exit 0)
+  [PASS] the run log holds all 50 steps of run 1, each ended with a final status (Success or Warning)
+  [PASS] with their counts: e.g. S1 landed 1,750, 25 rows rejected, 120 tenants, 466 payments, 71 fact tests read
+  [PASS] every fact is loaded: rent_invoice_line 516, payment 466, unit_occupancy_daily 98,640, maintenance_request 36, lease_event 23, vacancy_incentive_coverage 157
+  [PASS] lineage links each source to bronze, bronze to staging, staging to the dimensions and the facts: S1 -> bronze 9, S2 -> bronze 5, S3 -> bronze 1, S4 -> bronze 2, S5 -> bronze 1, S6 -> bronze 2, bronze -> staging 20, staging -> dimension 11, staging -> fact 30
+US-8.1 --only and --from-step
+  [PASS] --only facts: just the 6 facts and their tests (7 steps)
+  [PASS] --from-step dimensions: the dimensions, the facts and the reconciliation, nothing before
+US-8.2 Source-to-warehouse reconciliation (DQ-07)
+  [PASS] every measure and month reconciles: 15 rows in lue_audit.reconciliation, all passed, unexplained variance 0
+  [PASS] source = warehouse + quarantined: billed 24,287,778 = 24,287,778 + 0, paid 21,605,798 = 21,605,798 + 0, tickets 40 = 36 + 4, lease events 26 = 23 + 3
+  [PASS] a fact row removed and an amount changed by PKR 5: exactly those months fail (DQ-07 billed 2026-06, DQ-07 lease events 2026-04), the step Failed, exit 1
+  [PASS] reloading the facts from staging restores them, and the reconciliation passes again
+US-8.1 A failed critical step stops the run
+  [PASS] a missing data folder fails the source stage: the run stops there (no ingest, no later stage), exit 1, and says how to resume
+US-8.1 A failed non-critical step is reported, the run goes on
+  [PASS] S5 weather Failed (it may be cut, D19), yet every later stage ran: fact_tests Success, reconcile Success
+======================================================================
+ RESULT: 14/14 checks passed
+======================================================================
