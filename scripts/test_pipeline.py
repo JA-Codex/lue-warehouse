@@ -12,6 +12,10 @@
   US-8.2  by month, source = warehouse + quarantined for billed, paid, tickets and lease events,
           every row in lue_audit.reconciliation passed; a fact row removed and an amount changed
           fail exactly their months and the step; reloading the facts restores the pass
+  US-8.3  a second run on unchanged inputs reports 0 inserted, updated and rejected in every step but
+          the declared occupancy refresh, and every table hashes identically; a crash inside a fact
+          step leaves no partial rows, and --from-step facts resumes to the same warehouse; data of
+          another generation is refused before anything changes
 The warehouse is left loaded with the small profile (rerun the pipeline on your own data after).
 """
 
@@ -84,6 +88,99 @@ def one_command(cur, data: Path) -> None:
           + ", ".join(f"{k} {v}" for k, v in sorted(paths.items())))
 
 
+TECH = ["batch_id", "loaded_at", "run_id", "staged_at"]  # when and by which run: not the content (D14)
+
+
+def content_hashes(cur, also: tuple = ()) -> dict[str, tuple]:
+    """Every table of bronze, staging and the warehouse: (rows, hash of the rows without TECH and
+    the columns in also)."""
+    cur.execute("SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema IN ('lue_staging', 'lue_dw') "
+                "AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'fact_unit_occupancy_daily_%' ORDER BY 1, 2")
+    out = {}
+    for s, t in cur.fetchall():
+        cur.execute(f"SELECT count(*), coalesce(sum(hashtextextended((to_jsonb(x) - %s::text[])::text, 0)), 0) FROM {s}.{t} x", (TECH + list(also),))
+        out[f"{s}.{t}"] = cur.fetchone()
+    return out
+
+
+def idempotency(cur, data: Path) -> dict:
+    """Returns the content hashes after the rerun, without payment_alloc_sk (see recovery)."""
+    print("US-8.3 A second run on unchanged inputs changes nothing (D14)")
+    before = content_hashes(cur)
+    code, out = run(["--skip-generate", "--data", str(data)])
+    rid = last_run(cur)
+    cur.execute("SELECT step, rows_inserted, rows_updated, rows_rejected FROM lue_audit.etl_run_log WHERE run_id = %s", (rid,))
+    log = {s: (i, u, j) for s, i, u, j in cur.fetchall()}
+    units = scalar(cur, "SELECT count(*) FROM lue_staging.stg_unit")
+    moved = {s: v for s, v in log.items() if v != (0, 0, 0) and s != "fact_unit_occupancy_daily"}
+    check(code == 0 and len(log) >= 45 and not moved,
+          f"every one of the {len(log)} steps reports 0 inserted, 0 updated, 0 rejected" + (f": not {moved}" if moved else ""))
+    check(log.get("fact_unit_occupancy_daily") == (0, units * 35, 0),
+          f"except the declared occupancy refresh: {log.get('fact_unit_occupancy_daily', (0, 0, 0))[1]:,} rows rewritten = {units} units x 35 days")
+    after = content_hashes(cur)
+    changed = [k for k in before if before[k] != after.get(k)]
+    check(not changed and len(before) > 50, f"the content of all {len(before)} tables of bronze, staging and the warehouse hashes identically, the refreshed days included"
+          + (f": changed {changed}" if changed else ""))
+    return content_hashes(cur, ("payment_alloc_sk",))
+
+
+def recovery(cur, data: Path, baseline: dict) -> None:
+    print("US-8.3 A failure in the fact load: rollback, then resume with --from-step")
+    from etl.facts import load as fact_load
+
+    cur.execute("TRUNCATE lue_dw.fact_payment")  # so a partial load would show
+    real = fact_load.load_fact
+
+    def crash(c, f, run_id, now):
+        out = real(c, f, run_id, now)
+        if f.name == "fact_payment":  # its rows are written, its transaction not committed yet
+            c.execute("SELECT count(*) FROM lue_dw.fact_payment")
+            raise RuntimeError(f"simulated crash after writing {c.fetchone()[0]} rows of fact_payment (test)")
+        return out
+
+    fact_load.load_fact = crash
+    try:
+        rid, done, stopped = p.pipeline("small", 3004, p.select(None, "facts", True), data)
+    finally:
+        fact_load.load_fact = real
+    cur.execute("SELECT step, status FROM lue_audit.etl_run_log WHERE run_id = %s", (rid,))
+    log = dict(cur.fetchall())
+    rows = scalar(cur, "SELECT count(*) FROM lue_dw.fact_payment")
+    check(stopped == "facts" and log.get("fact_payment") == "Failed" and rows == 0 and "reconcile_dq07" not in log,
+          "a crash inside the fact_payment step rolls it back: 0 rows, no partial load; the run stops at facts, reconcile not run")
+    code, out = run(["--skip-generate", "--data", str(data), "--from-step", "facts"])
+    rid = last_run(cur)
+    cur.execute("SELECT step, status FROM lue_audit.etl_run_log WHERE run_id = %s", (rid,))
+    log = dict(cur.fetchall())
+    staged = scalar(cur, "SELECT count(*) FROM lue_staging.stg_payment_allocation")
+    check(code == 0 and log.get("fact_payment") == "Success" and log.get("fact_tests") == "Success" and log.get("reconcile_dq07") == "Success"
+          and scalar(cur, "SELECT count(*) FROM lue_dw.fact_payment") == staged,
+          f"python etl/run_pipeline.py --skip-generate --from-step facts resumes: fact_payment loaded ({staged:,}), the fact tests and the reconciliation pass")
+    # A rolled-back insert still uses up identity values, so the reloaded payments have new
+    # surrogate keys (payment_alloc_sk); everything else must be as before.
+    after, base = content_hashes(cur, ("payment_alloc_sk",)), baseline
+    changed = [k for k in base if base[k] != after.get(k)]
+    check(not changed, "after the resume the warehouse is what an uninterrupted run gives: every table's content hashes as before "
+          "(the reloaded payments' new surrogate keys aside)" + (f": changed {changed}" if changed else ""))
+
+
+def generation_guard(cur, data: Path) -> None:
+    print("US-8.3 Data of another generation is refused before anything changes")
+    other = data.parent / (data.name + "_seed3005")
+    gen = subprocess.run([sys.executable, str(ROOT / "etl" / "generate_data.py"), "--profile", "small", "--seed", "3005", "--out", str(other)],
+                         cwd=ROOT, capture_output=True, text=True)
+    before = content_hashes(cur)
+    try:
+        code, out = run(["--skip-generate", "--data", str(other)])
+    finally:
+        shutil.rmtree(other, ignore_errors=True)
+    cur.execute("SELECT step, status FROM lue_audit.etl_run_log WHERE run_id = %s", (last_run(cur),))
+    log = dict(cur.fetchall())
+    check(gen.returncode == 0 and code == 1 and log.get("check_generation") == "Failed" and "source" not in log and "Reset first" in out
+          and content_hashes(cur) == before,
+          "a run on seed 3005 data, while the warehouse holds seed 3004, stops at check_generation (before the source stage), says to reset first, and changes nothing")
+
+
 def options(cur, data: Path) -> None:
     print("US-8.1 --only and --from-step")
     code, out = run(["--data", str(data), "--only", "facts"])
@@ -144,8 +241,8 @@ def failures(cur, data: Path) -> None:
     rid = last_run(cur)
     cur.execute("SELECT step, status FROM lue_audit.etl_run_log WHERE run_id = %s", (rid,))
     log = dict(cur.fetchall())
-    check(code == 1 and log == {"source": "Failed"} and "STOPPED at source" in out and "--from-step source" in out,
-          "a missing data folder fails the source stage: the run stops there (no ingest, no later stage), exit 1, and says how to resume")
+    check(code == 1 and log == {"check_generation": "Failed"} and "STOPPED at source" in out and "--from-step source" in out and "no run_manifest.json" in out,
+          "a missing data folder stops the run before the source stage changes anything (no ingest, no later stage), exit 1, and says how to resume")
     print("US-8.1 A failed non-critical step is reported, the run goes on")
     real = ingest.steps
 
@@ -184,6 +281,9 @@ def main() -> int:
         try:
             with wh.cursor() as cur:
                 one_command(cur, data)
+                baseline = idempotency(cur, data)
+                recovery(cur, data, baseline)
+                generation_guard(cur, data)
                 options(cur, data)
                 reconciliation(cur)
                 failures(cur, data)

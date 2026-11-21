@@ -28,6 +28,17 @@ from etl.ingest.base import IngestError, Run  # noqa: E402
 from etl.quality import engine  # noqa: E402
 
 
+def unvalidated(cur) -> list[int]:
+    """The bronze batches not validated yet (not in lue_audit.dq_batch), for an incremental run
+    (US-8.3): the rules judge a row within its own batch, or against whole bronze tables, so
+    validating only the new batches gives the same findings as validating everything again."""
+    tables = sorted(engine.bronze_tables(cur))
+    union = " UNION ".join(f"SELECT DISTINCT batch_id FROM lue_staging.{t}" for t in tables)
+    done = "SELECT 1 FROM lue_audit.dq_batch d WHERE d.batch_id = b.batch_id"
+    cur.execute(f"SELECT b.batch_id FROM ({union}) b WHERE NOT EXISTS ({done}) ORDER BY 1")
+    return [b for (b,) in cur.fetchall()]
+
+
 def validate(rules_file: Path = engine.RULES_FILE, batches: list[int] | None = None,
              settings: dict | None = None, run: Run | None = None) -> tuple:  # fmt: skip
     """One run with one step; returns (run_id, step result, Summary or None). Inside a pipeline

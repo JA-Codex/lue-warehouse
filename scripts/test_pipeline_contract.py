@@ -106,6 +106,28 @@ def main() -> int:
     check(x.variance == 1 and x.check_name == "DQ-07 lease events 2026-06" and max(len(reconcile.Line(m, "2026-06", 0, 0, 0).check_name) for m in reconcile.BY_NAME) <= 60,
           "unexplained = source - warehouse - quarantined; one check per measure and month, names within 60 characters")
 
+    print("US-8.3 Reruns and recovery")
+    import json
+    import tempfile
+
+    from etl.quality import run as qrun
+
+    src = inspect.getsource(p.layer)
+    check("quality.unvalidated(" in src and "batches=batches" in src and hasattr(qrun, "unvalidated"),
+          "the pipeline validates only the batches not validated yet, so a rerun rejects nothing twice (D14)")
+    loop = inspect.getsource(p.pipeline)
+    check(loop.index("check_generation(data)") < loop.index("if stage.script:") and '("source", "ingest")' in loop
+          and "record_generation(r, data)" in loop,
+          "the generation is checked before the source or bronze changes, and recorded after an ingest")
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "run_manifest.json").write_text(json.dumps({"content_hash": "ab" * 32, "seed": 7, "profile": {"name": "small"}}))
+        gen, none = p.generation(Path(d)), p.generation(Path(d) / "missing")
+    check(gen == ("ab" * 32, "profile small, seed 7") and none is None,
+          "a generation is the run manifest's content hash, profile and seed; no manifest, no generation (the run stops)")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    check("## Recovery" in readme and "--from-step" in readme.split("## Recovery")[1],
+          "the README documents the recovery procedure (resume with --from-step)")
+
     print("US-8.1 make targets")
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("etl/run_pipeline.py" in mk.split("\npipeline:")[1].split("\n\n")[0] and "scripts/db_reset.py" in mk.split("\nrebuild:")[1].split("\n\n")[0]

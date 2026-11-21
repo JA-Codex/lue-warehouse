@@ -24,6 +24,11 @@ in a critical stage stops the run (exit 1); a non-critical step (the S5 weather,
 D19) is reported and the run goes on. Options: --profile and --seed for the generation,
 --from-step NAME to resume at a stage, --only NAME[,NAME] to run just those stages.
 Exit 0 when every step succeeded (Warnings allowed), 1 when one Failed, 2 for a bad option.
+
+One warehouse holds one generation of the data (US-8.3): the profile, seed and content hash of the
+data folder's run_manifest.json are recorded after the first ingest (lue_audit.file_load, source
+GEN). A run on other generated data stops before it touches the source or bronze (mixing two
+generations would corrupt bronze); reset first (python scripts/db_reset.py, or make rebuild).
 """
 
 # ruff: noqa: E501  (the result table: long lines read better)
@@ -31,6 +36,7 @@ Exit 0 when every step succeeded (Warnings allowed), 1 when one Failed, 2 for a 
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 import time
@@ -83,6 +89,53 @@ class PipelineError(Exception):
     """A setup script failed (named, with the end of its output)."""
 
 
+GEN = "GEN"  # lue_audit.file_load source_system of the generation record
+
+
+def generation(data: Path) -> tuple[str, str] | None:
+    """(content hash, "profile P, seed S") of the generated data, from its run_manifest.json."""
+    f = data / "run_manifest.json"
+    if not f.is_file():
+        return None
+    m = json.loads(f.read_text(encoding="utf-8"))
+    return m["content_hash"], f"profile {m['profile']['name']}, seed {m['seed']}"
+
+
+def loaded_generation(cur) -> tuple[str, str, int] | None:
+    """The generation the warehouse was loaded from: (content hash, profile and seed, run), or None."""
+    cur.execute("SELECT checksum_sha256, message, run_id FROM lue_audit.file_load WHERE source_system = %s "
+                "AND status = 'Loaded' ORDER BY file_load_id DESC LIMIT 1", (GEN,))  # fmt: skip
+    return cur.fetchone()
+
+
+def check_generation(data: Path):
+    """A step: refuse data from another generation than the warehouse holds."""
+
+    def run(step) -> None:
+        gen = generation(data)
+        if gen is None:
+            raise PipelineError(f"no run_manifest.json in {data}: generate the data first (python etl/generate_data.py)")
+        have = loaded_generation(step.cur)
+        step.result.rows_read = 1
+        if have and have[0] != gen[0]:
+            raise PipelineError(f"the warehouse holds other generated data ({have[1]}, {have[0][:12]}, run {have[2]}) "
+                                f"than {data.name}/ ({gen[1]}, {gen[0][:12]}); mixing them would corrupt bronze. "
+                                "Reset first: python scripts/db_reset.py (or make rebuild)")  # fmt: skip
+
+    return run
+
+
+def record_generation(r: Run, data: Path) -> None:
+    """After an ingest: the warehouse now holds this generation (kept unless it changes)."""
+    gen = generation(data)
+    with r.audit.cursor() as cur:
+        have = loaded_generation(cur)
+        if gen and (have is None or have[0] != gen[0]):
+            cur.execute("INSERT INTO lue_audit.file_load (run_id, source_system, file_name, checksum_sha256, target_table, "
+                        "rows_landed, status, message, loaded_at) VALUES (%s, %s, 'run_manifest.json', %s, 'generation', 0, "
+                        "'Loaded', %s, now()::timestamp(0))", (r.run_id, GEN, gen[0], gen[1]))  # fmt: skip
+
+
 def select(only: list[str] | None, from_step: str | None, skip_generate: bool) -> list[Stage]:
     """The stages to run, in pipeline order. Raises ValueError for an unknown or empty choice."""
     for name in [*(only or []), *([from_step] if from_step else [])]:
@@ -131,7 +184,9 @@ def layer(stage: Stage, r: Run, data: Path) -> list[StepResult]:
             results.append(_failed(r, "ingest_reconciliation", f"bronze differs from its source: {', '.join(bad[:5])}"))
         return results
     if stage.name == "validate":
-        return [quality.validate(run=r)[1]]
+        with r.audit.cursor() as cur:  # only the batches not validated yet: a rerun rejects nothing twice (D14)
+            batches = quality.unvalidated(cur)
+        return [quality.validate(batches=batches, run=r)[1]]
     if stage.name == "transform":
         return staging.stage(run=r)[1]  # with the cleaning evidence CSVs, as make stage
     if stage.name == "dimensions":
@@ -186,7 +241,15 @@ def pipeline(profile: str, seed: int, chosen: list[Stage], data: Path = DATA, se
     try:
         for result, started, ended in early:
             r.record(result, started, ended)
+        checked = False
         for stage in [s for s in chosen if not s.before_run]:
+            guard = []
+            if stage.name in ("source", "ingest") and not checked:  # before the source or bronze changes
+                checked = True
+                guard = [r.step("check_generation", "PIPE", check_generation(data))]
+                if guard[0].status == "Failed":
+                    done.append((stage, guard))
+                    return r.run_id, done, stage.name
             if stage.script:
                 results = [r.step(stage.name, "PIPE", lambda _s, st=stage: run_script(st, script_args(st, profile, seed, data), log))]
             else:
@@ -194,9 +257,12 @@ def pipeline(profile: str, seed: int, chosen: list[Stage], data: Path = DATA, se
                     results = layer(stage, r, data)
                 except Exception as exc:  # noqa: BLE001  a layer that cannot start (not ready, no data, no database): a failed step, not a crash
                     results = [_failed(r, f"{stage.name}_not_ready", f"{type(exc).__name__}: {exc}")]
+            results = guard + results
             done.append((stage, results))
             if critical_failures(results):
                 return r.run_id, done, stage.name
+            if stage.name == "ingest":
+                record_generation(r, data)
         return r.run_id, done, None
     finally:
         r.close()

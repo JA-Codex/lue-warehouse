@@ -57,6 +57,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-7.6 | Automate grain and orphan checks | Junaid (done by Hanan) | Done | 2026-11-21 | [US-7.6](US-7.6.md) | [evidence](../evidence/us-7.6/) |
 | US-8.1 | Build run_pipeline.py with logging and lineage | Junaid (done by Hanan) | Done | 2026-11-21 | [US-8.1](US-8.1.md) | [evidence](../evidence/us-8.1/) |
 | US-8.2 | Implement source-to-warehouse reconciliation (DQ-07) | Hanan | Done | 2026-11-21 | [US-8.2](US-8.2.md) | [evidence](../evidence/us-8.2/) |
+| US-8.3 | Test idempotency and failure recovery | Junaid (done by Hanan) | Done | 2026-11-21 | [US-8.3](US-8.3.md) | [evidence](../evidence/us-8.3/) |
 
 ## Later epics
 
@@ -112,3 +113,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-21 | Fact tests run as the last step of every fact run, results in lue_audit.reconciliation; a violation fails the run | [US-7.6](US-7.6.md) |
 | 2026-11-21 | One run_id per pipeline run: each layer joins the pipeline's run; setup stages run first and are logged once the run exists; only the S5 weather is non-critical | [US-8.1](US-8.1.md) |
 | 2026-11-21 | DQ-07 by month: source = warehouse + quarantined (a rejected row explains only if its key never reached staging); warehouse_value holds warehouse + quarantined in the frozen table | [US-8.2](US-8.2.md) |
+| 2026-11-21 | The pipeline validates only new batches (a rerun rejects nothing twice); one warehouse holds one generation of the data, another is refused until a reset | [US-8.3](US-8.3.md) |
