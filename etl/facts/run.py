@@ -3,7 +3,8 @@
 
 One pipeline run (lue_audit.etl_run_log): one step per fact of etl/facts/spec.py, each its own
 transaction. The run log gets rows read, inserted, updated and rejected per fact; unresolved keys
-(-1) are reported per key column and make the step a Warning.
+(-1) are reported per key column and make the step a Warning. Each fact is then reconciled to
+staging by month (lue_audit.reconciliation, one row per month); a month that differs is a Warning.
 
 Refuses to start (exit 2) when the calendar does not hold its days (python
 scripts/db_load_reference.py) or the dimensions are empty (python etl/dimensions/run.py). Exit 1
@@ -57,6 +58,13 @@ def fact_step(f: spec.Fact, now: datetime, box: dict):
         if result.unknown or result.rejected:
             r.warning = True
             step.warn(f"unresolved keys (-1): {result.unknown_keys}; rows rejected: {result.rejected}")
+        result.months = load.monthly(step.cur, f)  # in the step's transaction: the fact as just loaded
+        for month, staged, loaded in result.months:
+            step.reconcile(f"{f.name} {month} {f.monthly[0]}", staged, loaded)
+        if result.months_off:
+            r.warning = True
+            step.warn(f"{f.monthly[0]}: staging and the fact differ in {len(result.months_off)} months "
+                      f"({', '.join(result.months_off[:6])})")  # fmt: skip
         box[f.name] = result
 
     return run
@@ -89,19 +97,21 @@ def main(argv: list[str] | None = None) -> int:
     except (IngestError, NotReady) as exc:
         print(f"[FAIL] {exc}")
         return 2
-    line = "=" * 96
+    line = "=" * 110
     print(line)
     print(f" Fact run {run_id}")
     print(line)
     print(f"  {'fact':32} {'status':8} {'read':>9} {'inserted':>9} {'updated':>8} {'deleted':>8} "
-          f"{'rejected':>8} {'unknown':>8}")  # fmt: skip
+          f"{'rejected':>8} {'unknown':>8} {'months ok':>10}")  # fmt: skip
     for res in results:
         x = loads.get(res.step)
         if x is None:
             print(f"  {res.step:32} {res.status:8} {res.message}")
             continue
         print(f"  {res.step:32} {res.status:8} {x.read:>9,} {x.inserted:>9,} {x.updated:>8,} {x.deleted:>8,} "
-              f"{x.rejected:>8,} {x.unknown:>8,}" + (f"  -1 keys: {x.unknown_keys}" if x.unknown_keys else ""))  # fmt: skip
+              f"{x.rejected:>8,} {x.unknown:>8,} {f'{len(x.months) - len(x.months_off)}/{len(x.months)}':>10}"
+              + (f"  -1 keys: {x.unknown_keys}" if x.unknown_keys else "")
+              + (f"  months off: {', '.join(x.months_off[:6])}" if x.months_off else ""))  # fmt: skip
     print(line)
     return 1 if any(res.status == "Failed" for res in results) else 0
 

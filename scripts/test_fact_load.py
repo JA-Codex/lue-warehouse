@@ -11,6 +11,10 @@
           maps to the old and the new version; a rerun inserts, updates and deletes nothing; a
           changed or removed source row is updated or deleted, not duplicated; a grain twice is
           refused
+  US-7.2  every staged invoice line is one fact_rent_invoice_line row with the same amounts, keys at
+          the invoice date; zero grain duplicates in both facts; net billed and paid equal staging in
+          every month (an independent query and the run's lue_audit.reconciliation rows); reversals
+          are negative and reduce collected; a fact amount off by PKR 1 fails its month
 At the end the facts hold staging again and staging is as it was.
 """
 
@@ -46,7 +50,8 @@ def payment_tests(cur) -> None:
     x = loads["fact_payment"]
     staged, total = (cur.execute("SELECT count(*), sum(allocated_amount) FROM lue_staging.stg_payment_allocation") or cur.fetchone())
     loaded, fact_total = (cur.execute("SELECT count(*), sum(payment_amount) FROM lue_dw.fact_payment") or cur.fetchone())
-    check(res[0].status in ("Success", "Warning") and loaded == staged == x.inserted + x.rejected and fact_total == total,
+    status = {r.step: r.status for r in res}["fact_payment"]
+    check(status == "Success" and loaded == staged == x.inserted + x.rejected and fact_total == total,
           f"one row per staged allocation ({loaded:,} of {staged:,}), the same amount ({fact_total:,.2f} PKR)")
     check(x.unknown == 0, f"no key left unresolved (-1): {x.unknown_keys or 'none'}")
     wrong = scalar(cur, """
@@ -137,6 +142,83 @@ def payment_tests(cur) -> None:
           "a source with a grain twice is refused and nothing changes")
 
 
+def invoice_tests(cur) -> None:
+    print("US-7.2 fact_rent_invoice_line")
+    cur.execute("TRUNCATE lue_dw.fact_rent_invoice_line RESTART IDENTITY")
+    run_id, res, loads = facts.load_all()
+    x = loads["fact_rent_invoice_line"]
+    status = {r.step: r.status for r in res}
+    cur.execute("SELECT count(*), sum(billed_amount), sum(tax_amount), sum(discount_amount), sum(net_amount) FROM lue_staging.stg_invoice_line")
+    staged = cur.fetchone()
+    cur.execute("SELECT count(*), sum(billed_amount), sum(tax_amount), sum(discount_amount), sum(net_amount) FROM lue_dw.fact_rent_invoice_line")
+    loaded = cur.fetchone()
+    check(status["fact_rent_invoice_line"] == "Success" and loaded == staged and x.inserted == staged[0] and x.unknown == 0,
+          f"one row per staged invoice line ({loaded[0]:,}), billed, tax, discount and net equal staging (net {loaded[4]:,.2f} PKR); no -1 key")
+    for fact, grain in (("fact_rent_invoice_line", "invoice_number, invoice_line_no"),
+                        ("fact_payment", "payment_reference, invoice_number, invoice_line_no")):
+        dup = scalar(cur, f"SELECT count(*) - count(DISTINCT ({grain})) FROM lue_dw.{fact}")
+        check(dup == 0, f"{fact}: zero grain duplicates ({grain})")
+    wrong = scalar(cur, """
+        SELECT count(*) FROM lue_dw.fact_rent_invoice_line f
+        JOIN lue_staging.stg_invoice i USING (invoice_number) JOIN lue_staging.stg_lease l USING (lease_number)
+        JOIN lue_dw.dim_date d ON d.date_key = f.invoice_date_key JOIN lue_dw.dim_tenant t ON t.tenant_key = f.tenant_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key JOIN lue_dw.dim_lease dl ON dl.lease_key = f.lease_key
+        WHERE d.full_date <> i.invoice_date OR t.tenant_code <> l.tenant_code OR dl.lease_number <> i.lease_number
+           OR NOT (i.invoice_date >= t.effective_from AND i.invoice_date < t.effective_to)
+           OR NOT (i.invoice_date >= u.effective_from AND i.invoice_date < u.effective_to)""")
+    check(wrong == 0, "invoice date, lease, and the lease's tenant and unit in the version valid on the invoice date")
+    wrong = scalar(cur, """
+        SELECT count(*) FROM lue_dw.fact_rent_invoice_line f JOIN lue_dw.dim_date d ON d.date_key = f.invoice_date_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key JOIN lue_dw.dim_owner o ON o.owner_key = f.owner_key
+        WHERE NOT EXISTS (SELECT 1 FROM lue_staging.stg_ownership r WHERE r.building_code = u.building_code AND r.unit_no = u.unit_no
+                          AND r.owner_code = o.owner_code AND r.valid_from <= d.full_date AND (r.valid_to IS NULL OR d.full_date < r.valid_to))""")
+    check(wrong == 0, "every owner key is the unit's owner on the invoice date")
+
+    print("US-7.2 Monthly reconciliation to staging")
+    # An independent query (not the loader's): staging and the fact by month, side by side.
+    cur.execute("""
+        WITH s AS (SELECT to_char(i.invoice_date, 'YYYY-MM') m, sum(il.net_amount) net FROM lue_staging.stg_invoice_line il
+                   JOIN lue_staging.stg_invoice i USING (invoice_number) GROUP BY 1),
+             w AS (SELECT left(f.invoice_date_key::text, 4) || '-' || substr(f.invoice_date_key::text, 5, 2) m, sum(net_amount) net
+                   FROM lue_dw.fact_rent_invoice_line f GROUP BY 1),
+             sp AS (SELECT to_char(paid_at, 'YYYY-MM') m, sum(allocated_amount) paid FROM lue_staging.stg_payment_allocation GROUP BY 1),
+             wp AS (SELECT left(paid_date_key::text, 4) || '-' || substr(paid_date_key::text, 5, 2) m, sum(payment_amount) paid
+                    FROM lue_dw.fact_payment GROUP BY 1)
+        SELECT coalesce(s.m, w.m, sp.m, wp.m), s.net, w.net, sp.paid, wp.paid FROM s FULL JOIN w ON w.m = s.m
+        FULL JOIN sp ON sp.m = coalesce(s.m, w.m) FULL JOIN wp ON wp.m = coalesce(s.m, w.m, sp.m) ORDER BY 1""")
+    months = cur.fetchall()
+    off = [r[0] for r in months if r[1] != r[2] or r[3] != r[4]]
+    print(f"    {'month':8} {'net billed: staging':>20} {'fact':>16}   {'paid: staging':>16} {'fact':>16}")
+    for m, sn, wn, sp_, wp_ in months[:3] + [("...", None, None, None, None)] + months[-3:]:
+        print(f"    {m:8} {sn or 0:>20,.2f} {wn or 0:>16,.2f}   {sp_ or 0:>16,.2f} {wp_ or 0:>16,.2f}" if m != "..." else "    ...")
+    check(months and not off, f"net billed and paid equal staging in every one of {len(months)} months" + (f": off in {off[:5]}" if off else ""))
+    cur.execute("SELECT check_name, passed FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE 'fact\\_%%'", (run_id,))
+    logged = cur.fetchall()
+    per_fact = {f: sum(1 for n, _ in logged if n.startswith(f + " ")) for f in ("fact_rent_invoice_line", "fact_payment")}
+    check(logged and all(p for _, p in logged) and per_fact["fact_rent_invoice_line"] == per_fact["fact_payment"] == len(months),
+          f"the run wrote one passing reconciliation row per month and fact to lue_audit.reconciliation ({per_fact})")
+    gross, rev, net = (cur.execute("SELECT sum(payment_amount) FILTER (WHERE NOT is_reversal), sum(payment_amount) FILTER (WHERE is_reversal), sum(payment_amount) FROM lue_dw.fact_payment") or cur.fetchone())
+    neg = scalar(cur, "SELECT count(*) FROM lue_dw.fact_payment WHERE is_reversal AND payment_amount >= 0")
+    check(rev is not None and rev < 0 and neg == 0 and net == gross + rev and net < gross,
+          f"reversals are negative amounts and reduce collected: {gross:,.2f} received {rev:,.2f} reversed = {net:,.2f} PKR"
+          if rev is not None else "reversals reduce collected (no reversal in this data)")
+
+    f = spec.BY_NAME["fact_rent_invoice_line"]
+    conn = connect("lue_warehouse")
+    try:
+        with conn.cursor() as c:
+            c.execute("UPDATE lue_dw.fact_rent_invoice_line SET billed_amount = billed_amount + 1, net_amount = net_amount + 1 "
+                      "WHERE invoice_line_sk = (SELECT min(invoice_line_sk) FROM lue_dw.fact_rent_invoice_line)")
+            broken = [m for m, s, w in load.monthly(c, f) if s != w]
+        conn.rollback()
+    finally:
+        conn.close()
+    check(len(broken) == 1, f"a fact amount changed by PKR 1 makes exactly its month fail the reconciliation ({broken})")
+    _r, res, loads = facts.load_all()
+    check(all(x.inserted == x.updated == x.deleted == 0 and not x.months_off for x in loads.values()),
+          "a rerun of both facts inserts, updates and deletes nothing, and every month still reconciles")
+
+
 def main() -> int:
     print("=" * 70)
     print(" E7 acceptance tests: the facts (database)")
@@ -155,6 +237,7 @@ def main() -> int:
                 print(f"  [FAIL] {exc}")
                 return 1
             payment_tests(cur)
+            invoice_tests(cur)
     finally:
         wh.close()
     print("=" * 70)

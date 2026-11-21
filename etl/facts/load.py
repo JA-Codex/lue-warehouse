@@ -37,10 +37,15 @@ class FactLoad:
     deleted: int = 0
     unchanged: int = 0
     unknown_keys: dict[str, int] = field(default_factory=dict)  # key column -> rows with -1
+    months: list[tuple] = field(default_factory=list)  # (month, staging, fact), US-7.2
 
     @property
     def unknown(self) -> int:
         return sum(self.unknown_keys.values())
+
+    @property
+    def months_off(self) -> list[str]:
+        return [m for m, s, w in self.months if s != w]
 
 
 def _match(f: spec.Fact, left: str, right: str) -> str:
@@ -93,3 +98,20 @@ def load_fact(cur, f: spec.Fact, run_id: int, now: datetime) -> FactLoad:
     out.unchanged = out.read - out.rejected - out.inserted - out.updated
     cur.execute("DROP TABLE _fact_src")
     return out
+
+
+def monthly_sql(f: spec.Fact) -> str:
+    """Staging against the fact by month (US-7.2): month, staging amount, fact amount; every month
+    either side has (a month missing on one side counts as 0 there)."""
+    _label, fact_q, staging_q = f.monthly
+    return (f"SELECT coalesce(s.month, w.month) AS month, coalesce(s.amount, 0) AS staging, "
+            f"coalesce(w.amount, 0) AS fact FROM ({staging_q}) s FULL JOIN ({fact_q}) w ON w.month = s.month "
+            f"ORDER BY 1")  # fmt: skip
+
+
+def monthly(cur, f: spec.Fact) -> list[tuple]:
+    """[(month, staging amount, fact amount)]; empty when the fact declares no reconciliation."""
+    if f.monthly is None:
+        return []
+    cur.execute(monthly_sql(f))
+    return cur.fetchall()

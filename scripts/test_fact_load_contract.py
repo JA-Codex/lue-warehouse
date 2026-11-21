@@ -4,8 +4,9 @@
     python scripts/test_fact_load_contract.py
 
 The fact spec (etl/facts/spec.py) against the frozen DDL (sql/10_ddl/02_facts.sql): every fact and
-column exists, every NOT NULL column is filled, the grain columns are written; the key lookups are
-point in time with half-open versions; and every statement the loader builds parses (pglast).
+column exists, every NOT NULL column is filled, the grain columns are written (and are the DDL's
+UNIQUE key where it has one); the key lookups are point in time with half-open versions; every
+statement the loader builds parses (pglast); the money facts reconcile to staging by month.
 """
 
 # ruff: noqa: E501  (long assertions and messages read better on one line)
@@ -27,6 +28,9 @@ def check(ok: bool, text: str) -> None:
     print(f"  [{'PASS' if ok else 'FAIL'}] {text}")
 
 
+UNIQUE: dict[str, list[list[str]]] = {}  # fact -> its UNIQUE constraints' columns (filled by ddl())
+
+
 def ddl() -> dict[str, dict[str, dict]]:
     from pglast import ast, parse_sql
 
@@ -37,6 +41,8 @@ def ddl() -> dict[str, dict[str, dict]]:
         if isinstance(s, ast.CreateStmt) and not s.partbound:
             cols = {}
             for e in s.tableElts:
+                if isinstance(e, ast.Constraint) and e.contype.name == "CONSTR_UNIQUE":
+                    UNIQUE.setdefault(s.relation.relname, []).append([k.sval for k in e.keys])
                 if isinstance(e, ast.ColumnDef):
                     kinds = [c.contype.name for c in (e.constraints or [])]
                     cols[e.colname] = {"not_null": "CONSTR_NOTNULL" in kinds, "identity": "CONSTR_IDENTITY" in kinds}
@@ -84,6 +90,11 @@ def main() -> int:
     missing = [f"{f.name}.{c}" for f in spec.FACTS for c in f.cols if not re.search(rf"\bAS {c}\b|\.{c}\b", f.source)]
     check(not missing, "the source query gives every column the fact writes" + (f": {missing}" if missing else ""))
 
+    wrong = [f"{f.name}: grain {f.grain}, unique {u}" for f in spec.FACTS for u in UNIQUE.get(f.name, []) if sorted(u) != sorted(f.grain)]
+    check(not wrong and UNIQUE.get("fact_rent_invoice_line") == [["invoice_number", "invoice_line_no"]],
+          "a fact with a UNIQUE constraint in the DDL has it on exactly its grain (uq_invoice_line: invoice_number, invoice_line_no)"
+          + (f": {wrong}" if wrong else ""))
+
     print("US-7.1 Key lookups")
     j = keys.scd2("dim_tenant", "dt", "p.tenant_code", "p.paid_at")
     check("dt.tenant_code = p.tenant_code" in j and ">= dt.effective_from" in j and "< dt.effective_to" in j and "<= dt.effective_to" not in j,
@@ -99,15 +110,25 @@ def main() -> int:
     print("US-7.1 The loader's SQL")
     errors = []
     for f in spec.FACTS:
-        for name, sql in (("source", f.source), ("delete", load.delete_sql(f)), ("update", load.update_sql(f)), ("insert", load.insert_sql(f))):
+        stmts = [("source", f.source), ("delete", load.delete_sql(f)), ("update", load.update_sql(f)), ("insert", load.insert_sql(f))]
+        if f.monthly:
+            stmts.append(("monthly reconciliation", load.monthly_sql(f)))
+        for name, sql in stmts:
             if e := parses(sql):
                 errors.append(f"{f.name} {name}: {e}")
-    check(not errors, "source, delete, update and insert statements parse (pglast)" + (f": {errors[:3]}" if errors else ""))
+    check(not errors, "source, delete, update, insert and reconciliation statements parse (pglast)" + (f": {errors[:3]}" if errors else ""))
     f = spec.FACTS[0]
     u, i = load.update_sql(f), load.insert_sql(f)
     check("IS DISTINCT FROM" in u and all(f"x.{g} = s.{g}" in u for g in f.grain) and "NOT EXISTS" in i
           and not any(c.endswith("_sk") for c in f.cols),
           "sync on the grain: update only on a difference, insert only new grains, the surrogate *_sk left to the identity")
+
+    print("US-7.2 Monthly reconciliation")
+    names = [f.name for f in spec.FACTS]
+    check(names[:2] == ["fact_rent_invoice_line", "fact_payment"] and all(spec.BY_NAME[n].monthly for n in names[:2]),
+          "the invoice and payment facts load first and both declare a monthly reconciliation to staging")
+    long = [f"{f.name} 2026-06 {f.monthly[0]}" for f in spec.FACTS if f.monthly and len(f"{f.name} 2026-06 {f.monthly[0]}") > 60]
+    check(not long, "every reconciliation check name fits lue_audit.reconciliation.check_name (60)" + (f": {long}" if long else ""))
     print("=" * 70)
     ok = results and all(results)
     print(f" RESULT: {sum(results)}/{len(results)} checks passed" + ("" if ok else " - FAILED"))
