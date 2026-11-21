@@ -29,17 +29,19 @@ from etl.quality import engine  # noqa: E402
 
 
 def validate(rules_file: Path = engine.RULES_FILE, batches: list[int] | None = None,
-             settings: dict | None = None) -> tuple:  # fmt: skip
-    """One run with one step; returns (run_id, step result, Summary or None)."""
+             settings: dict | None = None, run: Run | None = None) -> tuple:  # fmt: skip
+    """One run with one step; returns (run_id, step result, Summary or None). Inside a pipeline
+    run (US-8.1) pass `run`: the step joins that run, which the caller closes."""
     rules = engine.load_rules(rules_file)
-    r = Run(settings)
+    r = run or Run(settings)
     box: dict = {}
     try:
         result = r.step("validate_dq", "bronze",
                         lambda step: box.setdefault("s", engine.validate(step, rules, batches)))
         return r.run_id, result, box.get("s") if result.status != "Failed" else None
     finally:
-        r.close()
+        if run is None:
+            r.close()
 
 
 def main(argv: list[str] | None = None) -> int:

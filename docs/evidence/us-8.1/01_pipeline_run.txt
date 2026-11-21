@@ -1,0 +1,123 @@
+US-8.1 run_pipeline.py (small profile, seed 3004). Generated into a fresh folder; the warehouse emptied first.
+
+1. An empty warehouse: python scripts/db_reset.py
+[OK]   reset.sql: warehouse schemas dropped
+[OK]   01_roles.sql                 on database postgres
+[OK]   passwords from .env          lue_etl, lue_reader
+[OK]   02_databases.sql             on database postgres
+[OK]   03_database_access.sql       on database postgres
+[OK]   04_source_schema.sql         on database lue_source
+[OK]   05_warehouse_schemas.sql     on database lue_warehouse
+ RESULT: SETUP COMPLETE. Check it with: python scripts/test_db_setup.py
+ tenants | payments | run_log_rows 
+---------+----------+--------------
+       0 |        0 |            0
+(1 row)
+
+2. One command: python etl/run_pipeline.py --profile small --data <folder>
+========================================================================================================
+ Pipeline run 1: generate, setup, deploy, reference, source, ingest, validate, transform, dimensions, facts
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  generate        1 Success            0           0          0         0      0.4
+  setup           1 Success            0           0          0         0      0.1
+  deploy          1 Success            0           0          0         0      0.1
+  reference       1 Success            0           0          0         0      0.1
+  source          1 Success            0           0          0         0      0.1
+  ingest          6 Success        6,854       6,854          0         0      0.6
+  validate        1 Warning        6,854          33          0        25      0.2
+      Warning validate_dq: 25 rows rejected (quarantined)
+  transform      21 Success        8,300       6,824      1,467        25      1.1
+  dimensions      9 Success        4,940       4,773        178         0      0.1
+  facts           7 Success       99,909      99,838      3,150         0      3.6
+========================================================================================================
+ RESULT: 49/49 steps without failure in 7 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 1
+========================================================================================================
+   exit code: 0
+
+3. The run log of run 1: every step, its counts and its final status (setup steps first: they ran before the run existed)
+              step               | status  | rows_read | rows_inserted | rows_updated | rows_rejected | started  |  ended   
+---------------------------------+---------+-----------+---------------+--------------+---------------+----------+----------
+ generate                        | Success |         0 |             0 |            0 |             0 | 18:30:49 | 18:30:50
+ setup                           | Success |         0 |             0 |            0 |             0 | 18:30:50 | 18:30:50
+ deploy                          | Success |         0 |             0 |            0 |             0 | 18:30:50 | 18:30:50
+ reference                       | Success |         0 |             0 |            0 |             0 | 18:30:50 | 18:30:50
+ source                          | Success |         0 |             0 |            0 |             0 | 18:30:50 | 18:30:50
+ ingest_s1_pms                   | Success |      1750 |          1750 |            0 |             0 | 18:30:50 | 18:30:50
+ ingest_s2_registers             | Success |       365 |           365 |            0 |             0 | 18:30:50 | 18:30:50
+ ingest_s3_settlements           | Success |       140 |           140 |            0 |             0 | 18:30:50 | 18:30:51
+ ingest_s4_tickets               | Success |       203 |           203 |            0 |             0 | 18:30:51 | 18:30:51
+ ingest_s5_weather               | Success |      4384 |          4384 |            0 |             0 | 18:30:51 | 18:30:51
+ ingest_s6_incentives            | Success |        12 |            12 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_building                  | Success |         2 |             2 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_holiday                   | Success |       173 |           173 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_invoice                   | Success |       222 |           222 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_invoice_line              | Success |       516 |           516 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_lease                     | Success |        85 |            85 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_lease_event               | Success |        26 |            23 |            0 |             3 | 18:30:51 | 18:30:51
+ stage_maintenance_category      | Success |        34 |            34 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_owner                     | Success |        40 |            40 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_ownership                 | Success |       106 |           106 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_payment                   | Success |       225 |           225 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_payment_allocation        | Success |       465 |           449 |            0 |            16 | 18:30:51 | 18:30:51
+ stage_settlement                | Success |       140 |           139 |            0 |             1 | 18:30:51 | 18:30:51
+ stage_tenant                    | Success |       119 |           119 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_ticket                    | Success |        42 |            36 |            0 |             5 | 18:30:51 | 18:30:52
+ stage_unit                      | Success |        90 |            90 |            0 |             0 | 18:30:51 | 18:30:51
+ stage_vendor                    | Success |        12 |            12 |            0 |             0 | 18:30:51 | 18:30:51
+ validate_dq                     | Warning |      6854 |            33 |            0 |            25 | 18:30:51 | 18:30:51
+ dim_date_holidays               | Success |       173 |             0 |          173 |             0 | 18:30:52 | 18:30:52
+ dim_incentive                   | Success |         7 |             7 |            0 |             0 | 18:30:52 | 18:30:52
+ dim_lease                       | Success |        85 |            85 |            0 |             0 | 18:30:52 | 18:30:52
+ dim_maintenance_category        | Success |        30 |            34 |            4 |             0 | 18:30:52 | 18:30:52
+ dim_owner                       | Success |        40 |            40 |            0 |             0 | 18:30:52 | 18:30:52
+ dim_tenant                      | Success |       119 |           120 |            0 |             0 | 18:30:52 | 18:30:52
+ dim_unit                        | Success |        90 |            90 |            0 |             0 | 18:30:52 | 18:30:52
+ dim_vendor                      | Success |        12 |            13 |            1 |             0 | 18:30:52 | 18:30:52
+ dim_weather                     | Success |      4384 |          4384 |            0 |             0 | 18:30:52 | 18:30:52
+ fact_payment                    | Success |       466 |           466 |            0 |             0 | 18:30:52 | 18:30:53
+ fact_rent_invoice_line          | Success |       516 |           516 |            0 |             0 | 18:30:52 | 18:30:52
+ stage_business                  | Success |      1467 |            17 |         1467 |             0 | 18:30:52 | 18:30:52
+ stage_incentive_log             | Success |         5 |             5 |            0 |             0 | 18:30:52 | 18:30:52
+ stage_incentive_offer           | Success |         7 |             7 |            0 |             0 | 18:30:52 | 18:30:52
+ stage_ticket_status             | Success |       140 |           140 |            0 |             0 | 18:30:52 | 18:30:52
+ stage_weather                   | Success |      4384 |          4384 |            0 |             0 | 18:30:52 | 18:30:52
+ fact_lease_event                | Success |        23 |            23 |            0 |             0 | 18:30:53 | 18:30:53
+ fact_maintenance_request        | Success |        36 |            36 |            0 |             0 | 18:30:53 | 18:30:53
+ fact_unit_occupancy_daily       | Success |     98640 |         98640 |         3150 |             0 | 18:30:53 | 18:30:56
+ fact_vacancy_incentive_coverage | Success |       157 |           157 |            0 |             0 | 18:30:53 | 18:30:53
+ fact_tests                      | Success |        71 |             0 |            0 |             0 | 18:30:56 | 18:30:56
+(49 rows)
+
+ steps | success | warning | failed | unfinished 
+-------+---------+---------+--------+------------
+    49 |      48 |       1 |      0 |          0
+(1 row)
+
+4. Lineage: each source to bronze, bronze to staging, staging to the dimensions and the facts
+      layer_path      | links |                                                              warehouse_targets                                                               
+----------------------+-------+----------------------------------------------------------------------------------------------------------------------------------------------
+ S1 -> bronze         |     9 | 
+ S2 -> bronze         |     5 | 
+ S3 -> bronze         |     1 | 
+ S4 -> bronze         |     2 | 
+ S5 -> bronze         |     1 | 
+ S6 -> bronze         |     2 | 
+ bronze -> staging    |    20 | 
+ staging -> dimension |    11 | dim_date, dim_incentive, dim_lease, dim_maintenance_category, dim_owner, dim_tenant, dim_unit, dim_vendor, dim_weather
+ staging -> fact      |    30 | fact_lease_event, fact_maintenance_request, fact_payment, fact_rent_invoice_line, fact_unit_occupancy_daily, fact_vacancy_incentive_coverage
+(9 rows)
+
+5. A failed critical step stops the run: python etl/run_pipeline.py --skip-generate --from-step source --data <missing folder>
+========================================================================================================
+ Pipeline run 2: source, ingest, validate, transform, dimensions, facts
+========================================================================================================
+  stage       steps status          read    inserted    updated  rejected  seconds
+  source          1 Failed             0           0          0         0      0.1
+      Failed  source: PipelineError: scripts/db_load_source.py exited 1: [FAIL] no CSV for buildings, units, tenants, charge_types, payment_methods, leases, lease_events, i
+========================================================================================================
+ STOPPED at source (a critical step failed); not run: ingest, validate, transform, dimensions, facts
+ Fix it, then resume: python etl/run_pipeline.py --skip-generate --from-step source
+ RESULT: 0/1 steps without failure in 0 s; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = 2
+========================================================================================================
+   exit code: 1

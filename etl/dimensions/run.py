@@ -72,8 +72,9 @@ def holiday_step(box: dict):
     return run
 
 
-def load_all(settings: dict | None = None):
-    """One run. Returns (run_id, step results, {dimension: DimLoad})."""
+def load_all(settings: dict | None = None, run: Run | None = None):
+    """One run. Returns (run_id, step results, {dimension: DimLoad}). Inside a pipeline run
+    (US-8.1) pass `run`: the steps join that run, which the caller closes."""
     probe = connect(WAREHOUSE_DB, settings)
     probe.autocommit = True
     try:
@@ -81,7 +82,7 @@ def load_all(settings: dict | None = None):
             check_ready(cur)
     finally:
         probe.close()
-    r = Run(settings)
+    r = run or Run(settings)
     box: dict = {}
     try:
         now = datetime.now().replace(microsecond=0)
@@ -89,7 +90,8 @@ def load_all(settings: dict | None = None):
         results += [r.step(d.name, "STG", dim_step(d, now, box)) for d in spec.DIMS]
         return r.run_id, results, box
     finally:
-        r.close()
+        if run is None:
+            r.close()
 
 
 def main(argv: list[str] | None = None) -> int:

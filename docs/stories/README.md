@@ -55,6 +55,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-7.4 | Load fact_maintenance_request | Junaid (done by Hanan) | Done | 2026-11-21 | [US-7.4](US-7.4.md) | [evidence](../evidence/us-7.4/) |
 | US-7.5 | Load fact_lease_event and fact_vacancy_incentive_coverage | Eesha (done by Hanan) | Done | 2026-11-21 | [US-7.5](US-7.5.md) | [evidence](../evidence/us-7.5/) |
 | US-7.6 | Automate grain and orphan checks | Junaid (done by Hanan) | Done | 2026-11-21 | [US-7.6](US-7.6.md) | [evidence](../evidence/us-7.6/) |
+| US-8.1 | Build run_pipeline.py with logging and lineage | Junaid (done by Hanan) | Done | 2026-11-21 | [US-8.1](US-8.1.md) | [evidence](../evidence/us-8.1/) |
 
 ## Later epics
 
@@ -108,3 +109,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-21 | Maintenance milestones not reached are -2 (the dictionary), not -1 (the plan's wording); tenant from the lease active on the raised date, -2 when raised by staff | [US-7.4](US-7.4.md) |
 | 2026-11-21 | Incentive coverage keeps vacant unit-days only (the dictionary); lease events keyed by lease, type and date, enforced by the loader | [US-7.5](US-7.5.md) |
 | 2026-11-21 | Fact tests run as the last step of every fact run, results in lue_audit.reconciliation; a violation fails the run | [US-7.6](US-7.6.md) |
+| 2026-11-21 | One run_id per pipeline run: each layer joins the pipeline's run; setup stages run first and are logged once the run exists; only the S5 weather is non-critical | [US-8.1](US-8.1.md) |
