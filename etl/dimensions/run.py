@@ -88,6 +88,9 @@ def load_all(settings: dict | None = None, run: Run | None = None):
         now = datetime.now().replace(microsecond=0)
         results = [r.step("dim_date_holidays", "S2", holiday_step(box))]
         results += [r.step(d.name, "STG", dim_step(d, now, box)) for d in spec.DIMS]
+        with r.audit.cursor() as cur:  # fresh statistics for the facts' key lookups (US-8.4)
+            for d in spec.DIMS:
+                cur.execute(f"ANALYZE lue_dw.{d.name}")
         return r.run_id, results, box
     finally:
         if run is None:

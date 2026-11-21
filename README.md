@@ -20,7 +20,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Dimensions (E6): loader and surrogate keys, SCD Type 2, hierarchies, inferred members, dimension tests | US-6.1 to US-6.5 (Done) |
 | Phase 2 reports: Data Cleaning, Data Quality, Implementation (generated, `make reports`) | Done |
 | Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
-| Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume | US-8.1 to US-8.3 (Done); US-8.4 in progress |
+| Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
 | Marts, Phase 3 reports | Pending |
 
 ## Layout
@@ -135,7 +135,7 @@ make facts       load the 6 facts from staging and the dimensions, then the 71 f
                  02_fact_tests.sql; a violation fails the run); about 2 minutes the first time (E7)
 make facts-test  E7 acceptance tests: 57 PASS lines (needs make stage and make dims first; about 6 minutes)
 make rebuild     reset the warehouse, generate the data and run the whole pipeline (PROFILE=full for the full
-                 profile): python scripts/db_reset.py, then python etl/run_pipeline.py --profile small
+                 profile, about 5 minutes): python scripts/db_reset.py, then python etl/run_pipeline.py --profile small
 make pipeline    run the whole pipeline on the data in data/ (one run_id; FROM=stage resumes at a stage);
                  options: --profile, --seed, --skip-generate, --from-step, --only, --data (python etl/run_pipeline.py -h)
                  the last stage reconciles source = warehouse + quarantined by month (DQ-07; alone: python etl/reconcile.py)
@@ -147,7 +147,7 @@ make db-reset    drop and rebuild the warehouse, reload reference data, smoke te
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 21)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)

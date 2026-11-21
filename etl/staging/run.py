@@ -161,6 +161,9 @@ def stage(full: bool = False, folder: Path | None = EVIDENCE, settings: dict | N
         for t in spec.TABLES:
             results.append(r.step(step_name(t.name), t.source_system, table_step(t, now, box)))
         results.append(r.step("stage_business", "STG", business_step(now, box)))
+        with r.audit.cursor() as cur:  # fresh statistics for the dimensions and facts (US-8.4)
+            for t in spec.TABLES:
+                cur.execute(f"ANALYZE lue_staging.{t.name}")
         with r.audit.cursor() as cur:
             bridge = evidence.bridge(cur)
             if folder is not None:

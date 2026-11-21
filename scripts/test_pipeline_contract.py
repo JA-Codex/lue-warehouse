@@ -128,6 +128,13 @@ def main() -> int:
     check("## Recovery" in readme and "--from-step" in readme.split("## Recovery")[1],
           "the README documents the recovery procedure (resume with --from-step)")
 
+    print("US-8.4 Full volume")
+    sources = {name: (ROOT / path).read_text(encoding="utf-8") for name, path in (
+        ("validation", "etl/quality/engine.py"), ("staging", "etl/staging/run.py"),
+        ("dimensions", "etl/dimensions/run.py"), ("fact tests", "etl/facts/run.py"))}
+    check(all("ANALYZE lue_" in s for s in sources.values()),
+          "each layer refreshes the statistics of what it reads after a bulk load (" + ", ".join(sources) + "): the planner needs them")
+
     print("US-8.1 make targets")
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("etl/run_pipeline.py" in mk.split("\npipeline:")[1].split("\n\n")[0] and "scripts/db_reset.py" in mk.split("\nrebuild:")[1].split("\n\n")[0]

@@ -1,0 +1,38 @@
+US-8.4 tests.
+
+1. python scripts/test_pipeline_contract.py (no database, in make gen-test)
+======================================================================
+ E8 contract tests: the pipeline orchestrator (no database)
+======================================================================
+US-8.1 Stages and order
+  [PASS] the brief's order: generate, set up and deploy, load sources, ingest, validate, transform, dimensions, facts (tests inside), reconcile
+  [PASS] generate, setup, deploy and reference run before the run exists (they create the audit tables), all others inside it
+  [PASS] every setup stage's script exists; the ETL layers run in process
+  [PASS] every layer can join one pipeline run (one run_id): ingest.run yes, quality.validate yes, staging.stage yes, dimensions.load_all yes, facts.load_all yes
+US-8.1 Options
+  [PASS] no option: every stage; --skip-generate: all but generate
+  [PASS] --from-step resumes at that stage and runs the rest in order
+  [PASS] --only runs just the named stages, in pipeline order
+  [PASS] an unknown stage, --only with --from-step, or nothing left to run is refused (exit 2)
+  [PASS] options --profile, --seed, --data, --skip-generate, --from-step and --only
+  [PASS] the generator gets the profile, seed and data folder; the source load the data folder; both with this Python
+US-8.1 Critical steps
+  [PASS] only the S5 weather is non-critical (it may be cut, D19); every other failed step stops the run
+  [PASS] a Warning or a non-critical failure goes on; a critical failure stops
+US-8.2 Reconciliation (DQ-07)
+  [PASS] the plan's four measures (billed, paid, tickets, lease events), reconciled after the facts are loaded
+  [PASS] every measure's source, warehouse and quarantined query parses (pglast)
+  [PASS] a quarantined row explains a difference only when its key never reached staging
+  [PASS] unexplained = source - warehouse - quarantined; one check per measure and month, names within 60 characters
+US-8.3 Reruns and recovery
+  [PASS] the pipeline validates only the batches not validated yet, so a rerun rejects nothing twice (D14)
+  [PASS] the generation is checked before the source or bronze changes, and recorded after an ingest
+  [PASS] a generation is the run manifest's content hash, profile and seed; no manifest, no generation (the run stops)
+  [PASS] the README documents the recovery procedure (resume with --from-step)
+US-8.4 Full volume
+  [PASS] each layer refreshes the statistics of what it reads after a bulk load (validation, staging, dimensions, fact tests): the planner needs them
+US-8.1 make targets
+  [PASS] make pipeline runs the pipeline; make rebuild resets the warehouse, then generates and runs it
+======================================================================
+ RESULT: 22/22 checks passed
+======================================================================

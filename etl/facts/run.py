@@ -82,6 +82,8 @@ TESTS = "fact_tests"
 
 def tests_step(box: dict):
     def run(step) -> None:
+        for f in spec.FACTS:  # fresh statistics for the 71 tests and the reconciliation (US-8.4)
+            step.cur.execute(f"ANALYZE lue_dw.{f.name}")
         tests = checks.run_tests(step.cur)
         with step.run.audit.cursor() as audit:  # autocommit: the results stay if the step fails
             checks.record(audit, step.run.run_id, tests)
