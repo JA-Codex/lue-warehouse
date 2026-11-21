@@ -58,7 +58,7 @@ def main() -> int:
 
     print("The load scripts")
     stale = [p.relative_to(ROOT).as_posix() for p, render in export.FILES.items()
-             if not p.is_file() or p.read_bytes().decode("utf-8") != render()]  # fmt: skip
+             if not p.is_file() or p.read_text(encoding="utf-8") != render()]  # fmt: skip
     check(not stale, "sql/30_dimensions/02_dimension_loads.sql and sql/40_facts/01_fact_loads.sql equal what the loaders run" + (f": re-export {stale}" if stale else ""))
     text = export.fact_sql() + export.dimension_sql()
     check(not re.search(r"%\(\w+\)s", text) and text.count("BEGIN;") == 2 and text.count("COMMIT;") == 2,

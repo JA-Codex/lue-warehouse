@@ -197,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
         text = render()
         rel = path.relative_to(ROOT).as_posix()
         if args.check:
-            ok = path.is_file() and path.read_bytes().decode("utf-8") == text
+            ok = path.is_file() and path.read_text(encoding="utf-8") == text  # text mode: a CRLF checkout (Windows) compares equal
             print(f"  [{'PASS' if ok else 'FAIL'}] {rel} equals what the loaders run")
             stale += [] if ok else [rel]
         else:
