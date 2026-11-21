@@ -18,7 +18,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Data quality and quarantine (E4): rule catalogue and engine, DQ-01 to DQ-06, proof against the answer key | US-4.1 to US-4.4 (Done) |
 | Staging (E5): clean, standardise, deduplicate, business fields, incremental merge, cleaning evidence | US-5.1 to US-5.4 (Done) |
 | Dimensions (E6): loader and surrogate keys, SCD Type 2, hierarchies, inferred members, dimension tests | US-6.1 to US-6.5 (Done) |
-| Phase 2 reports: Data Cleaning, Data Quality, Implementation (generated, `make reports`) | Done |
+| Phase 2 reports: Data Cleaning and Data Quality (generated from the loaded warehouse, `make reports`) | US-9.1 to US-9.2 (Done) |
 | Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
 | Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
 | Marts, Phase 3 reports | Pending |
@@ -141,8 +141,9 @@ make pipeline    run the whole pipeline on the data in data/ (one run_id; FROM=s
                  the last stage reconciles source = warehouse + quarantined by month (DQ-07; alone: python etl/reconcile.py)
                  E8 acceptance tests: python scripts/test_pipeline.py (21 PASS lines; resets the warehouse)
                  a rerun changes nothing, a failed step is resumed with FROM=stage: see Recovery below
-make reports     build the Phase 2 reports from the warehouse: docs/reports/LUE_Data_Cleaning_Report.pdf,
-                 LUE_Data_Quality_Report.pdf, LUE_Phase2_Implementation.pdf (every number read, none typed)
+make reports     build the Phase 2 reports from the loaded warehouse (after make rebuild or make pipeline):
+                 docs/reports/LUE_Data_Cleaning_Report.pdf and LUE_Data_Quality_Report.pdf (every number read, none
+                 typed); E9 tests: python scripts/test_reports.py (11 PASS lines)
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)

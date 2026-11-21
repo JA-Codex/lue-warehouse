@@ -110,7 +110,7 @@ facts: ## Load the facts from staging and the dimensions: keys point in time, sy
 facts-test: ## Fact acceptance tests (US-7.1 on); needs staging and the dimensions loaded (make stage, make dims)
 	$(PYTHON) scripts/test_fact_load.py
 
-reports: ## Build the Phase 2 reports (cleaning, quality, implementation) from the warehouse into docs/reports/
+reports: ## Build the Phase 2 reports (cleaning, quality) from the loaded warehouse into docs/reports/ (US-9.1, US-9.2)
 	$(PYTHON) etl/reports/build.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)

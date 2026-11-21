@@ -59,6 +59,8 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-8.2 | Implement source-to-warehouse reconciliation (DQ-07) | Hanan | Done | 2026-11-21 | [US-8.2](US-8.2.md) | [evidence](../evidence/us-8.2/) |
 | US-8.3 | Test idempotency and failure recovery | Junaid (done by Hanan) | Done | 2026-11-21 | [US-8.3](US-8.3.md) | [evidence](../evidence/us-8.3/) |
 | US-8.4 | Run at full volume and record baseline timings | Junaid (done by Hanan) | Done | 2026-11-21 | [US-8.4](US-8.4.md) | [evidence](../evidence/us-8.4/) |
+| US-9.1 | Produce the Data Cleaning Report (PDF) | Ahmad Waqar (done by Hanan) | Done | 2026-11-22 | [US-9.1](US-9.1.md) | [evidence](../evidence/us-9.2/) |
+| US-9.2 | Produce the Data Quality Report (PDF) | Ahmad Waqar (done by Hanan) | Done | 2026-11-22 | [US-9.2](US-9.2.md) | [evidence](../evidence/us-9.2/) |
 
 ## Later epics
 
@@ -116,3 +118,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-21 | DQ-07 by month: source = warehouse + quarantined (a rejected row explains only if its key never reached staging); warehouse_value holds warehouse + quarantined in the frozen table | [US-8.2](US-8.2.md) |
 | 2026-11-21 | The pipeline validates only new batches (a rerun rejects nothing twice); one warehouse holds one generation of the data, another is refused until a reset | [US-8.3](US-8.3.md) |
 | 2026-11-21 | Each layer runs ANALYZE on what it reads after a bulk load (validation 309 s to 32 s); no secondary indexes, the Phase 3 baseline stays | [US-8.4](US-8.4.md) |
+| 2026-11-22 | The reports read the current findings of every batch and the evidence of the run that built staging; tables from the audit tables, nothing typed | [US-9.1](US-9.1.md) |

@@ -15,6 +15,8 @@ from etl.quality import engine
 from etl.staging import answer_key as e5_key
 from etl.staging import evidence, spec
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 def rows(cur, sql: str, args=None) -> list[tuple]:
     cur.execute(sql, args)
@@ -32,7 +34,7 @@ class Facts:
     sizes: dict = field(default_factory=dict)
     seed: int = 0
     window: str = ""
-    dq_run: int = 0
+    dq_runs: list = field(default_factory=list)  # the validation runs whose findings are current
     stage_run: int = 0
     volumes: list = field(default_factory=list)  # (source, bronze table, staging table, rows, batches)
     findings: list = field(default_factory=list)  # (source, table, rule, check, severity, rows, example)
@@ -55,6 +57,19 @@ class Facts:
     partitions: int = 0
     dims: list = field(default_factory=list)  # (dimension, members, keys from, to)
     runs: list = field(default_factory=list)  # (step, status, read, inserted, updated, rejected)
+    log_staged: dict = field(default_factory=dict)  # staging table -> rows inserted by its steps (run log)
+    log_rejected: int = 0  # rows rejected by the validation runs whose findings are current (run log)
+    quarantined: int = 0  # rows in lue_audit.quarantine
+    recon_run: int | None = None  # the latest run that reconciled source and warehouse (DQ-07, US-8.2)
+    recon: list = field(default_factory=list)  # (measure, month, source, warehouse + quarantined, unexplained, passed)
+    test_run: int | None = None  # the latest run of the fact tests (US-7.6)
+    fact_tests: list = field(default_factory=list)  # (test, violations, passed)
+    orphan_sql: str = ""  # one orphan test, as run
+    dim_tests: list = field(default_factory=list)  # (test, violations): sql/90_tests/01_dimension_tests.sql
+    pipeline_run: int | None = None  # the latest pipeline run (US-8.1)
+    pipeline: list = field(default_factory=list)  # (status, steps)
+    pipeline_failed: list = field(default_factory=list)  # steps of that run that failed (only non-critical ones can)
+    fact_rows: list = field(default_factory=list)  # (fact, rows)
 
 
 def collect(cur, src, data: Path) -> Facts:
@@ -66,15 +81,20 @@ def collect(cur, src, data: Path) -> Facts:
     f.profile, f.seed = prof.get("name", ""), manifest.get("seed", prof.get("seed", 0))
     f.window = f"{prof.get('window_start', '')} to {prof.get('window_end', '')}"
     f.sizes = {k: prof.get(k) for k in ("buildings", "units", "tenants", "owners", "vendors")}
-    f.dq_run = one(cur, "SELECT max(run_id) FROM lue_audit.dq_result")[0]
-    f.stage_run = one(cur, "SELECT max(run_id) FROM lue_audit.etl_run_log WHERE step = 'stage_reset' AND status = 'Success'")[0]
+    # The findings: every batch keeps those of the run that last validated it, so all of
+    # dq_result and quarantine is the current picture (a pipeline run validates new batches only).
+    f.dq_runs = [r for (r,) in rows(cur, "SELECT DISTINCT run_id FROM lue_audit.dq_result ORDER BY 1")]
+    # The cleaning evidence: the staging run that built every table, the latest full restage
+    # (make stage FULL=1) or else the first staging run (the pipeline's first load after a reset).
+    f.stage_run = one(cur, """SELECT coalesce((SELECT max(run_id) FROM lue_audit.etl_run_log WHERE step = 'stage_reset' AND status = 'Success'),
+                                              (SELECT min(run_id) FROM lue_audit.cleaning_evidence))""")[0]
 
     for t in spec.TABLES:
         n, b = one(cur, f"SELECT count(*), count(DISTINCT batch_id) FROM lue_staging.{t.bronze}")
         f.volumes.append((t.source_system, t.bronze, t.name, n, b))
 
     sys_of = {t.bronze: t.source_system for t in spec.TABLES}
-    for table, rule, check, sev, n, ex in rows(cur, "SELECT source_table, rule_id, check_name, severity, count(*), min(reason) FROM lue_audit.dq_result WHERE run_id = %s GROUP BY 1, 2, 3, 4 ORDER BY 1, 2", (f.dq_run,)):
+    for table, rule, check, sev, n, ex in rows(cur, "SELECT source_table, rule_id, check_name, severity, count(*), min(reason) FROM lue_audit.dq_result GROUP BY 1, 2, 3, 4 ORDER BY 1, 2"):
         f.findings.append((sys_of.get(table, ""), table, rule, check, sev, n, ex))
     f.rules = engine.load_rules()
     f.rule_hits = {r[2]: r[5] for r in f.findings}
@@ -83,10 +103,10 @@ def collect(cur, src, data: Path) -> Facts:
         checks[check[:5]][0 if sev == "reject" else 1] += n
     names = engine.CHECKS
     f.by_check = [(names[k], *checks.get(k, [0, 0])) for k in sorted(names)]
-    f.quarantine = rows(cur, "SELECT source_system, source_table, check_name, count(*) FROM lue_audit.quarantine WHERE run_id = %s GROUP BY 1, 2, 3 ORDER BY 1, 2, 3", (f.dq_run,))
+    f.quarantine = rows(cur, "SELECT source_system, source_table, check_name, count(*) FROM lue_audit.quarantine GROUP BY 1, 2, 3 ORDER BY 1, 2, 3")
 
     key_file = data / "answer_key" / "defects_answer_key.csv"
-    f.e4 = e4_key.compare(cur, key_file, f.dq_run)
+    f.e4 = e4_key.compare(cur, key_file, None)
     f.e5 = e5_key.compare(cur, data)
 
     for s, t, issue, col, n, before, after in rows(cur, "SELECT source_system, stg_table, issue, column_name, rows_affected, sample_before, sample_after FROM lue_audit.cleaning_evidence WHERE run_id = %s ORDER BY source_system, stg_table, column_name, issue", (f.stage_run,)):
@@ -138,4 +158,28 @@ def collect(cur, src, data: Path) -> Facts:
     f.partitions = one(cur, "SELECT count(*) FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'lue_dw'")[0]
     f.dims = rows(cur, "SELECT 'dim_tenant', count(*) FILTER (WHERE tenant_key > 0), min(tenant_key) FILTER (WHERE tenant_key > 0), max(tenant_key) FROM lue_dw.dim_tenant")
     f.runs = rows(cur, "SELECT step, status, rows_read, rows_inserted, rows_updated, rows_rejected FROM lue_audit.etl_run_log WHERE run_id = %s ORDER BY started_at", (f.stage_run,))
+    # The run log against the tables (US-9.1): staging keeps one row per key and never deletes, so
+    # the rows its steps inserted since the build equal the rows staged; the validation runs whose
+    # findings are current rejected exactly the rows now in quarantine.
+    f.log_staged = dict(rows(cur, "SELECT 'stg_' || substr(step, 7), sum(rows_inserted) FROM lue_audit.etl_run_log WHERE step LIKE 'stage\\_%%' AND step NOT IN ('stage_reset', 'stage_business') AND run_id >= %s GROUP BY 1", (f.stage_run,)))
+    f.log_rejected = one(cur, "SELECT coalesce(sum(rows_rejected), 0) FROM lue_audit.etl_run_log WHERE step = 'validate_dq' AND run_id = ANY(%s)", (f.dq_runs,))[0]
+    f.quarantined = one(cur, "SELECT count(*) FROM lue_audit.quarantine")[0]
+
+    # Phase 2 checks of E7 and E8, from the audit tables (US-9.2)
+    f.recon_run = one(cur, "SELECT max(run_id) FROM lue_audit.reconciliation WHERE check_name LIKE 'DQ-07 %%'")[0]
+    for name, sv, wv, diff, ok in rows(cur, "SELECT check_name, source_value, warehouse_value, difference, passed FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE 'DQ-07 %%'", (f.recon_run,)):
+        measure, month = name[6:].rsplit(" ", 1)
+        f.recon.append((measure, month, sv, wv, -diff, ok))
+    f.test_run = one(cur, "SELECT max(run_id) FROM lue_audit.reconciliation WHERE check_name LIKE 'fact\\_%%: %%'")[0]
+    f.fact_tests = rows(cur, "SELECT check_name, warehouse_value, passed FROM lue_audit.reconciliation WHERE run_id = %s AND check_name LIKE 'fact\\_%%: %%' ORDER BY check_name", (f.test_run,))
+    tests_sql = (ROOT / "sql" / "90_tests" / "02_fact_tests.sql").read_text(encoding="utf-8")
+    f.orphan_sql = next((x for x in tests_sql.splitlines() if x.startswith("SELECT 'fact_payment: no orphan tenant_key'")), "")
+    f.dim_tests = [(t, int(n)) for t, n in rows(cur, (ROOT / "sql" / "90_tests" / "01_dimension_tests.sql").read_text(encoding="utf-8"))]
+    # The latest complete pipeline run: it checked the generation and reached the reconciliation
+    f.pipeline_run = one(cur, "SELECT max(run_id) FROM lue_audit.etl_run_log g WHERE step = 'check_generation' AND EXISTS (SELECT 1 FROM lue_audit.etl_run_log r WHERE r.run_id = g.run_id AND r.step = 'reconcile_dq07')")[0]
+    f.pipeline = rows(cur, "SELECT status, count(*) FROM lue_audit.etl_run_log WHERE run_id = %s GROUP BY 1 ORDER BY 1", (f.pipeline_run,))
+    f.pipeline_failed = [s for (s,) in rows(cur, "SELECT step FROM lue_audit.etl_run_log WHERE run_id = %s AND status = 'Failed' ORDER BY step", (f.pipeline_run,))]
+    f.fact_rows = [(t, one(cur, f"SELECT count(*) FROM lue_dw.{t}")[0]) for t in
+                   ("fact_rent_invoice_line", "fact_payment", "fact_unit_occupancy_daily", "fact_maintenance_request",
+                    "fact_lease_event", "fact_vacancy_incentive_coverage")]  # fmt: skip
     return f

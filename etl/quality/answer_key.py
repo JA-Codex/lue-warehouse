@@ -101,14 +101,18 @@ class Bronze:
         return list(idx.get(record, []))
 
 
-def compare(cur, key_file: Path, run_id: int) -> Comparison:
+def compare(cur, key_file: Path, run_id: int | None) -> Comparison:
+    """The planted defects against the findings of one validation run, or (run_id None) against
+    the current findings of every batch: each batch keeps the findings of the run that last
+    validated it, so all of lue_audit.dq_result is the current picture (US-9.1)."""
     with key_file.open(encoding="utf-8", newline="") as f:
         key = list(csv.DictReader(f))
     findings = defaultdict(list)  # (table, row_id) -> [(rule_id, check_name, severity, reason)]
+    where = "" if run_id is None else f" WHERE run_id = {int(run_id)}"
     for table, rid, rule, check, sev, reason in _fetch(
         cur,
         f"SELECT source_table, row_id, rule_id, check_name, severity, reason FROM "
-        f"lue_audit.dq_result WHERE run_id = {int(run_id)}",
+        f"lue_audit.dq_result{where}",
     ):
         findings[(table, rid)].append((rule, check, sev, reason))
     bronze = Bronze(cur)
