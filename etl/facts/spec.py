@@ -20,7 +20,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from etl.facts.keys import DATA_WINDOW, date_key, key, owner, plain, scd2
+from etl.facts.keys import (
+    DATA_WINDOW,
+    NOT_APPLICABLE,
+    date_key,
+    flags,
+    key,
+    owner,
+    plain,
+    scd2,
+    weather,
+)
 
 
 @dataclass
@@ -120,6 +130,49 @@ FACTS = [
         {owner('dw', 'su.building_code', 'su.unit_no', 'p.paid_at')}
         {plain('dim_payment_method', 'dm', 'p.method_code')}
         {plain('dim_charge_type', 'dc', 'il.charge_code')}"""),
+    # US-7.4: the accumulating snapshot, one row per ticket, updated in place as it is assigned,
+    # resolved and verified (the loader's update on the grain). A milestone not reached yet is -2
+    # (the dictionary: "-2 until it happens"); so is the vendor until assigned, and the tenant when
+    # no lease is active on the unit that day (raised by staff). The SLA is the category version
+    # in force on the raised date.
+    Fact("fact_maintenance_request", ["request_number"], story="US-7.4",
+         staging=["stg_ticket", "stg_unit", "stg_lease", "stg_ownership"],
+         cols=["raised_date_key", "assigned_date_key", "resolved_date_key", "verified_date_key", "unit_key",
+               "tenant_key", "owner_key", "maint_category_key", "vendor_key", "request_flags_key", "weather_key",
+               "request_number", "request_status", "days_to_assign", "days_to_resolve", "days_to_verify",
+               "estimated_cost", "actual_cost", "sla_breached_flag"],
+         required=["request_status"],
+         monthly=("tickets by raised month",
+                  "SELECT to_char(d.full_date, 'YYYY-MM') AS month, count(*) AS amount FROM lue_dw.fact_maintenance_request f "
+                  "JOIN lue_dw.dim_date d ON d.date_key = f.raised_date_key GROUP BY 1",
+                  "SELECT to_char(raised_at, 'YYYY-MM') AS month, count(*) AS amount FROM lue_staging.stg_ticket GROUP BY 1"),
+         source=f"""
+        SELECT {date_key('t.raised_at')} AS raised_date_key,
+               {date_key('t.assigned_at', NOT_APPLICABLE)} AS assigned_date_key,
+               {date_key('t.resolved_at', NOT_APPLICABLE)} AS resolved_date_key,
+               {date_key('t.verified_at', NOT_APPLICABLE)} AS verified_date_key,
+               {key('du', 'unit_key')} AS unit_key,
+               CASE WHEN sl.lease_number IS NULL THEN {NOT_APPLICABLE} ELSE {key('dt', 'tenant_key')} END AS tenant_key,
+               {key('dw', 'owner_key')} AS owner_key,
+               {key('dc', 'maint_category_key')} AS maint_category_key,
+               CASE WHEN t.assigned_at IS NULL THEN {NOT_APPLICABLE} ELSE {key('dv', 'vendor_key')} END AS vendor_key,
+               {key('df', 'request_flags_key')} AS request_flags_key,
+               {key('dx', 'weather_key')} AS weather_key,
+               t.ticket_id AS request_number, t.status AS request_status,
+               t.days_to_assign, t.days_to_resolve, t.days_to_verify, t.estimated_cost, t.actual_cost,
+               CASE WHEN t.resolved_at IS NULL OR dc.default_sla_hours IS NULL THEN NULL
+                    WHEN t.hours_to_resolve > dc.default_sla_hours THEN 1 ELSE 0 END::smallint AS sla_breached_flag,
+               'S4' AS source_system
+        FROM lue_staging.stg_ticket t
+        LEFT JOIN lue_staging.stg_unit su ON su.building_code = t.building_code AND su.unit_no = t.unit_no
+        LEFT JOIN lue_staging.stg_lease sl ON sl.unit_id = su.unit_id AND t.raised_at::date BETWEEN sl.start_date AND sl.end_date
+        {scd2('dim_unit', 'du', "t.building_code || '-' || t.unit_no", 't.raised_at')}
+        {scd2('dim_tenant', 'dt', 'sl.tenant_code', 't.raised_at')}
+        {owner('dw', 't.building_code', 't.unit_no', 't.raised_at')}
+        {scd2('dim_maintenance_category', 'dc', 't.subcategory_code', 't.raised_at')}
+        {scd2('dim_vendor', 'dv', 't.vendor_code', 't.assigned_at')}
+        {flags('df', 't.is_emergency', 't.is_recurring', 't.is_tenant_caused')}
+        {weather('dx', 'du.city', 't.raised_at')}"""),
     # US-7.3: every unit on every day of the data window, occupied or vacant. The lease active that
     # day (start_date <= day <= end_date; end_date is the actual end, a termination included), and
     # its arrears from _occ_balance: per lease, a line's net counts from the day after it is due and

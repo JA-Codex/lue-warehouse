@@ -132,6 +132,18 @@ def main() -> int:
     long = [f"{f.name} 2026-06 {f.monthly[0]}" for f in spec.FACTS if f.monthly and len(f"{f.name} 2026-06 {f.monthly[0]}") > 60]
     check(not long, "every reconciliation check name fits lue_audit.reconciliation.check_name (60)" + (f": {long}" if long else ""))
 
+    print("US-7.4 The accumulating snapshot")
+    mr = spec.BY_NAME.get("fact_maintenance_request")
+    src = mr.source if mr else ""
+    check(mr is not None and mr.grain == ["request_number"] and all(f"{keys.date_key(f't.{m}_at', keys.NOT_APPLICABLE)} AS {m}_date_key" in src for m in ("assigned", "resolved", "verified"))
+          and f"{keys.date_key('t.raised_at')} AS raised_date_key" in src,
+          "fact_maintenance_request: one row per request number; assigned, resolved and verified date keys -2 until reached (the dictionary), raised -1 if unknown")
+    check(keys.scd2("dim_maintenance_category", "dc", "t.subcategory_code", "t.raised_at") in src and keys.scd2("dim_vendor", "dv", "t.vendor_code", "t.assigned_at") in src
+          and "WHEN t.assigned_at IS NULL THEN -2" in src and "t.hours_to_resolve > dc.default_sla_hours" in src,
+          "SLA from the category version valid on the raised date; vendor version on the assigned date, -2 until assigned")
+    check("WHEN sl.lease_number IS NULL THEN -2" in src and keys.weather("dx", "du.city", "t.raised_at") in src and "dim_request_flags" in src,
+          "tenant -2 when no lease is active on the raised date (raised by staff); weather of the unit's city that day; the flags junk key")
+
     print("US-7.3 The periodic snapshot")
     from etl.generator_config import WINDOW_END, WINDOW_START
 

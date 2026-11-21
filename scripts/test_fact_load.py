@@ -19,6 +19,9 @@
           unit-days reconciled by month; vacant days -2 and 0; lease, rent, tenant and owner of
           the day; arrears against a direct computation; a rerun rewrites the last 35 days with
           identical values; a late payment in those days corrects the arrears
+  US-7.4  one maintenance row per ticket; milestones -2 until reached; durations, SLA (category
+          version on the raised date), vendor, tenant, flags and weather; a rerun changes nothing;
+          a ticket progressing from assigned to verified updates its row, never duplicates it
 At the end the facts hold staging again and staging is as it was.
 """
 
@@ -224,6 +227,110 @@ def invoice_tests(cur) -> None:
           "a rerun of both money facts inserts, updates and deletes nothing, and every month still reconciles")
 
 
+MR = "fact_maintenance_request"
+MR_STAGE = """SELECT f.request_sk, f.request_number, f.request_status, f.raised_date_key, f.assigned_date_key, f.resolved_date_key,
+                      f.verified_date_key, f.vendor_key, f.days_to_assign, f.days_to_resolve, f.days_to_verify, f.actual_cost, f.sla_breached_flag
+               FROM lue_dw.fact_maintenance_request f WHERE f.request_number = %s"""
+
+
+def maintenance_tests(cur) -> None:
+    print("US-7.4 fact_maintenance_request: the accumulating snapshot")
+    cur.execute(f"TRUNCATE lue_dw.{MR} RESTART IDENTITY")
+    _r, res, loads = facts.load_all(only=[MR])
+    x = loads[MR]
+    tickets = scalar(cur, "SELECT count(*) FROM lue_staging.stg_ticket")
+    rows, distinct = (cur.execute(f"SELECT count(*), count(DISTINCT request_number) FROM lue_dw.{MR}") or cur.fetchone())
+    check({r.step: r.status for r in res}[MR] == "Success" and rows == distinct == tickets == x.inserted and not x.months_off,
+          f"one row per request: {rows:,} rows, {distinct:,} request numbers, {tickets:,} staged tickets; tickets by raised month reconcile")
+    check(x.unknown == 0, f"no key left unresolved (-1): {x.unknown_keys or 'none'}")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{MR} f JOIN lue_staging.stg_ticket t ON t.ticket_id = f.request_number
+        LEFT JOIN lue_dw.dim_date da ON da.date_key = f.assigned_date_key LEFT JOIN lue_dw.dim_date dr ON dr.date_key = f.resolved_date_key
+        LEFT JOIN lue_dw.dim_date dv ON dv.date_key = f.verified_date_key JOIN lue_dw.dim_date dd ON dd.date_key = f.raised_date_key
+        WHERE dd.full_date <> t.raised_at::date OR f.request_status <> t.status
+           OR (t.assigned_at IS NULL) <> (f.assigned_date_key = -2) OR (t.assigned_at IS NOT NULL AND da.full_date <> t.assigned_at::date)
+           OR (t.resolved_at IS NULL) <> (f.resolved_date_key = -2) OR (t.resolved_at IS NOT NULL AND dr.full_date <> t.resolved_at::date)
+           OR (t.verified_at IS NULL) <> (f.verified_date_key = -2) OR (t.verified_at IS NOT NULL AND dv.full_date <> t.verified_at::date)""")
+    cur.execute(f"SELECT request_status, count(*), count(*) FILTER (WHERE assigned_date_key = -2), count(*) FILTER (WHERE resolved_date_key = -2), count(*) FILTER (WHERE verified_date_key = -2) FROM lue_dw.{MR} GROUP BY 1 ORDER BY 1")
+    stages = ", ".join(f"{s} {n:,} (-2: {a}/{r}/{v})" for s, n, a, r, v in cur.fetchall())
+    check(wrong == 0, f"milestone date keys are the staged dates, -2 until reached (assigned/resolved/verified): {stages}")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{MR} f JOIN lue_staging.stg_ticket t ON t.ticket_id = f.request_number
+        WHERE f.days_to_assign IS DISTINCT FROM round((extract(epoch FROM t.assigned_at - t.raised_at) / 86400)::numeric, 2)
+           OR f.days_to_resolve IS DISTINCT FROM round((extract(epoch FROM t.resolved_at - t.raised_at) / 86400)::numeric, 2)
+           OR f.days_to_verify IS DISTINCT FROM round((extract(epoch FROM t.verified_at - t.resolved_at) / 86400)::numeric, 2)
+           OR f.estimated_cost IS DISTINCT FROM t.estimated_cost OR f.actual_cost IS DISTINCT FROM t.actual_cost""")
+    check(wrong == 0, "days to assign, resolve (from raised) and verify (from resolved), recomputed from the timestamps; costs as staged; NULL until reached")
+    cur.execute(f"""
+        SELECT count(*) FILTER (WHERE f.sla_breached_flag IS DISTINCT FROM CASE WHEN t.resolved_at IS NULL THEN NULL
+                   WHEN extract(epoch FROM t.resolved_at - t.raised_at) / 3600 > c.default_sla_hours THEN 1 ELSE 0 END),
+               count(*) FILTER (WHERE NOT (t.raised_at::date >= c.effective_from AND t.raised_at::date < c.effective_to) OR c.subcategory_code <> t.subcategory_code),
+               count(*) FILTER (WHERE f.sla_breached_flag = 1), count(*) FILTER (WHERE f.sla_breached_flag IS NOT NULL),
+               count(*) FILTER (WHERE (f.sla_breached_flag = 1) IS DISTINCT FROM t.sla_breached)
+        FROM lue_dw.{MR} f JOIN lue_staging.stg_ticket t ON t.ticket_id = f.request_number
+        JOIN lue_dw.dim_maintenance_category c ON c.maint_category_key = f.maint_category_key""")
+    sla_wrong, cat_wrong, breached, resolved, vs_staging = cur.fetchone()
+    check(sla_wrong == cat_wrong == vs_staging == 0,
+          f"SLA breach: hours to resolve > the SLA hours of the category version valid on the raised date ({breached:,} of {resolved:,} resolved breached; NULL while open)")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{MR} f JOIN lue_staging.stg_ticket t ON t.ticket_id = f.request_number
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key
+        LEFT JOIN lue_dw.dim_vendor v ON v.vendor_key = f.vendor_key LEFT JOIN lue_dw.dim_tenant tn ON tn.tenant_key = f.tenant_key
+        JOIN lue_dw.dim_request_flags rf ON rf.request_flags_key = f.request_flags_key JOIN lue_dw.dim_weather w ON w.weather_key = f.weather_key
+        LEFT JOIN lue_staging.stg_unit su ON su.building_code = t.building_code AND su.unit_no = t.unit_no
+        LEFT JOIN lue_staging.stg_lease l ON l.unit_id = su.unit_id AND t.raised_at::date BETWEEN l.start_date AND l.end_date
+        WHERE u.unit_nk <> t.building_code || '-' || t.unit_no OR NOT (t.raised_at::date >= u.effective_from AND t.raised_at::date < u.effective_to)
+           OR (t.assigned_at IS NULL) <> (f.vendor_key = -2)
+           OR (t.assigned_at IS NOT NULL AND (v.vendor_code <> t.vendor_code OR NOT (t.assigned_at::date >= v.effective_from AND t.assigned_at::date < v.effective_to)))
+           OR (l.lease_number IS NULL) <> (f.tenant_key = -2)
+           OR (l.lease_number IS NOT NULL AND (tn.tenant_code <> l.tenant_code OR NOT (t.raised_at::date >= tn.effective_from AND t.raised_at::date < tn.effective_to)))
+           OR (rf.is_emergency, rf.is_recurring, rf.is_tenant_caused) IS DISTINCT FROM (t.is_emergency, t.is_recurring, t.is_tenant_caused)
+           OR w.city <> u.city OR w.weather_date <> t.raised_at::date""")
+    staff = scalar(cur, f"SELECT count(*) FROM lue_dw.{MR} WHERE tenant_key = -2")
+    check(wrong == 0, f"unit at the raised date; vendor at the assigned date (-2 until assigned); tenant of the lease active that day (-2 for {staff:,} raised on a vacant unit); flags; the city's weather that day")
+    wrong = scalar(cur, f"""
+        SELECT count(*) FROM lue_dw.{MR} f JOIN lue_dw.dim_date d ON d.date_key = f.raised_date_key
+        JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key JOIN lue_dw.dim_owner o ON o.owner_key = f.owner_key
+        WHERE NOT EXISTS (SELECT 1 FROM lue_staging.stg_ownership r WHERE r.building_code = u.building_code AND r.unit_no = u.unit_no
+                          AND r.owner_code = o.owner_code AND r.valid_from <= d.full_date AND (r.valid_to IS NULL OR d.full_date < r.valid_to))""")
+    check(wrong == 0, "every owner key is the unit's owner on the raised date (who pays the cost)")
+
+    print("US-7.4 A ticket progressing between two runs")
+    before = scalar(cur, f"SELECT md5(string_agg(concat_ws('|', request_sk, raised_date_key, assigned_date_key, resolved_date_key, verified_date_key, unit_key, tenant_key, owner_key, maint_category_key, vendor_key, request_flags_key, weather_key, request_number, request_status, days_to_assign, days_to_resolve, days_to_verify, estimated_cost, actual_cost, sla_breached_flag), ',' ORDER BY request_sk)) FROM lue_dw.{MR}")
+    _r, res, loads = facts.load_all(only=[MR])
+    x = loads[MR]
+    again = scalar(cur, f"SELECT md5(string_agg(concat_ws('|', request_sk, raised_date_key, assigned_date_key, resolved_date_key, verified_date_key, unit_key, tenant_key, owner_key, maint_category_key, vendor_key, request_flags_key, weather_key, request_number, request_status, days_to_assign, days_to_resolve, days_to_verify, estimated_cost, actual_cost, sla_breached_flag), ',' ORDER BY request_sk)) FROM lue_dw.{MR}")
+    check(x.inserted == x.updated == x.deleted == 0 and again == before, "a rerun neither duplicates nor changes any row, completed ones included (same content hash)")
+    ticket = scalar(cur, "SELECT ticket_id FROM lue_staging.stg_ticket WHERE status = 'Verified' ORDER BY raised_at DESC, ticket_id LIMIT 1")
+    cur.execute("DROP TABLE IF EXISTS _ticket_keep")
+    cur.execute("CREATE TEMP TABLE _ticket_keep AS SELECT * FROM lue_staging.stg_ticket WHERE ticket_id = %s", (ticket,))
+    # The ticket as an earlier extract had it: assigned to a vendor, not resolved yet
+    cur.execute("""UPDATE lue_staging.stg_ticket SET status = 'Assigned', resolved_at = NULL, verified_at = NULL, actual_cost = NULL,
+                   days_to_resolve = NULL, days_to_verify = NULL, hours_to_resolve = NULL, sla_breached = NULL WHERE ticket_id = %s""", (ticket,))
+    try:
+        _r, res, loads = facts.load_all(only=[MR])
+        first = (cur.execute(MR_STAGE, (ticket,)) or cur.fetchall())
+        n1 = loads[MR]
+    finally:
+        cur.execute("""UPDATE lue_staging.stg_ticket t SET status = k.status, resolved_at = k.resolved_at, verified_at = k.verified_at,
+                       actual_cost = k.actual_cost, days_to_resolve = k.days_to_resolve, days_to_verify = k.days_to_verify,
+                       hours_to_resolve = k.hours_to_resolve, sla_breached = k.sla_breached FROM _ticket_keep k WHERE t.ticket_id = k.ticket_id""")
+    _r, res, loads = facts.load_all(only=[MR])
+    second = (cur.execute(MR_STAGE, (ticket,)) or cur.fetchall())
+    n2 = loads[MR]
+    head = ["request_sk", "request_number", "status", "raised", "assigned", "resolved", "verified", "vendor", "d_assign", "d_resolve", "d_verify", "actual_cost", "sla_breached"]
+    print("    " + " | ".join(head))
+    for label, rows_ in (("run 1, assigned", first), ("run 2, verified", second)):
+        for r in rows_:
+            print(f"    {label}: " + " | ".join("" if v is None else str(v) for v in r))
+    final = scalar(cur, f"SELECT md5(string_agg(concat_ws('|', request_sk, raised_date_key, assigned_date_key, resolved_date_key, verified_date_key, unit_key, tenant_key, owner_key, maint_category_key, vendor_key, request_flags_key, weather_key, request_number, request_status, days_to_assign, days_to_resolve, days_to_verify, estimated_cost, actual_cost, sla_breached_flag), ',' ORDER BY request_sk)) FROM lue_dw.{MR}")
+    ok = (len(first) == len(second) == 1 and first[0][0] == second[0][0] and first[0][2] == "Assigned" and first[0][5] == first[0][6] == -2
+          and first[0][12] is None and second[0][2] == "Verified" and second[0][5] > 0 and second[0][6] > 0 and second[0][12] is not None
+          and n1.updated == n2.updated == 1 and n1.inserted == n2.inserted == n1.deleted == n2.deleted == 0)
+    check(ok, f"ticket {ticket}: at the Assigned stage resolved and verified are -2; when it is verified the same row (request_sk {second[0][0] if second else '?'}) is updated, not duplicated")
+    check(final == before, "with staging back as it was, the snapshot is exactly as before (same content hash)")
+
+
 OCC = "fact_unit_occupancy_daily"
 # A content fingerprint of the snapshot without the technical columns (D14: values, not load times)
 OCC_HASH = ("SELECT count(*), sum(hashtextextended(concat_ws('|', snapshot_date_key, unit_key, tenant_key, lease_key, owner_key, "
@@ -364,6 +471,7 @@ def main() -> int:
                 return 1
             payment_tests(cur)
             invoice_tests(cur)
+            maintenance_tests(cur)
             occupancy_tests(cur)
     finally:
         wh.close()

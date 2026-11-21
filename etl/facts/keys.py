@@ -11,6 +11,8 @@ Each helper returns a SQL fragment for a fact's source query:
   owner(alias, building, unit, on_date)
                           the owner of the unit on that day from the ownership register
                           (valid_from <= day < valid_to; an open period has no valid_to), then dim_owner
+  weather(alias, city, on_date), flags(alias, emergency, recurring, tenant_caused)
+                          the composite natural keys of dim_weather and dim_request_flags
   key(alias, column)      coalesce(alias.key, -1): a key that cannot be resolved is -1 (Unknown),
                           never a dropped row; the loader counts the -1 keys of every fact
 The unit's natural key is building_code || '-' || unit_no (dim_unit.unit_nk, US-6.3).
@@ -56,6 +58,18 @@ def owner(alias: str, building: str, unit: str, on_date: str) -> str:
             f"AND {alias}_r.unit_no = {unit} AND {alias}_r.valid_from <= ({on_date})::date AND "
             f"({alias}_r.valid_to IS NULL OR ({on_date})::date < {alias}_r.valid_to) "
             f"LEFT JOIN lue_dw.dim_owner {alias} ON {alias}.owner_code = {alias}_r.owner_code")  # fmt: skip
+
+
+def weather(alias: str, city: str, on_date: str) -> str:
+    """The weather of a city on a day (dim_weather's natural key is city and date)."""
+    return (f"LEFT JOIN lue_dw.dim_weather {alias} ON {alias}.city = {city} AND "
+            f"{alias}.weather_date = ({on_date})::date")  # fmt: skip
+
+
+def flags(alias: str, emergency: str, recurring: str, tenant_caused: str) -> str:
+    """The junk dimension's row for three flags (dim_request_flags: all 8 combinations, no -1/-2)."""
+    return (f"LEFT JOIN lue_dw.dim_request_flags {alias} ON {alias}.is_emergency = {emergency} AND "
+            f"{alias}.is_recurring = {recurring} AND {alias}.is_tenant_caused = {tenant_caused}")  # fmt: skip
 
 
 def key(alias: str, column: str) -> str:
