@@ -57,7 +57,7 @@ def last_run(cur) -> int:
     return scalar(cur, "SELECT max(run_id) FROM lue_audit.etl_run_log")
 
 
-def one_command(cur, data: Path) -> None:
+def one_command(cur, data: Path) -> bool:
     print("US-8.1 One command: an empty warehouse to a loaded one")
     reset = subprocess.run([sys.executable, str(ROOT / "scripts" / "db_reset.py")], cwd=ROOT, capture_output=True, text=True)
     empty = scalar(cur, "SELECT count(*) FROM lue_dw.fact_payment") + scalar(cur, "SELECT count(*) FROM lue_dw.dim_tenant WHERE tenant_key > 0")
@@ -70,6 +70,15 @@ def one_command(cur, data: Path) -> None:
     steps = {s for s, *_ in log}
     check(code == 0 and "RESULT:" in out and (data / "run_manifest.json").is_file(),
           f"python etl/run_pipeline.py --profile small generates the data and runs every stage (exit {code})")
+    if code != 0:  # the rest builds on this run: say why it stopped, then stop
+        for line in out.splitlines():
+            if line.strip().startswith(("Failed", "STOPPED", "Fix it")):
+                print("    " + line.strip())
+        for f in sorted(p.LOGS.glob("pipeline_*.log"))[-1:]:
+            tail = [x for x in f.read_text(encoding="utf-8", errors="replace").splitlines() if x.strip()][-4:]
+            print(f"    the end of {f.name}: " + " | ".join(tail))
+        print("    The checks below need this run; fix the cause (see the run log) and run this test again.")
+        return False
     expected = {"generate", "setup", "deploy", "reference", "source", "validate_dq", "stage_business", "dim_date_holidays", "fact_tests", "reconcile_dq07"}
     check(expected <= steps and len(log) >= 45 and all(done and status in ("Success", "Warning") for _s, status, *_r, done in log),
           f"the run log holds all {len(log)} steps of run {rid}, each ended with a final status (Success or Warning)")
@@ -86,6 +95,7 @@ def one_command(cur, data: Path) -> None:
           and paths.get("staging -> dimension", 0) > 0 and paths.get("staging -> fact", 0) > 0,
           "lineage links each source to bronze, bronze to staging, staging to the dimensions and the facts: "
           + ", ".join(f"{k} {v}" for k, v in sorted(paths.items())))
+    return True
 
 
 TECH = ["batch_id", "loaded_at", "run_id", "staged_at"]  # when and by which run: not the content (D14)
@@ -241,7 +251,7 @@ def failures(cur, data: Path) -> None:
     rid = last_run(cur)
     cur.execute("SELECT step, status FROM lue_audit.etl_run_log WHERE run_id = %s", (rid,))
     log = dict(cur.fetchall())
-    check(code == 1 and log == {"check_generation": "Failed"} and "STOPPED at source" in out and "--from-step source" in out and "no run_manifest.json" in out,
+    check(code == 1 and log == {"check_generation": "Failed"} and "STOPPED at source" in out and "--from-step source --data" in out and "no run_manifest.json" in out,
           "a missing data folder stops the run before the source stage changes anything (no ingest, no later stage), exit 1, and says how to resume")
     print("US-8.1 A failed non-critical step is reported, the run goes on")
     real = ingest.steps
@@ -280,7 +290,8 @@ def main() -> int:
         wh.autocommit = True
         try:
             with wh.cursor() as cur:
-                one_command(cur, data)
+                if not one_command(cur, data):
+                    return finish()
                 baseline = idempotency(cur, data)
                 recovery(cur, data, baseline)
                 generation_guard(cur, data)
@@ -291,6 +302,10 @@ def main() -> int:
             wh.close()
     finally:
         shutil.rmtree(data, ignore_errors=True)
+    return finish()
+
+
+def finish() -> int:
     print("=" * 70)
     ok = results and all(results)
     print(f" RESULT: {sum(results)}/{len(results)} checks passed" + ("" if ok else " - FAILED"))

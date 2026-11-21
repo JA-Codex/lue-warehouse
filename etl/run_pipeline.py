@@ -306,7 +306,11 @@ def main(argv: list[str] | None = None) -> int:
     if stopped:
         rest = [s.name for s in chosen[[s.name for s in chosen].index(stopped) + 1:]]
         print(f" STOPPED at {stopped} (a critical step failed)" + (f"; not run: {', '.join(rest)}" if rest else ""))
-        print(f" Fix it, then resume: python etl/run_pipeline.py --skip-generate --from-step {stopped}")
+        data = "" if args.data.resolve() == DATA.resolve() else f" --data {args.data}"
+        if stopped == "generate":
+            print(f" Fix it, then run again: python etl/run_pipeline.py --profile {args.profile} --seed {args.seed}{data}")
+        else:
+            print(f" Fix it, then resume: python etl/run_pipeline.py --skip-generate --from-step {stopped}{data}")
     print(f" RESULT: {steps - bad}/{steps} steps without failure in {time.monotonic() - started:.0f} s"
           + (f"; the run log: SELECT * FROM lue_audit.etl_run_log WHERE run_id = {run_id}" if run_id is not None else ""))
     print(line)
