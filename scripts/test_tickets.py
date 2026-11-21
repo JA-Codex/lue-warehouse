@@ -61,8 +61,11 @@ def read_csv(path: Path) -> list[dict]:
 def read_sheet(path: Path, name: str) -> list[dict]:
     from openpyxl import load_workbook
 
-    ws = load_workbook(path, read_only=True, data_only=True)[name]
-    rows = [list(r) for r in ws.iter_rows(values_only=True)]
+    book = load_workbook(path, read_only=True, data_only=True)
+    try:  # a read-only workbook keeps its file open until closed (Windows cannot delete it then)
+        rows = [list(r) for r in book[name].iter_rows(values_only=True)]
+    finally:
+        book.close()
     return [dict(zip(rows[0], r, strict=True)) for r in rows[1:]]
 
 

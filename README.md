@@ -18,10 +18,66 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Data quality and quarantine (E4): rule catalogue and engine, DQ-01 to DQ-06, proof against the answer key | US-4.1 to US-4.4 (Done) |
 | Staging (E5): clean, standardise, deduplicate, business fields, incremental merge, cleaning evidence | US-5.1 to US-5.4 (Done) |
 | Dimensions (E6): loader and surrogate keys, SCD Type 2, hierarchies, inferred members, dimension tests | US-6.1 to US-6.5 (Done) |
-| Phase 2 reports: Data Cleaning, Data Quality, Implementation (generated, `make reports`) | Done |
 | Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
 | Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
-| Marts, Phase 3 reports | Pending |
+| Phase 2 reports and submission (E9): Data Cleaning and Data Quality reports generated from the loaded warehouse, the dimension and fact load scripts as SQL, the deliverables checklist ([docs/phase2_checklist.md](docs/phase2_checklist.md)), a fresh-clone rehearsal; git tag `phase2-submission` | US-9.1 to US-9.3 (Done) |
+| Reporting views and marts, analytics, indexing, Power BI, Phase 3 reports (E10 to E14) | Pending |
+
+## Run it from a fresh clone (Phase 2 submission, US-9.3)
+
+Every Phase 2 deliverable and its files: [docs/phase2_checklist.md](docs/phase2_checklist.md). The steps below
+take a machine with PostgreSQL to a loaded, tested warehouse and the two reports. They work the same on Windows
+(PowerShell) and Linux or macOS; no `make` is needed (each `make` target is one of these commands).
+
+**Prerequisites.** PostgreSQL 16 or newer, running, with its superuser password; Python 3.11 or newer; Git. About
+1 GB of free disk for the small profile, 4 GB for the full one.
+
+1. **Clone** the submission:
+
+       git clone https://github.com/JA-Codex/lue-warehouse.git
+       cd lue-warehouse
+       git checkout phase2-submission
+
+2. **Python environment** (Windows: `python -m venv .venv` then `.venv\Scripts\Activate.ps1`):
+
+       python3 -m venv .venv
+       source .venv/bin/activate
+       pip install -r requirements.txt -r requirements-ci.txt
+
+3. **Settings:** copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`) and set `PGPASSWORD`
+   to the PostgreSQL superuser's password (and `PGPORT` if it is not 5432). Then check the connection:
+
+       python scripts/test_connection.py
+
+4. **The checks CI runs** (no database; about 3 minutes; ends with `ALL PASSED`):
+
+       python scripts/run_ci.py
+
+5. **Build the warehouse** on the small profile (2 buildings, 3 months; under a minute). The pipeline generates the
+   data, creates the databases, roles and schemas, deploys the DDL and loads every layer in one run, ending with the
+   source-to-warehouse reconciliation (DQ-07). On a machine that already has an LUE warehouse, reset it first
+   (`python scripts/db_reset.py`; together the two are `make rebuild`):
+
+       python etl/run_pipeline.py --profile small
+
+   Every step should say Success; only `ingest_s5_weather` may warn (it is the one non-critical step). For the full
+   profile (40 buildings, 36 months, about 5 minutes): `python scripts/db_reset.py`, then
+   `python etl/run_pipeline.py --profile full`.
+
+6. **Test the loaded warehouse** (each ends with `RESULT: n/n checks passed`):
+
+       python scripts/test_reports.py     # the reports' numbers against the audit tables (US-9.1, US-9.2)
+       python scripts/test_load_sql.py    # the SQL load scripts rebuild the loaded facts (US-9.3)
+
+7. **Build the reports** from the loaded warehouse. The committed PDFs in `docs/reports/` were built from the full
+   profile; to build them from the warehouse you just loaded without changing those, write them elsewhere:
+
+       python etl/reports/build.py --out data/reports
+
+   (`python etl/reports/build.py`, or `make reports`, writes `docs/reports/`.)
+
+The rehearsal of these steps on the tagged commit, from an empty PostgreSQL, is in
+[docs/evidence/us-9.3/](docs/evidence/us-9.3/).
 
 ## Layout
 
@@ -31,14 +87,16 @@ docs/plan/        the development plan for Phases 2 and 3
 docs/stories/     story log: what was done in each user story (start at docs/stories/README.md)
 docs/contracts/   generated table and key contracts, refreshed weekly
 docs/reports/     generated PDFs: cleaning, data quality, indexing, insights
+docs/phase2_checklist.md  every Phase 2 deliverable of the brief and its files (plan Appendix B)
 docs/evidence/    screenshots and outputs that prove each story (one folder per story)
-sql/              00_setup, 10_ddl, 20_staging, 30_dimensions, 40_facts, 50_reporting,
+sql/              00_setup, 05_source, 10_ddl, 20_staging, 30_dimensions, 40_facts, 50_reporting,
                   60_analytics, 70_performance, 90_tests
-etl/              generate_data.py, refresh_weather.py, ingest/, run_pipeline.py, reports/
+etl/              run_pipeline.py, generate_data.py, ingest/, quality/, staging/, dimensions/, facts/,
+                  reconcile.py, reports/
 data/             generated source files (not committed) and data/weather_cache.json (committed)
 powerbi/          PBIX and screenshots
 presentation/     final slides
-scripts/          ci_checks.py (CI quality gates), test_connection.py (connection test)
+scripts/          run_ci.py (every CI check), database setup and reset, export_load_sql.py, the tests
 ```
 
 Two small additions to the plan's layout, recorded here as deviations: `scripts/` holds the CI checks, and
@@ -104,11 +162,10 @@ Two small additions to the plan's layout, recorded here as deviations: `scripts/
    ```
    The script verifies your Python version, connects to PostgreSQL, displays the server version, creates a throwaway table `_lue_conn_test_tmp`, inserts a test record, verifies it, and drops it.
 
-6. **Verify repository quality gates:**
+6. **Verify repository quality gates** (needs `requirements-ci.txt`; the same checks as CI, ends with `ALL PASSED`):
    ```bash
-   ruff check etl scripts
-   python scripts/ci_checks.py --manifest --allow-missing-pglast
-   # Or if pglast is installed:
+   python scripts/run_ci.py
+   # Or, where make is installed:
    make test
    ```
 
@@ -117,7 +174,8 @@ Two small additions to the plan's layout, recorded here as deviations: `scripts/
 ```
 make help        list the targets
 make setup       install dependencies and run PostgreSQL connection test (US-0.4)
-make test        lint + SQL parse + frozen-pack + DDL contract check + generator tests (what CI runs)
+make test        lint + SQL parse + frozen-pack + DDL contract check + generator tests (what CI runs);
+                 without make: python scripts/run_ci.py (groups: lint, sqlcheck, manifest, contract, gen-test)
 make db-setup    create databases, roles and schemas (US-1.1); safe to re-run
 make db-deploy   deploy sql/10_ddl (the 13 dimensions, 6 facts) as lue_etl (US-1.2)
 make db-load-ref load dim_date and the static dimensions as lue_etl; safe to re-run (US-1.4)
@@ -141,13 +199,17 @@ make pipeline    run the whole pipeline on the data in data/ (one run_id; FROM=s
                  the last stage reconciles source = warehouse + quarantined by month (DQ-07; alone: python etl/reconcile.py)
                  E8 acceptance tests: python scripts/test_pipeline.py (21 PASS lines; resets the warehouse)
                  a rerun changes nothing, a failed step is resumed with FROM=stage: see Recovery below
-make reports     build the Phase 2 reports from the warehouse: docs/reports/LUE_Data_Cleaning_Report.pdf,
-                 LUE_Data_Quality_Report.pdf, LUE_Phase2_Implementation.pdf (every number read, none typed)
+make reports     build the Phase 2 reports from the loaded warehouse (after make rebuild or make pipeline):
+                 docs/reports/LUE_Data_Cleaning_Report.pdf and LUE_Data_Quality_Report.pdf (every number read, none
+                 typed); E9 tests: python scripts/test_reports.py (11 PASS lines)
+make load-sql    re-export sql/30_dimensions/02_dimension_loads.sql and sql/40_facts/01_fact_loads.sql from the
+                 loaders' specs (US-9.3; CI fails while they differ); python scripts/test_load_sql.py (6 PASS lines)
+                 runs them on the loaded warehouse, rolled back
 make db-reset    drop and rebuild the warehouse, reload reference data, smoke test (US-1.5)
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -176,9 +238,8 @@ The SQL is in `sql/00_setup/01` to `05` (each file names the database it runs in
 Role passwords come from `.env` (`LUE_ETL_PASSWORD`, `LUE_READER_PASSWORD`) and are never committed.
 `scripts/db_setup.py` reads `.env` first, so a `PGPASSWORD` left in the shell cannot override it.
 
-On Windows, `make` is not installed by default. Either run the checks directly
-(`pip install -r requirements-ci.txt`, then `ruff check etl scripts` and `python scripts/ci_checks.py`)
-or use Git Bash with `make` installed.
+On Windows, `make` is not installed by default. Every target is one Python command (shown above); the checks CI runs
+are `python scripts/run_ci.py` (after `pip install -r requirements-ci.txt`).
 
 ## Recovery (US-8.3)
 
@@ -225,7 +286,7 @@ The briefs use `project_*` names. We use LUE names; this mapping is **pending in
 | `project_reporting` | `lue_reporting` | Gold marts and views, including `vw_dim_*` |
 | (none) | `lue_audit` | `etl_run_log`, `quarantine`, `reconciliation`, `lineage` |
 | (none) | `lue_source.src_pms` | Source system S1; separate database `lue_source` |
-| `vw_monthly_sales`, `vw_customer_analysis`, `vw_product_performance` | alias views in `lue_reporting` | Planned (US-10.1) |
+| `vw_monthly_sales`, `vw_customer_analysis`, `vw_product_performance` | alias views in `lue_reporting` | Phase 3: created with the reporting views (US-10.1, D18); Phase 2 has none |
 
 The warehouse database is `lue_warehouse`.
 

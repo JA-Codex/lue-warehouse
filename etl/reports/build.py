@@ -49,10 +49,25 @@ def money(v) -> str:
     return f"{v:,.0f}"
 
 
+def recon_summary(f) -> str:
+    if not f.recon:
+        return "not run yet (the last stage of the pipeline)"
+    off = sum(1 for r in f.recon if not r[5])
+    return f"{len(f.recon) - off} of {len(f.recon)} measure-months reconcile (billed, paid, tickets, lease events); unexplained {money(sum(r[4] for r in f.recon))}"
+
+
+def fact_summary(f) -> str:
+    if not f.fact_tests:
+        return "not run yet"
+    orphans = sum(int(n) for name, n, _ok in f.fact_tests if ": no orphan " in name)
+    return f"{sum(1 for t in f.fact_tests if t[2])} of {len(f.fact_tests)} fact tests pass; {fmt(orphans)} fact rows without a dimension row; {fmt(sum(n for _t, n in f.fact_rows))} fact rows"
+
+
 # ============================================================================ cleaning report
-PIPE = [("Sources S1 to S6", "PostgreSQL, Excel,\nCSV, JSON"), ("Bronze", "rows landed as sent,\nwith lineage"),
-        ("Validation", "109 rules,\nDQ-01 to DQ-06"), ("Staging", "cleaned, typed,\none row per key"),
-        ("Warehouse", "dimensions\nand facts")]  # fmt: skip
+def pipe(f) -> list:
+    return [("Sources S1 to S6", "PostgreSQL, Excel,\nCSV, JSON"), ("Bronze", "rows landed as sent,\nwith lineage"),
+            ("Validation", f"{len(f.rules)} rules,\nDQ-01 to DQ-06"), ("Staging", "cleaned, typed,\none row per key"),
+            ("Warehouse", "dimensions\nand facts")]  # fmt: skip
 
 
 def cleaning_report(f, path: Path) -> None:
@@ -66,7 +81,7 @@ def cleaning_report(f, path: Path) -> None:
     s.append(p("1. Summary", "h1"))
     s.append(table(["Measure", "Value"], [
         ["Data", f"{f.profile} profile (seed {f.seed}), {f.window}"],
-        ["Rows received from the 6 sources (20 tables)", fmt(total_bronze)],
+        [f"Rows received from the {len({v[0] for v in f.volumes})} sources ({len(f.volumes)} tables)", fmt(total_bronze)],
         ["Rows rejected to quarantine", fmt(rejected)],
         ["Rows kept with a warning", fmt(warned)],
         ["Rows repaired (at least one value fixed)", fmt(repaired)],
@@ -75,7 +90,7 @@ def cleaning_report(f, path: Path) -> None:
     ], [3, 4]))
 
     s.append(p("2. Cleaning process", "h1"))
-    s.append(flow(PIPE, (2, "Quarantine", "rejected rows + reason")))
+    s.append(flow(pipe(f), (2, "Quarantine", "rejected rows + reason")))
     s.append(table(["Step", "What happens to the data"], [
         ["Bronze", "Every source row is landed unchanged, as text, with its batch, file and row number."],
         ["Validation", "Each row is checked by the rule catalogue. Unusable rows are rejected to quarantine with the rule and reason; suspicious but usable rows are kept with a warning."],
@@ -158,7 +173,16 @@ def cleaning_report(f, path: Path) -> None:
         ["Also derived", "Days past due, settlement lag, lease term (months), ticket lifecycle times, SLA breach, 30-day recurrence"],
     ], [3.5, 5]))
 
-    s.append(p("9. Answer key check", "h1"))
+    s.append(p("9. Agreement with the run log", "h1"))
+    s.append(p("Every count above is read from the tables; the run log (lue_audit.etl_run_log) recorded the same rows as they were loaded."))
+    agree = []
+    for b in f.bridge:
+        logged = f.log_staged.get(b[0], 0)
+        agree.append([b[0][4:], b[7], logged, "agree" if logged == b[7] else "DIFFER"])
+    agree.append(["Rows rejected to quarantine", f.quarantined, f.log_rejected, "agree" if f.quarantined == f.log_rejected else "DIFFER"])
+    s.append(table(["Staging table", "Rows staged (table)", "Rows inserted (run log)", "Result"], agree, [3.2, 2, 2, 1.2], {1, 2}))
+
+    s.append(p("10. Answer key check", "h1"))
     s.append(table(["Check", "Staging table.column", "Expected", "Found", "Result"],
                    [[r[0], f"{r[1]}.{r[2]}", r[3], r[4], "pass" if r[7] else "FAIL"] for r in f.e5.rows],
                    [1, 3.6, 1.2, 1.2, 1], {2, 3}))
@@ -180,10 +204,12 @@ def quality_report(f, path: Path) -> None:
         ["Integrity", f"{fmt(f.by_check[4][1] + f.by_check[4][2])} referential and {fmt(f.by_check[2][1] + f.by_check[2][2])} duplicate findings handled; {sum(1 for b in f.bridge if b[9] == 0)} of {len(f.bridge)} tables reconcile; {f.fks} foreign keys enforced"],
         ["Rules", f"{len(f.rules)} rules; {fmt(rejected)} rows rejected, {fmt(warned)} warned"],
         ["Answer key", f"{fmt(f.e4.detected)} of {fmt(f.e4.expected)} planted defects detected, {f.e4.false_positives} false positives"],
+        ["Source to warehouse", recon_summary(f)],
+        ["Fact integrity", fact_summary(f)],
     ], [1.6, 7]))
 
     s.append(p("2. Validation checks", "h1"))
-    s.append(flow([("Bronze", "rows as sent"), ("Rule engine", "109 rules"), ("Pass / warn", "to staging"), ("Staging", "clean tables")],
+    s.append(flow([("Bronze", "rows as sent"), ("Rule engine", f"{len(f.rules)} rules"), ("Pass / warn", "to staging"), ("Staging", "clean tables")],
                   (1, "Quarantine", "rejected rows + reason")))
     s.append(table(["Check", "Tests", "Dimension", "Rejected", "Warned"], [
         [f.by_check[0][0], "Required value missing", "Completeness", f.by_check[0][1], f.by_check[0][2]],
@@ -221,17 +247,71 @@ def quality_report(f, path: Path) -> None:
         ["Invoice lines paid / unpaid / partly paid", f"{fmt(a['lines_paid'])} / {fmt(a['lines_unpaid'])} / {fmt(a['lines'] - a['lines_paid'] - a['lines_unpaid'])}"],
     ], [5, 3]))
 
+    s.append(p("4.3 Source to warehouse by month (DQ-07)", "h2"))
+    if not f.recon:
+        s.append(p("Not run yet: the reconciliation runs as the last stage of python etl/run_pipeline.py."))
+    else:
+        s.append(p(f"Run {f.recon_run}, lue_audit.reconciliation. For every measure and month: source = warehouse + quarantined; "
+                   "the unexplained rest must be 0. A rejected row counts only when its key never reached staging."))
+        meas = {}
+        for m, _mo, sv, wv, un, ok in f.recon:
+            x = meas.setdefault(m, [0, 0, 0, 0, 0])
+            x[0] += 1; x[1] += sv; x[2] += wv; x[3] += un; x[4] += 0 if ok else 1  # noqa: E702
+        s.append(table(["Measure", "Months", "Source", "Warehouse + quarantined", "Unexplained", "Months off"],
+                       [[m, x[0], money(x[1]), money(x[2]), money(x[3]), x[4]] for m, x in meas.items()],
+                       [1.6, 0.9, 2.2, 2.4, 1.3, 1.1], {1, 2, 3, 4, 5}))
+        by = {(m, mo): (sv, wv, un) for m, mo, sv, wv, un, _ok in f.recon}
+        months = sorted({mo for m, mo, *_r in f.recon if m in ("billed", "paid")})
+        s.append(table(["Month", "Billed (source)", "Billed (warehouse)", "Paid (source)", "Paid (warehouse)", "Unexplained"],
+                       [[mo, money(by.get(("billed", mo), (0, 0, 0))[0]), money(by.get(("billed", mo), (0, 0, 0))[1]),
+                         money(by.get(("paid", mo), (0, 0, 0))[0]), money(by.get(("paid", mo), (0, 0, 0))[1]),
+                         money(by.get(("billed", mo), (0, 0, 0))[2] + by.get(("paid", mo), (0, 0, 0))[2])] for mo in months],
+                       [1.1, 1.9, 1.9, 1.9, 1.9, 1.2], {1, 2, 3, 4, 5}))
+
     s.append(p("5. Integrity", "h1"))
     integ = [r for r in f.findings if r[3][:5] in ("DQ-03", "DQ-05")]
     s.append(table(["Src", "Table", "Rule", "Check", "Handling", "Rows", "Example"],
                    [[a_, b[4:], c, d[6:], e, n, ex] for a_, b, c, d, e, n, ex in integ], [0.6, 1.9, 1.3, 1.5, 1.2, 0.8, 5.3], {5}))
     s.append(p("5.1 Enforced in the database", "h2"))
     s.append(table(["Control", "Result"], [
-        ["Staging primary keys (one row per natural key)", f"20 tables; count bridge difference 0 in {sum(1 for b in f.bridge if b[9] == 0)} of {len(f.bridge)}"],
+        ["Staging primary keys (one row per natural key)", f"{len(f.bridge)} tables; count bridge difference 0 in {sum(1 for b in f.bridge if b[9] == 0)} of {len(f.bridge)}"],
         ["Foreign keys from facts to dimensions", f"{f.fks} declared ({f.partitions} partitions inherit them)"],
         ["Special members in every dimension", "-1 Unknown, -2 Not applicable"],
         ["Surrogate keys", f"Identity columns; dim_tenant {fmt(f.dims[0][1] if f.dims else 0)} members, all keys unique"],
     ], [4, 5]))
+    s.append(p("5.2 Facts: grain, orphans and values (US-7.6)", "h2"))
+    if not f.fact_tests:
+        s.append(p("Not run yet: the fact tests run at the end of python etl/facts/run.py."))
+    else:
+        per = {}
+        for name, n, _ok in f.fact_tests:
+            fact, test = name.split(": ", 1)
+            kind = "grain" if "(grain)" in test else "orphan" if test.startswith("no orphan") else "value"
+            x = per.setdefault(fact, {"grain": [0, 0], "orphan": [0, 0], "value": [0, 0]})
+            x[kind][0] += 1
+            x[kind][1] += int(n)
+        rows_ = dict(f.fact_rows)
+        s.append(table(["Fact", "Rows", "Grain duplicates", "Orphan checks", "Orphan rows", "Value checks", "Violations"],
+                       [[k[5:], rows_.get(k, 0), v["grain"][1], v["orphan"][0], v["orphan"][1], v["value"][0], v["value"][1]] for k, v in per.items()],
+                       [2.6, 1.2, 1.2, 1.1, 1.1, 1.1, 1.1], {1, 2, 3, 4, 5, 6}))
+        orphans = sum(int(n) for name, n, _ok in f.fact_tests if ": no orphan " in name)
+        s.append(p(f"Fact rows without a matching dimension row: <b>{fmt(orphans)}</b> across all "
+                   f"{sum(1 for name, *_r in f.fact_tests if ': no orphan ' in name)} foreign keys (run {f.test_run}). "
+                   "The special members -1 and -2 are dimension rows, not orphans. Each key is tested by a query of this form "
+                   "(sql/90_tests/02_fact_tests.sql), here the tenant of a payment:"))
+        s.append(p(f"<font face='Courier' size='7'>{escape(f.orphan_sql)}</font>"))
+    s.append(p("5.3 SCD Type 2 continuity", "h2"))
+    scd = ["dim_unit", "dim_tenant", "dim_vendor", "dim_maintenance_category"]
+    tests = {}
+    for name, n in f.dim_tests:
+        dim, test = name.split(": ", 1)
+        if dim in scd:
+            tests.setdefault(test, {})[dim] = n
+    s.append(table(["Test (sql/90_tests/01_dimension_tests.sql)", "unit", "tenant", "vendor", "category"],
+                   [[t, *[d.get(x, "") for x in scd]] for t, d in tests.items()], [4.6, 0.9, 0.9, 0.9, 1.1], {1, 2, 3, 4}))
+    others = [(n_, v) for n_, v in f.dim_tests if n_.split(": ", 1)[0] not in scd]
+    s.append(p(f"The other dimension tests: {sum(1 for _n, v in others if v == 0)} of {len(others)} without violations "
+               "(keys unique, special members present, one row per natural key, inferred members, the hierarchy, holidays)."))
 
     s.append(PageBreak())
     s.append(p("6. Rule-by-rule results", "h1"))
@@ -245,12 +325,31 @@ def quality_report(f, path: Path) -> None:
     ak = [[r[1], r[2], r[3].replace("_", " "), r[4], r[5], r[6], r[7]] for r in f.e4.rows if r[0] != "total"]
     s.append(table(["Src", "Table", "Defect", "Handling", "Expected by", "Planted", "Found"], ak,
                    [0.6, 2.1, 3, 1, 1.1, 0.9, 0.9], {5, 6}))
+
+    s.append(p("9. The pipeline run", "h1"))
+    if f.pipeline_run is None:
+        s.append(p("No pipeline run yet (python etl/run_pipeline.py)."))
+    else:
+        s.append(p(f"The latest complete run, {f.pipeline_run}, of python etl/run_pipeline.py (lue_audit.etl_run_log): "
+                   + ", ".join(f"{fmt(n)} steps {st}" for st, n in f.pipeline)
+                   + (f" (failed, non-critical: {', '.join(f.pipeline_failed)}; the run went on)" if f.pipeline_failed else "") + ". Facts loaded: "
+                   + ", ".join(f"{t[5:]} {fmt(n)}" for t, n in f.fact_rows) + "."))
+
+    s.append(p("10. Conclusion and residual risks", "h1"))
+    s.append(table(["Risk", "Where it stands"], [
+        ["Rejected rows leave gaps", f"{fmt(f.quarantined)} rows sit in quarantine with their rule and reason; DQ-07 counts them as the explained difference, and paid cash still reconciles because staging re-derives the rejected allocations."],
+        ["Late or missing reference data", "Unknown codes resolve to -1 (Unknown) and are counted every run; late tenants become inferred members, completed when the record arrives."],
+        ["Rules cover only planted defects", f"The catalogue found {fmt(f.e4.detected)} of {fmt(f.e4.expected)} planted defects with {f.e4.false_positives} false positives; a new kind of defect needs a new rule."],
+        ["Arrears of a departed tenant", "The occupancy snapshot holds the arrears of the lease active that day; debt left by a tenant who has gone stays in the invoice and payment facts."],
+        ["Synthetic data", "The checks prove the pipeline on generated data with known defects; real sources may hold patterns the generator does not plant."],
+    ], [2.4, 6.2]))
     build(path, "Data Quality Report", "Lahore Urban Estates Analytics Warehouse", s)
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--data", type=Path, default=ROOT / "data")
+    ap.add_argument("--out", type=Path, default=OUT, help="the folder for the PDFs (default: docs/reports)")
     args = ap.parse_args(argv)
     wh, src = connect("lue_warehouse"), connect("lue_source")
     try:
@@ -258,10 +357,10 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         wh.close()
         src.close()
-    OUT.mkdir(parents=True, exist_ok=True)
+    args.out.mkdir(parents=True, exist_ok=True)
     for name, fn in (("LUE_Data_Cleaning_Report.pdf", cleaning_report), ("LUE_Data_Quality_Report.pdf", quality_report)):
-        fn(f, OUT / name)
-        print(f"written docs/reports/{name}")
+        fn(f, args.out / name)
+        print(f"written {args.out / name}")
     return 0
 
 

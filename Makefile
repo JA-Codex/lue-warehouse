@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -16,34 +16,26 @@ rebuild: ## Reset the warehouse, generate the data and run the whole pipeline: m
 pipeline: ## Run the whole pipeline on the data already in data/, one run_id (US-8.1); FROM=stage resumes there
 	$(PYTHON) etl/run_pipeline.py --skip-generate $(if $(FROM),--from-step $(FROM),)
 
-test: lint sqlcheck manifest contract gen-test ## Everything CI runs
+test: ## Everything CI runs (no make on Windows: python scripts/run_ci.py)
+	$(PYTHON) scripts/run_ci.py
 
 lint: ## Ruff on our own Python (docs/ is excluded)
-	ruff check etl scripts
+	$(PYTHON) scripts/run_ci.py lint
 
 sqlcheck: ## pglast parse of every .sql file under sql/ and docs/phase1/sql/
-	$(PYTHON) scripts/ci_checks.py --sql
+	$(PYTHON) scripts/run_ci.py sqlcheck
 
 manifest: ## docs/phase1 must still match MANIFEST.sha256 (frozen baseline)
-	$(PYTHON) scripts/ci_checks.py --manifest
+	$(PYTHON) scripts/run_ci.py manifest
 
-contract: ## sql/10_ddl must match the frozen Phase 1 DDL (US-1.2)
-	$(PYTHON) scripts/check_contract.py
+contract: ## sql/10_ddl must match the frozen Phase 1 DDL (US-1.2); the load scripts must match the loaders (US-9.3)
+	$(PYTHON) scripts/run_ci.py contract
 
-gen-test: ## Generator acceptance tests, no database needed (US-2.1 to US-2.6)
-	$(PYTHON) scripts/test_generator.py
-	$(PYTHON) scripts/test_master_data.py
-	$(PYTHON) scripts/test_leases.py
-	$(PYTHON) scripts/test_payments.py
-	$(PYTHON) scripts/test_tickets.py
-	$(PYTHON) scripts/test_weather.py
-	$(PYTHON) scripts/test_defects.py
-	$(PYTHON) scripts/test_ingest_contract.py
-	$(PYTHON) scripts/test_quality_contract.py
-	$(PYTHON) scripts/test_staging_contract.py
-	$(PYTHON) scripts/test_dim_load_contract.py
-	$(PYTHON) scripts/test_fact_load_contract.py
-	$(PYTHON) scripts/test_pipeline_contract.py
+gen-test: ## Generator and contract tests, no database needed (US-2.1 to US-2.6, E3 to E9)
+	$(PYTHON) scripts/run_ci.py gen-test
+
+load-sql: ## Re-export the dimension and fact load scripts from the specs (US-9.3)
+	$(PYTHON) scripts/export_load_sql.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
@@ -110,7 +102,7 @@ facts: ## Load the facts from staging and the dimensions: keys point in time, sy
 facts-test: ## Fact acceptance tests (US-7.1 on); needs staging and the dimensions loaded (make stage, make dims)
 	$(PYTHON) scripts/test_fact_load.py
 
-reports: ## Build the Phase 2 reports (cleaning, quality, implementation) from the warehouse into docs/reports/
+reports: ## Build the Phase 2 reports (cleaning, quality) from the loaded warehouse into docs/reports/ (US-9.1, US-9.2)
 	$(PYTHON) etl/reports/build.py
 
 db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smoke test (US-1.5)

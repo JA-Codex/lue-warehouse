@@ -356,10 +356,8 @@ def json_tests(cur, tmp: Path) -> None:
     if key.is_file():
         import csv
 
-        planted = Counter(
-            r["defect_type"] for r in csv.DictReader(key.open(encoding="utf-8"))
-            if r["source"] == "S4"
-        )  # fmt: skip
+        with key.open(encoding="utf-8") as fh:
+            planted = Counter(r["defect_type"] for r in csv.DictReader(fh) if r["source"] == "S4")
         last = len(tickets)  # the copy this test appended is not one of the planted defects
         as_text = scalar(cur, "SELECT count(*) FROM lue_staging.brz_ticket WHERE estimate !~ "
                               "'^[0-9]+$' AND source_row <> %s", (last,))  # fmt: skip

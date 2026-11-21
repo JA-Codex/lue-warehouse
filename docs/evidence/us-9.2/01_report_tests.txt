@@ -1,0 +1,23 @@
+US-9.1 and US-9.2 tests (full profile, seed 3004; the warehouse built by make rebuild PROFILE=full).
+
+python scripts/test_reports.py
+======================================================================
+ E9 acceptance tests: the Phase 2 reports (database)
+======================================================================
+US-9.1 The Data Cleaning Report
+  [PASS] python etl/reports/build.py writes the Data Cleaning Report (5 pages)
+  [PASS] rows rejected: 5,636 in the findings = 5,636 in quarantine = 5,636 in the run log; every finding of every batch counted
+  [PASS] every staging table: the rows in the report = the rows in the table = the rows the run log inserted (20 tables)
+  [PASS] the cleaning evidence is the run that built staging (run 1, 293 evidence rows), not an empty rerun
+  [PASS] the answer key: 6,915 of 6,915 planted defects detected, 0 false positives; every cleaning check passes
+US-9.2 The Data Quality Report
+  [PASS] python etl/reports/build.py writes the Data Quality Report (8 pages)
+  [PASS] accuracy: the DQ-07 reconciliation of run 1, 194 measure-months of billed, paid, tickets and lease events, all passed, unexplained 0
+  [PASS] integrity: the fact tests of run 1, 0 rows in 41 orphan checks; the query the report quotes is in 02_fact_tests.sql and returns 0
+  [PASS] SCD continuity: 30 tests of the four Type 2 dimensions and 17 others, all 0 violations
+  [PASS] the pipeline run it describes (run 1) reached the reconciliation; failed steps, if any, are non-critical and named (none); its fact counts are the tables'
+US-9.1, US-9.2 Nothing typed
+  [PASS] the counts the reports print (rules, tables, foreign keys, quarantine, planted defects) are not typed into the generator
+======================================================================
+ RESULT: 11/11 checks passed
+======================================================================

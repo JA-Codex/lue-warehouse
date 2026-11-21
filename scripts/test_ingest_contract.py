@@ -32,6 +32,12 @@ def check(ok: bool, text: str) -> None:
     print(f"  [{'PASS' if ok else 'FAIL'}] {text}")
 
 
+def header(path: Path) -> list[str]:
+    """A CSV file's first row; the file is closed again (Windows cannot delete an open file)."""
+    with path.open(encoding="utf-8", newline="") as fh:
+        return next(csv.reader(fh))
+
+
 def bronze_tables() -> dict[str, list[str]]:
     from pglast import ast, parse_sql
 
@@ -97,13 +103,12 @@ def main() -> int:
         )
         book.close()
         check(sheets_ok, "S2: the 5 sheets' headers = the ingestor's columns = bronze")
-        heads = {tuple(next(csv.reader(p.open(encoding="utf-8"))))
-                 for p in (out / "s3").glob("settlement_*.csv")}  # fmt: skip
+        heads = {tuple(header(p)) for p in (out / "s3").glob("settlement_*.csv")}
         check(heads == {tuple(files.S3_COLUMNS)} and brz["brz_settlement"] == files.S3_COLUMNS
               + tail, f"S3: all {len(list((out / 's3').glob('*.csv')))} settlement files have "
               "the expected header, as bronze")  # fmt: skip
         check(all(
-            next(csv.reader((out / "s6" / f).open(encoding="utf-8"))) == cols
+            header(out / "s6" / f) == cols
             and brz[t] == cols + tail for f, (t, cols) in files.S6_FILES.items()),
             "S6: offers.csv and incentive_log.csv headers = expected = bronze")  # fmt: skip
         export = json.loads((out / "s4" / "tickets.json").read_text(encoding="utf-8"))
