@@ -1,0 +1,67 @@
+-- B5 One unit's occupancy, rent and arrears over a fiscal year (a drill-through to one unit)
+-- baseline, as deployed
+GroupAggregate  (cost=17029.63..17043.32 rows=365 width=84) (actual time=20.735..20.813 rows=12 loops=1)
+  Group Key: ((f.snapshot_date_key / 100))
+  Buffers: shared hit=1473 read=1656
+  InitPlan 2 (returns $1)
+    ->  Result  (cost=0.37..0.38 rows=1 width=32) (actual time=0.017..0.019 rows=1 loops=1)
+          Buffers: shared hit=3
+          InitPlan 1 (returns $0)
+            ->  Limit  (cost=0.28..0.37 rows=1 width=32) (actual time=0.014..0.015 rows=1 loops=1)
+                  Buffers: shared hit=3
+                  ->  Index Scan using uq_dim_unit_version on dim_unit  (cost=0.28..160.23 rows=1799 width=32) (actual time=0.013..0.014 rows=1 loops=1)
+                        Index Cond: ((unit_nk)::text IS NOT NULL)
+                        Filter: (unit_key > 0)
+                        Buffers: shared hit=3
+  ->  Sort  (cost=17029.26..17030.17 rows=365 width=19) (actual time=20.706..20.726 rows=365 loops=1)
+        Sort Key: ((f.snapshot_date_key / 100)), f.snapshot_date_key DESC
+        Sort Method: quicksort  Memory: 42kB
+        Buffers: shared hit=1473 read=1656
+        ->  Nested Loop  (cost=0.57..17013.72 rows=365 width=19) (actual time=0.070..20.552 rows=365 loops=1)
+              Buffers: shared hit=1473 read=1656
+              ->  Index Scan using uq_dim_unit_version on dim_unit u  (cost=0.28..8.29 rows=1 width=4) (actual time=0.026..0.029 rows=1 loops=1)
+                    Index Cond: ((unit_nk)::text = $1)
+                    Buffers: shared hit=6
+              ->  Append  (cost=0.29..17000.87 rows=365 width=19) (actual time=0.042..20.424 rows=365 loops=1)
+                    Buffers: shared hit=1467 read=1656
+                    ->  Index Scan using fact_unit_occupancy_daily_2025_07_pkey on fact_unit_occupancy_daily_2025_07 f_1  (cost=0.29..1374.60 rows=31 width=19) (actual time=0.041..1.620 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=151
+                    ->  Index Scan using fact_unit_occupancy_daily_2025_08_pkey on fact_unit_occupancy_daily_2025_08 f_2  (cost=0.29..1374.60 rows=31 width=19) (actual time=0.020..1.512 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=151
+                    ->  Index Scan using fact_unit_occupancy_daily_2025_09_pkey on fact_unit_occupancy_daily_2025_09 f_3  (cost=0.29..1330.34 rows=30 width=19) (actual time=0.018..1.529 rows=30 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=33 read=146
+                    ->  Index Scan using fact_unit_occupancy_daily_2025_10_pkey on fact_unit_occupancy_daily_2025_10 f_4  (cost=0.29..1374.60 rows=31 width=19) (actual time=0.017..1.872 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=151
+                    ->  Index Scan using fact_unit_occupancy_daily_2025_11_pkey on fact_unit_occupancy_daily_2025_11 f_5  (cost=0.29..1330.34 rows=30 width=19) (actual time=0.027..1.596 rows=30 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=33 read=146
+                    ->  Index Scan using fact_unit_occupancy_daily_2025_12_pkey on fact_unit_occupancy_daily_2025_12 f_6  (cost=0.29..1374.60 rows=31 width=19) (actual time=0.021..1.607 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=151
+                    ->  Index Scan using fact_unit_occupancy_daily_2026_01_pkey on fact_unit_occupancy_daily_2026_01 f_7  (cost=0.29..1374.60 rows=31 width=19) (actual time=0.019..1.497 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=151
+                    ->  Index Scan using fact_unit_occupancy_daily_2026_02_pkey on fact_unit_occupancy_daily_2026_02 f_8  (cost=0.29..1241.82 rows=28 width=19) (actual time=0.017..1.396 rows=28 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=31 read=136
+                    ->  Index Scan using fact_unit_occupancy_daily_2026_03_pkey on fact_unit_occupancy_daily_2026_03 f_9  (cost=0.29..1374.60 rows=31 width=19) (actual time=0.016..1.516 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=151
+                    ->  Index Scan using fact_unit_occupancy_daily_2026_04_pkey on fact_unit_occupancy_daily_2026_04 f_10  (cost=0.29..1330.34 rows=30 width=19) (actual time=0.017..1.513 rows=30 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=33 read=146
+                    ->  Index Scan using fact_unit_occupancy_daily_2026_05_pkey on fact_unit_occupancy_daily_2026_05 f_11  (cost=0.29..1474.60 rows=31 width=19) (actual time=0.015..1.561 rows=31 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Buffers: shared hit=34 read=176
+                    ->  Seq Scan on fact_unit_occupancy_daily_2026_06 f_12  (cost=0.00..2044.00 rows=30 width=19) (actual time=0.231..3.128 rows=30 loops=1)
+                          Filter: ((snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630) AND (unit_key = u.unit_key))
+                          Rows Removed by Filter: 53970
+                          Buffers: shared hit=1099
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.789 ms
+Execution Time: 20.909 ms

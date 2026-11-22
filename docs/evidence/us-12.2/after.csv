@@ -1,0 +1,55 @@
+phase,query,variant,run,execution_ms,planning_ms,total_cost,plan_rows,actual_rows,scans,occupancy_partitions_read,indexes_used,shared_hit_blocks,shared_read_blocks
+after,B1,as deployed,1,206.57,2.868,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,1,3.85,0.288,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,209,0
+after,B3,as deployed,1,744.955,3.981,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,1,67.616,0.355,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2308,37
+after,B5,as deployed,1,0.878,0.582,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,1,0.568,0.054,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,2,357.333,5.428,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,2,6.109,0.457,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,209,0
+after,B3,as deployed,2,831.195,4.657,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,2,69.761,0.325,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,2,1.0,0.704,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,2,0.556,0.056,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,3,218.581,2.77,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,3,5.927,0.437,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,209,0
+after,B3,as deployed,3,754.095,4.897,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,3,66.951,0.366,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2308,37
+after,B5,as deployed,3,0.756,0.556,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,3,0.538,0.072,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,4,214.747,3.075,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,4,3.86,0.471,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,189,20
+after,B3,as deployed,4,826.077,7.836,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,4,71.269,0.339,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,4,0.822,0.584,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,4,0.448,0.085,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,5,234.573,3.338,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,5,3.639,0.288,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,209,0
+after,B3,as deployed,5,799.543,4.178,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,5,57.774,0.366,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,5,0.836,0.578,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,5,0.483,0.059,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,6,233.294,5.987,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,336,4190
+after,B2,as deployed,6,5.467,0.391,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,209,0
+after,B3,as deployed,6,791.623,5.058,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,6,94.861,0.424,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,6,1.033,0.797,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,6,0.745,0.081,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,7,223.612,4.232,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,7,4.094,0.411,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,189,20
+after,B3,as deployed,7,828.989,4.152,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,7,70.903,0.345,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,7,1.234,0.875,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,7,0.723,0.119,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,8,210.976,2.848,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+after,B2,as deployed,8,3.994,0.326,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,209,0
+after,B3,as deployed,8,768.288,4.039,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,8,71.04,0.362,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,8,0.971,0.659,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,8,0.554,0.06,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0
+after,B1,as deployed,9,277.257,5.292,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,333,4193
+after,B2,as deployed,9,4.052,0.518,4749.74,42,40,Bitmap Heap Scan fact_payment; Bitmap Heap Scan fact_rent_invoice_line; Bitmap Index Scan ix_invoice_line_due_unit; Bitmap Index Scan ix_payment_due_unit,0,ix_invoice_line_due_unit ix_payment_due_unit,189,20
+after,B3,as deployed,9,862.281,6.963,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+after,B4,partitioned,9,94.423,0.429,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+after,B5,as deployed,9,1.16,0.854,1318.89,365,12,Bitmap Heap Scan fact_unit_occupancy_daily x12; Bitmap Index Scan ix_occupancy_unit_date x12,12,ix_occupancy_unit_date,395,0
+after,B6,as deployed,9,0.804,0.086,110.51,68,34,Index Only Scan ix_dim_tenant_current_segment,0,ix_dim_tenant_current_segment,6,0

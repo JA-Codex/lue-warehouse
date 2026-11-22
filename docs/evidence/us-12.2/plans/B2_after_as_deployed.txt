@@ -1,0 +1,58 @@
+-- B2 Collection rate by building for one month (Q1 drilled to June 2026)
+-- after, as deployed
+Merge Left Join  (cost=4748.58..4749.74 rows=42 width=102) (actual time=5.857..5.895 rows=40 loops=1)
+  Merge Cond: ((u.building_code)::text = (c.building_code)::text)
+  Buffers: shared hit=189 read=20
+  ->  Sort  (cost=2293.63..2293.74 rows=42 width=38) (actual time=2.973..2.980 rows=40 loops=1)
+        Sort Key: u.building_code
+        Sort Method: quicksort  Memory: 26kB
+        Buffers: shared hit=93 read=11
+        ->  HashAggregate  (cost=2291.97..2292.50 rows=42 width=38) (actual time=2.939..2.952 rows=40 loops=1)
+              Group Key: u.building_code
+              Batches: 1  Memory Usage: 32kB
+              Buffers: shared hit=93 read=11
+              ->  Hash Join  (cost=146.08..2274.35 rows=3524 width=12) (actual time=0.633..2.047 rows=3566 loops=1)
+                    Hash Cond: (f.unit_key = u.unit_key)
+                    Buffers: shared hit=93 read=11
+                    ->  Bitmap Heap Scan on fact_rent_invoice_line f  (cost=68.54..2187.54 rows=3524 width=10) (actual time=0.179..0.596 rows=3566 loops=1)
+                          Recheck Cond: ((due_date_key >= 20260601) AND (due_date_key <= 20260630))
+                          Heap Blocks: exact=56
+                          Buffers: shared hit=56 read=11
+                          ->  Bitmap Index Scan on ix_invoice_line_due_unit  (cost=0.00..67.66 rows=3524 width=0) (actual time=0.164..0.165 rows=3566 loops=1)
+                                Index Cond: ((due_date_key >= 20260601) AND (due_date_key <= 20260630))
+                                Buffers: shared read=11
+                    ->  Hash  (cost=55.02..55.02 rows=1802 width=10) (actual time=0.444..0.444 rows=1802 loops=1)
+                          Buckets: 2048  Batches: 1  Memory Usage: 94kB
+                          Buffers: shared hit=37
+                          ->  Seq Scan on dim_unit u  (cost=0.00..55.02 rows=1802 width=10) (actual time=0.005..0.244 rows=1802 loops=1)
+                                Buffers: shared hit=37
+  ->  Sort  (cost=2454.95..2455.06 rows=42 width=38) (actual time=2.874..2.878 rows=40 loops=1)
+        Sort Key: c.building_code
+        Sort Method: quicksort  Memory: 26kB
+        Buffers: shared hit=96 read=9
+        ->  Subquery Scan on c  (cost=2452.87..2453.82 rows=42 width=38) (actual time=2.827..2.851 rows=40 loops=1)
+              Buffers: shared hit=96 read=9
+              ->  HashAggregate  (cost=2452.87..2453.40 rows=42 width=38) (actual time=2.826..2.844 rows=40 loops=1)
+                    Group Key: u_1.building_code
+                    Batches: 1  Memory Usage: 32kB
+                    Buffers: shared hit=96 read=9
+                    ->  Hash Join  (cost=138.00..2437.19 rows=3137 width=12) (actual time=0.680..2.114 rows=3146 loops=1)
+                          Hash Cond: (p.unit_key = u_1.unit_key)
+                          Buffers: shared hit=96 read=9
+                          ->  Bitmap Heap Scan on fact_payment p  (cost=60.46..2351.39 rows=3137 width=10) (actual time=0.164..0.717 rows=3146 loops=1)
+                                Recheck Cond: ((due_date_key >= 20260601) AND (due_date_key <= 20260630))
+                                Filter: ((paid_date_key >= 1) AND (paid_date_key <= 20260630))
+                                Heap Blocks: exact=59
+                                Buffers: shared hit=59 read=9
+                                ->  Bitmap Index Scan on ix_payment_due_unit  (cost=0.00..59.67 rows=3138 width=0) (actual time=0.151..0.151 rows=3146 loops=1)
+                                      Index Cond: ((due_date_key >= 20260601) AND (due_date_key <= 20260630))
+                                      Buffers: shared read=9
+                          ->  Hash  (cost=55.02..55.02 rows=1802 width=10) (actual time=0.506..0.507 rows=1802 loops=1)
+                                Buckets: 2048  Batches: 1  Memory Usage: 94kB
+                                Buffers: shared hit=37
+                                ->  Seq Scan on dim_unit u_1  (cost=0.00..55.02 rows=1802 width=10) (actual time=0.007..0.260 rows=1802 loops=1)
+                                      Buffers: shared hit=37
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.581 ms
+Execution Time: 5.989 ms
