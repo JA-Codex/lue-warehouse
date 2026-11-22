@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -48,6 +48,15 @@ analytics: ## Run the 14 business questions, window analytics and OLAP queries, 
 
 analytics-test: ## Analytical SQL acceptance tests (US-11.1 to US-11.6): marts, planted patterns, pandas cross-checks
 	$(PYTHON) scripts/test_analytics.py
+
+benchmark: ## Measure the workload before and after the candidate indexes (E12); results in data/benchmark, warehouse left at the baseline
+	$(PYTHON) scripts/benchmark.py
+
+benchmark-test: ## Benchmark harness acceptance tests (US-12.1, US-12.2): one command, every file, the baseline restored
+	$(PYTHON) scripts/test_benchmark.py
+
+indexing-report: ## Build docs/reports/LUE_Indexing_Report.pdf from the recorded run (docs/evidence/us-12.2) (US-12.3)
+	$(PYTHON) etl/reports/indexing.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)

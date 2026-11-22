@@ -4,3 +4,4 @@ pglast>=6
 numpy>=1.26
 openpyxl>=3.1
 pandas>=2.1  # scripts/check_patterns.py, run by scripts/test_defects.py (US-2.6)
+reportlab>=4.0  # scripts/test_benchmark_contract.py builds the Indexing Report from the recorded run (US-12.3)

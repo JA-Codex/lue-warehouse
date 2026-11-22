@@ -23,7 +23,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Phase 2 reports and submission (E9): Data Cleaning and Data Quality reports generated from the loaded warehouse, the dimension and fact load scripts as SQL, the deliverables checklist ([docs/phase2_checklist.md](docs/phase2_checklist.md)), a fresh-clone rehearsal; git tag `phase2-submission` | US-9.1 to US-9.3 (Done) |
 | Reporting layer (E10): the brief's three views (monthly collections, tenant analysis, unit performance) and their brief-named aliases, 9 slicer views, 4 monthly marts refreshed by the pipeline's last stage, read-only access for Power BI; every column in [docs/reporting.md](docs/reporting.md) | US-10.1 to US-10.3 (Done) |
 | Analytical SQL and OLAP (E11): the 14 business questions, window analytics, ROLLUP and CUBE with GROUPING() and their verification, in `sql/60_analytics/`; answers and interpretations in [docs/analytics.md](docs/analytics.md); three results cross-checked with pandas | US-11.1 to US-11.6 (Done) |
-| Indexing, Power BI, Phase 3 reports (E12 to E14) | Pending |
+| Query optimisation (E12): a benchmark harness (`python scripts/benchmark.py`), indexing and partitioning experiments before and after with `EXPLAIN ANALYZE`, and the Indexing Report ([docs/reports/LUE_Indexing_Report.pdf](docs/reports/LUE_Indexing_Report.pdf)); the candidate indexes in `sql/70_performance/` stay out of the deploy (D20) | US-12.1 to US-12.3 (Done) |
+| Power BI, Phase 3 reports (E13 to E14) | Pending |
 
 ## Run it from a fresh clone (Phase 2 submission, US-9.3)
 
@@ -214,6 +215,10 @@ make analytics   run the SQL pack (sql/60_analytics/analytical.sql, olap.sql) qu
                  (also: psql -d lue_warehouse -f sql/60_analytics/analytical.sql); answers in docs/analytics.md (E11)
 make analytics-test  E11 acceptance tests: 22 PASS lines on the full profile (16 on the small): the marts, the planted
                  patterns, the ROLLUP/CUBE verification and three pandas cross-checks (python scripts/test_analytics.py)
+make benchmark   E12: the workload measured before and after the candidate indexes (sql/70_performance), interleaved
+                 rounds; results in data/benchmark, the warehouse left at the D20 baseline (--keep keeps the indexes)
+make benchmark-test  E12 harness tests: 7 PASS lines (python scripts/test_benchmark.py; about 3 minutes on the full profile)
+make indexing-report  docs/reports/LUE_Indexing_Report.pdf from the recorded run in docs/evidence/us-12.2
 make load-sql    re-export sql/30_dimensions/02_dimension_loads.sql and sql/40_facts/01_fact_loads.sql from the
                  loaders' specs (US-9.3; CI fails while they differ); python scripts/test_load_sql.py (6 PASS lines)
                  runs them on the loaded warehouse, rolled back
@@ -221,7 +226,7 @@ make db-reset    drop and rebuild the warehouse, reload reference data, smoke te
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13, E11 contract: 14)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13, E11 contract: 14, E12 contract: 15)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -319,8 +324,9 @@ from the development plan:
 | `IF NOT EXISTS` and `ON CONFLICT DO NOTHING` | Safe to re-run | US-1.2 |
 
 The partial unique indexes enforce uniqueness, like the primary keys, so they belong to the D20 baseline; the pack's
-38 foreign-key and filter indexes are left out of the baseline and are added in the Phase 3 indexing experiments
-(US-12.2). `dim_request_flags` has no special members, as in the pack: all 8 flag combinations always exist.
+38 foreign-key and filter indexes are left out of the baseline. The Phase 3 experiments (US-12.2) tested four
+candidates chosen for the measured workload, among them the pack's `(unit_key, snapshot_date_key)`, in
+`sql/70_performance/02_indexes.sql`, outside the deploy; the results are in the Indexing Report. `dim_request_flags` has no special members, as in the pack: all 8 flag combinations always exist.
 
 ### Reference data (US-1.4)
 
