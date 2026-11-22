@@ -1,0 +1,66 @@
+Expected dashboard values (lue_reader; data window 2023-07-01 to 2026-06-30)
+Measure                                      Window       Month 2025-03           FY2024-25              Lahore
+Invoice Lines                               129,885               3,569              43,416              55,810
+Billed                            PKR 5,676,652,818     PKR 157,557,764   PKR 1,889,759,182   PKR 2,341,131,218
+Collected (Cohort)                PKR 5,347,289,709     PKR 148,326,762   PKR 1,775,026,939   PKR 2,187,307,068
+Collection Rate                               94.2%               94.1%               93.9%               93.4%
+Cash Received                     PKR 5,347,289,709     PKR 149,027,837   PKR 1,774,998,239   PKR 2,187,307,068
+Cash Received PY                            (blank)     PKR 137,222,923   PKR 1,640,862,798             (blank)
+Cash Received YoY %                         (blank)                8.6%                8.2%             (blank)
+Arrears                             PKR 329,363,109     PKR 181,181,521     PKR 207,519,053     PKR 153,824,150
+Billed to Date                    PKR 5,676,652,818   PKR 3,143,400,476   PKR 3,623,380,090   PKR 2,341,131,218
+Arrears Ratio                                  5.8%                5.8%                5.7%                6.6%
+Unit Days                                 1,972,800              55,800             657,000             824,192
+Occupied Days                             1,667,578              46,903             558,818             706,960
+Occupancy %                                   84.5%               84.1%               85.1%               85.8%
+Avg Vacancy Days                              126.9               156.1               125.4               122.9
+Active Leases                                 1,499               1,513               1,499                 647
+Units                                         1,800               1,800               1,800                 752
+Occupied Units                                1,499               1,513               1,499                 647
+Rent Roll                           PKR 140,589,000     PKR 127,207,500     PKR 128,291,000      PKR 58,959,500
+Avg Contract Rent                        PKR 93,789          PKR 84,076          PKR 85,584          PKR 91,128
+Requests                                      5,670                 152               1,889               2,232
+Resolved Requests                             5,659                 152               1,889               2,226
+Avg Days to Resolve                             1.8                 1.9                 1.8                 1.7
+SLA Breaches                                  1,411                  42                 488                 555
+SLA Breach %                                  24.9%               27.6%               25.8%               24.9%
+Maintenance Cost                     PKR 32,984,300         PKR 943,750      PKR 10,965,500      PKR 13,142,500
+Maintenance Cost per Unit-Month             PKR 509             PKR 524             PKR 508             PKR 485
+Rent Collected                    PKR 4,483,799,351     PKR 126,103,639   PKR 1,488,101,599   PKR 4,483,799,351
+Management Fee                      PKR 358,703,948      PKR 10,088,291     PKR 119,048,128     PKR 358,703,948
+NOI                               PKR 4,092,111,103     PKR 115,071,598   PKR 1,358,087,971   PKR 4,092,111,103
+Tenants                                       3,455               3,455               3,455               1,499
+Chronically Late Tenants                        846                 846                 846                 381
+Tenant Billed                     PKR 5,676,652,818   PKR 5,676,652,818   PKR 5,676,652,818   PKR 2,341,131,218
+Tenant Collected                  PKR 5,347,289,709   PKR 5,347,289,709   PKR 5,347,289,709   PKR 2,187,307,068
+Tenant Arrears                      PKR 329,363,109     PKR 329,363,109     PKR 329,363,109     PKR 153,824,150
+Tenant Arrears Ratio                           5.8%                5.8%                5.8%                6.6%
+Late Payment Share                            30.4%               30.4%               30.4%               31.3%
+Collection Rate (Portfolio)                   94.2%               94.1%               93.9%               94.2%
+Arrears (Portfolio)                 PKR 329,363,109     PKR 181,181,521     PKR 207,519,053     PKR 329,363,109
+Arrears Ratio (Portfolio)                      5.8%                5.8%                5.7%                5.8%
+Occupancy % (Portfolio)                       84.5%               84.1%               85.1%               84.5%
+Avg Days to Resolve (Portfolio)                 1.8                 1.9                 1.8                 1.8
+SLA Breach % (Portfolio)                      24.9%               27.6%               25.8%               24.9%
+Trade Avg Days to Resolve                   (blank)             (blank)             (blank)             (blank)
+Days vs Trade                               (blank)             (blank)             (blank)             (blank)
+
+Decision page texts
+[Window]
+  D1: Concentrate arrears follow-up on Gulberg Residency 2 (GLB03). Its arrears ratio is 21.8% against 5.8% for the portfolio, and its collection rate of 78.2% trails the portfolio's 94.2% by 16.0 points. Action: a weekly call list and payment plans for its chronically late tenants. Owner: finance head (credit control). Expected effect: recovering half of its PKR 64,267,854 arrears cuts portfolio arrears by 10%.
+  D2: Move urgent Plumbing work away from Sheikh Plumbing Works (V-001). It takes 3.1 days on average to resolve a request, 2.3 times the 1.4 days of all Plumbing vendors, and breaches the SLA on 86.5% of its jobs (24.9% for all vendors). Action: give its urgent jobs to Hussain Plumbing Associates (V-006), the fastest Plumbing vendor, and review its contract. Owner: maintenance manager. Expected effect: at the speed of Hussain Plumbing Associates, its 37 requests would have waited about 76 fewer days in all over this period.
+  D3: Fill vacant apartments in Karachi. Their occupancy is 78.2% against 84.5% for the portfolio, and a vacancy lasts 133 days on average. Action: a vacancy incentive (rent-free weeks) on them, marketed before the summer moving peak. Owner: leasing manager. Expected effect: reaching the portfolio's occupancy fills about 23 more units, about PKR 1,775,190 of rent a month.
+[Month 2025-03]
+  D1: Concentrate arrears follow-up on Gulberg Residency 2 (GLB03). Its arrears ratio is 20.0% against 5.8% for the portfolio, and its collection rate of 78.6% trails the portfolio's 94.1% by 15.5 points. Action: a weekly call list and payment plans for its chronically late tenants. Owner: finance head (credit control). Expected effect: recovering half of its PKR 32,607,862 arrears cuts portfolio arrears by 9%.
+  D2: No vendor has 20 or more resolved requests in this selection.
+  D3: Fill vacant apartments in Karachi. Their occupancy is 78.8% against 84.1% for the portfolio, and a vacancy lasts 102 days on average. Action: a vacancy incentive (rent-free weeks) on them, marketed before the summer moving peak. Owner: leasing manager. Expected effect: reaching the portfolio's occupancy fills about 19 more units, about PKR 1,300,995 of rent a month.
+[FY2024-25]
+  D1: Concentrate arrears follow-up on Gulberg Residency 2 (GLB03). Its arrears ratio is 20.5% against 5.7% for the portfolio, and its collection rate of 76.1% trails the portfolio's 93.9% by 17.8 points. Action: a weekly call list and payment plans for its chronically late tenants. Owner: finance head (credit control). Expected effect: recovering half of its PKR 38,345,557 arrears cuts portfolio arrears by 9%.
+  D2: Move urgent HVAC work away from Memon Cooling Enterprises (V-077). It takes 2.5 days on average to resolve a request, 1.4 times the 1.8 days of all HVAC vendors, and breaches the SLA on 30.4% of its jobs (25.8% for all vendors). Action: give its urgent jobs to Virk Cooling Enterprises (V-079), the fastest HVAC vendor, and review its contract. Owner: maintenance manager. Expected effect: at the speed of Virk Cooling Enterprises, its 23 requests would have waited about 24 fewer days in all over this period.
+  D3: Fill vacant apartments in Karachi. Their occupancy is 79.8% against 85.1% for the portfolio, and a vacancy lasts 124 days on average. Action: a vacancy incentive (rent-free weeks) on them, marketed before the summer moving peak. Owner: leasing manager. Expected effect: reaching the portfolio's occupancy fills about 19 more units, about PKR 1,359,930 of rent a month.
+[Lahore]
+  D1: Concentrate arrears follow-up on Gulberg Residency 2 (GLB03). Its arrears ratio is 21.8% against 5.8% for the portfolio, and its collection rate of 78.2% trails the portfolio's 94.2% by 16.0 points. Action: a weekly call list and payment plans for its chronically late tenants. Owner: finance head (credit control). Expected effect: recovering half of its PKR 64,267,854 arrears cuts portfolio arrears by 10%.
+  D2: Move urgent Pest control work away from Hussain Pest Control Services (V-109). It takes 2.4 days on average to resolve a request, 1.4 times the 1.7 days of all Pest control vendors, and breaches the SLA on 45.8% of its jobs (24.9% for all vendors). Action: give its urgent jobs to Khan Pest Control & Sons (V-113), the fastest Pest control vendor, and review its contract. Owner: maintenance manager. Expected effect: at the speed of Khan Pest Control & Sons, its 24 requests would have waited about 19 fewer days in all over this period.
+  D3: Fill vacant apartments in Lahore. Their occupancy is 84.5% against 84.5% for the portfolio, and a vacancy lasts 122 days on average. Action: a vacancy incentive (rent-free weeks) on them, marketed before the summer moving peak. Owner: leasing manager. Expected effect: they are at the portfolio's occupancy already; each one let adds about PKR 93,708 of rent a month.
+
+wrote docs/evidence/us-13.1/expected_measures.csv and docs/evidence/us-13.1/decisions.txt

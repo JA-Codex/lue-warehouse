@@ -1,0 +1,105 @@
+{
+  "about": "The LUE dashboard's data model (US-13.1): what Power BI loads from lue_reporting, how the tables relate and which columns are hidden. docs/powerbi/README.md builds it step by step; scripts/test_powerbi_contract.py checks every table and column against sql/50_reporting/01_reporting.sql, and that no filter path is ambiguous.",
+  "connection": {
+    "connector": "PostgreSQL database",
+    "server": "localhost:5432",
+    "database": "lue_warehouse",
+    "schema": "lue_reporting",
+    "user": "lue_reader",
+    "mode": "Import"
+  },
+  "tables": {
+    "vw_dim_date": {
+      "role": "dimension",
+      "filter": "date_key > 0, and full_date inside vw_reporting_window (the special rows -1 and -2 are 1900 dates)",
+      "mark_as_date_table": "full_date",
+      "hidden": ["date_key"],
+      "sort_by": {"month_name": "month_no"}
+    },
+    "vw_dim_building": {
+      "role": "dimension",
+      "filter": "building_code not in (N/A, Unknown): no mart row uses them (scripts/test_powerbi.py)",
+      "hidden": []
+    },
+    "vw_dim_unit_type": {
+      "role": "dimension",
+      "filter": "unit_type not in (Not applicable, Unknown): no mart row uses them (scripts/test_powerbi.py)",
+      "hidden": ["current_units"]
+    },
+    "vw_dim_vendor": {
+      "role": "dimension",
+      "hidden": ["vendor_key", "phone", "effective_from", "effective_to"]
+    },
+    "vw_dim_maintenance_category": {
+      "role": "dimension",
+      "hidden": ["maint_category_key", "effective_from", "effective_to"]
+    },
+    "vw_dim_owner": {
+      "role": "dimension",
+      "hidden": ["owner_key"]
+    },
+    "vw_tenant_analysis": {
+      "role": "dimension",
+      "note": "one row per tenant version: the tenant and its payer segment for the drill-through",
+      "hidden": ["tenant_key"]
+    },
+    "mart_collections_monthly": {
+      "role": "fact",
+      "hidden": ["month_key", "month_start", "building_code", "invoice_lines", "billed_due", "collected_cohort", "cash_received", "arrears_month_end"]
+    },
+    "mart_occupancy_monthly": {
+      "role": "fact",
+      "hidden": ["month_key", "month_start", "building_code", "unit_type", "unit_days", "occupied_days", "vacant_days", "completed_vacancy_spells", "active_leases", "units_month_end", "occupied_units_month_end", "rent_roll_month_end", "arrears_month_end"]
+    },
+    "mart_maintenance_monthly": {
+      "role": "fact",
+      "hidden": ["month_key", "month_start", "building_code", "unit_type", "maint_category_key", "vendor_key", "requests", "resolved_requests", "days_to_resolve_sum", "sla_breached", "estimated_cost", "actual_cost"]
+    },
+    "mart_owner_portfolio_monthly": {
+      "role": "fact",
+      "hidden": ["month_key", "month_start", "owner_key", "rent_collected", "cash_received", "maintenance_requests", "maintenance_cost", "management_fee_rate", "management_fee", "noi", "unit_days", "occupied_days", "units_month_end"]
+    },
+    "vw_tenant_by_building": {
+      "role": "fact",
+      "note": "over the whole window: no date relationship",
+      "hidden": ["tenant_key", "building_code", "tenant_code", "tenant_name", "tenant_type", "employer_sector", "payer_segment", "invoice_lines", "billed_due", "payments", "late_payments", "total_collected", "current_arrears"]
+    },
+    "vw_unit_performance": {
+      "role": "fact",
+      "note": "over the whole window: a reference table for checking, hidden from report view",
+      "hidden_table": true,
+      "hidden": []
+    },
+    "vw_monthly_collections": {
+      "role": "fact",
+      "note": "the portfolio by month: a reference table for checking Collection Rate per month, hidden from report view",
+      "hidden_table": true,
+      "hidden": []
+    },
+    "vw_reporting_window": {
+      "role": "parameter",
+      "note": "one row; the Data Window measure shows it",
+      "hidden": []
+    }
+  },
+  "relationships": [
+    {"from": "vw_dim_date[date_key]", "to": "mart_collections_monthly[month_key]"},
+    {"from": "vw_dim_date[date_key]", "to": "mart_occupancy_monthly[month_key]"},
+    {"from": "vw_dim_date[date_key]", "to": "mart_maintenance_monthly[month_key]"},
+    {"from": "vw_dim_date[date_key]", "to": "mart_owner_portfolio_monthly[month_key]"},
+    {"from": "vw_dim_date[date_key]", "to": "vw_monthly_collections[month_key]"},
+    {"from": "vw_dim_building[building_code]", "to": "mart_collections_monthly[building_code]"},
+    {"from": "vw_dim_building[building_code]", "to": "mart_occupancy_monthly[building_code]"},
+    {"from": "vw_dim_building[building_code]", "to": "mart_maintenance_monthly[building_code]"},
+    {"from": "vw_dim_building[building_code]", "to": "vw_tenant_by_building[building_code]"},
+    {"from": "vw_dim_building[building_code]", "to": "vw_unit_performance[building_code]"},
+    {"from": "vw_dim_unit_type[unit_type]", "to": "mart_occupancy_monthly[unit_type]"},
+    {"from": "vw_dim_unit_type[unit_type]", "to": "mart_maintenance_monthly[unit_type]"},
+    {"from": "vw_dim_unit_type[unit_type]", "to": "vw_unit_performance[unit_type]"},
+    {"from": "vw_dim_vendor[vendor_key]", "to": "mart_maintenance_monthly[vendor_key]"},
+    {"from": "vw_dim_maintenance_category[maint_category_key]", "to": "mart_maintenance_monthly[maint_category_key]"},
+    {"from": "vw_dim_owner[owner_key]", "to": "mart_owner_portfolio_monthly[owner_key]"},
+    {"from": "vw_tenant_analysis[tenant_key]", "to": "vw_tenant_by_building[tenant_key]"}
+  ],
+  "relationship_defaults": {"cardinality": "Many to one (*:1), the dimension on the one side", "cross_filter_direction": "Single (the dimension filters the fact)", "active": true}
+}

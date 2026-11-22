@@ -21,10 +21,11 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
 | Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
 | Phase 2 reports and submission (E9): Data Cleaning and Data Quality reports generated from the loaded warehouse, the dimension and fact load scripts as SQL, the deliverables checklist ([docs/phase2_checklist.md](docs/phase2_checklist.md)), a fresh-clone rehearsal; git tag `phase2-submission` | US-9.1 to US-9.3 (Done) |
-| Reporting layer (E10): the brief's three views (monthly collections, tenant analysis, unit performance) and their brief-named aliases, 9 slicer views, 4 monthly marts refreshed by the pipeline's last stage, read-only access for Power BI; every column in [docs/reporting.md](docs/reporting.md) | US-10.1 to US-10.3 (Done) |
+| Reporting layer (E10): the brief's three views (monthly collections, tenant analysis, unit performance) and their brief-named aliases, 10 slicer views, 4 monthly marts refreshed by the pipeline's last stage, read-only access for Power BI; every column in [docs/reporting.md](docs/reporting.md) | US-10.1 to US-10.3 (Done) |
 | Analytical SQL and OLAP (E11): the 14 business questions, window analytics, ROLLUP and CUBE with GROUPING() and their verification, in `sql/60_analytics/`; answers and interpretations in [docs/analytics.md](docs/analytics.md); three results cross-checked with pandas | US-11.1 to US-11.6 (Done) |
 | Query optimisation (E12): a benchmark harness (`python scripts/benchmark.py`), indexing and partitioning experiments before and after with `EXPLAIN ANALYZE`, and the Indexing Report ([docs/reports/LUE_Indexing_Report.pdf](docs/reports/LUE_Indexing_Report.pdf)); the candidate indexes in `sql/70_performance/` stay out of the deploy (D20) | US-12.1 to US-12.3 (Done) |
-| Power BI, Phase 3 reports (E13 to E14) | Pending |
+| Power BI (E13): the data model ([docs/powerbi/model.json](docs/powerbi/model.json)), 51 DAX measures, the theme and a step-by-step build guide ([docs/powerbi/README.md](docs/powerbi/README.md)); every measure's expected value computed from the marts and checked against the facts (`python scripts/powerbi_expected.py`, `scripts/test_powerbi.py`); the PBIX is built in Power BI Desktop from the guide | US-13.1 to US-13.5 (model and validation done; PBIX and screenshots to build) |
+| Phase 3 reports and release (E14, E15) | Pending |
 
 ## Run it from a fresh clone (Phase 2 submission, US-9.3)
 
@@ -218,6 +219,10 @@ make analytics-test  E11 acceptance tests: 22 PASS lines on the full profile (16
 make benchmark   E12: the workload measured before and after the candidate indexes (sql/70_performance), interleaved
                  rounds; results in data/benchmark, the warehouse left at the D20 baseline (--keep keeps the indexes)
 make benchmark-test  E12 harness tests: 7 PASS lines (python scripts/test_benchmark.py; about 3 minutes on the full profile)
+make powerbi-expected  E13: the value every dashboard measure must show, and the decision texts (as lue_reader;
+                 python scripts/powerbi_expected.py; --out <folder> writes them, --dax rewrites docs/powerbi/validation.dax)
+make powerbi-test  E13 acceptance tests: 13 PASS lines; the model loads as lue_reader, every key is found, every
+                 measure equals the facts, the decision texts pick what the facts pick (python scripts/test_powerbi.py)
 make indexing-report  docs/reports/LUE_Indexing_Report.pdf from the recorded run in docs/evidence/us-12.2
 make load-sql    re-export sql/30_dimensions/02_dimension_loads.sql and sql/40_facts/01_fact_loads.sql from the
                  loaders' specs (US-9.3; CI fails while they differ); python scripts/test_load_sql.py (6 PASS lines)
@@ -226,7 +231,7 @@ make db-reset    drop and rebuild the warehouse, reload reference data, smoke te
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13, E11 contract: 14, E12 contract: 15)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13, E11 contract: 14, E12 contract: 15, E13 contract: 16)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -393,11 +398,23 @@ are findings only. Everything is in `lue_audit.dq_result`; staging keeps the bro
 | `mart_occupancy_monthly` | month x building x unit type | unit-days, occupied days, vacancy spells, month-end rent roll and arrears |
 | `mart_maintenance_monthly` | raised month x building x unit type x category x vendor | requests, resolution, SLA, cost |
 | `mart_owner_portfolio_monthly` | month x owner | rent collected, maintenance cost, the 8 percent fee assumption, NOI (Q12) |
-| `vw_dim_*` (9) | one row per member or version | the slicers: date, month, building, unit, tenant, owner, vendor, maintenance category, payment method |
+| `vw_dim_*` (10) | one row per member or version | the slicers: date, month, building, unit, unit type, tenant, owner, vendor, maintenance category, payment method |
+| `vw_tenant_by_building` | tenant version x building | the tenant analysis by building: the dashboard's drill-through from a building to its tenants (E13) |
 
 The marts are refreshed by the pipeline's last stage (`marts`; alone `python etl/reporting.py`), concurrently so
 readers are never blocked. `lue_reader` reads `lue_reporting` only: it cannot read `lue_staging`, `lue_dw` or
 `lue_audit`, write, or refresh (`python scripts/test_reporting.py` shows the denials).
+
+### The dashboard (E13)
+
+Power BI connects to `lue_reporting` as `lue_reader` in Import mode. [docs/powerbi/README.md](docs/powerbi/README.md)
+builds the three pages (Executive Overview, Detailed Analysis, Decision Page) step by step from
+[`model.json`](docs/powerbi/model.json) (15 tables, 17 single-direction relationships),
+[`measures.dax`](docs/powerbi/measures.dax) (51 measures, pasted in one go in DAX query view) and
+[`lue_theme.json`](docs/powerbi/lue_theme.json). `python scripts/powerbi_expected.py` prints the value every measure
+must show (as `lue_reader`, from the same marts, for the whole window, a month, a fiscal year and a city) and the
+three decision texts; [`validation.dax`](docs/powerbi/validation.dax) shows the same table in Power BI.
+`python scripts/test_powerbi.py` checks those values against queries on the facts (13 PASS lines).
 
 ### Planted defects, answer key and patterns (US-2.6)
 

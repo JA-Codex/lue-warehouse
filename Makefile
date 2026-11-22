@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -57,6 +57,12 @@ benchmark-test: ## Benchmark harness acceptance tests (US-12.1, US-12.2): one co
 
 indexing-report: ## Build docs/reports/LUE_Indexing_Report.pdf from the recorded run (docs/evidence/us-12.2) (US-12.3)
 	$(PYTHON) etl/reports/indexing.py
+
+powerbi-expected: ## The value every dashboard measure must show and the decision texts, as lue_reader (US-13.1, US-13.5)
+	$(PYTHON) scripts/powerbi_expected.py
+
+powerbi-test: ## Dashboard model and measure acceptance tests (US-13.1 to US-13.5); needs a loaded warehouse, changes nothing
+	$(PYTHON) scripts/test_powerbi.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
