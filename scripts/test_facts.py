@@ -14,6 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_contract import FROZEN, read_model  # noqa: E402
 from db_setup import ETL_ROLE, READER_ROLE, load_settings  # noqa: E402
@@ -177,8 +178,15 @@ def main() -> int:
         "WHERE n.nspname = 'lue_dw' AND t.relname LIKE 'fact\\_%%' AND NOT t.relispartition "
         "AND NOT EXISTS (SELECT 1 FROM pg_constraint c WHERE c.conindid = i.indexrelid)"
     )
-    extra = [r[0] for r in cur.fetchall()]
-    check(not extra, "no secondary indexes on the facts" + (f" (found {extra})" if extra else ""))
+    # the E12 candidate indexes may be present after python scripts/benchmark.py --keep
+    perf = (ROOT / "sql" / "70_performance" / "02_indexes.sql").read_text(encoding="utf-8")
+    e12 = set(re.findall(r"CREATE INDEX IF NOT EXISTS (\w+)", perf))
+    extra = [x for (x,) in cur.fetchall() if x.split(".")[-1] not in e12]
+    check(
+        not extra,
+        "no secondary indexes on the facts beyond the documented E12 candidates"
+        + (f" (found {extra})" if extra else ""),
+    )
 
     print("Behaviour")
     # E7 loads the facts, so some may already hold rows. A still-empty fact must have an unused

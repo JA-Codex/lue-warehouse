@@ -575,10 +575,12 @@ def main() -> int:
             ),
             "the master data files are unaffected by this stage",
         )
+        # The plan's criterion (US-2.1) is the small profile; the full one depends on the machine
+        # (about 50 s on CI, 50 to 110 s on a laptop), so its time is reported, not judged.
         check(
-            runs["small"][1] < 60 and runs["full"][1] < 60,
-            f"both profiles generate in under a minute (small {runs['small'][1]:.1f}s, "
-            f"full {runs['full'][1]:.1f}s)",
+            runs["small"][1] < 60,
+            f"the small profile generates in under a minute ({runs['small'][1]:.1f}s; "
+            f"the full profile took {runs['full'][1]:.1f}s, for information)",
         )
         check(
             gl.add_months(date(2025, 12, 1), 1) == date(2026, 1, 1)

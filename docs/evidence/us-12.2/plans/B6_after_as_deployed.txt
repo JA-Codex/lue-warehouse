@@ -1,0 +1,12 @@
+-- B6 Current tenants by segment (a slicer list from the current SCD2 rows)
+-- after, as deployed
+GroupAggregate  (cost=0.28..110.51 rows=68 width=29) (actual time=0.023..0.870 rows=34 loops=1)
+  Group Key: tenant_type, employer_sector
+  Buffers: shared hit=6
+  ->  Index Only Scan using ix_dim_tenant_current_segment on dim_tenant  (cost=0.28..81.31 rows=3802 width=21) (actual time=0.010..0.362 rows=3802 loops=1)
+        Heap Fetches: 0
+        Buffers: shared hit=6
+Planning:
+  Buffers: shared hit=3
+Planning Time: 0.100 ms
+Execution Time: 0.889 ms

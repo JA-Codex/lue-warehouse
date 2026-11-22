@@ -1,4 +1,4 @@
-"""Shared PDF building blocks for the Phase 2 reports (reportlab)."""
+"""Shared PDF building blocks for the reports (reportlab): Phase 2 (cleaning, quality), Phase 3 (indexing)."""
 
 # ruff: noqa: E501  (drawing coordinates: long lines read better)
 
@@ -48,6 +48,8 @@ STYLES = {
     "note": ParagraphStyle("note", parent=_base["BodyText"], fontName="Helvetica-Oblique",
                            fontSize=8.2, leading=10.5, textColor=colors.HexColor("#52606d"),
                            spaceAfter=6),
+    "code": ParagraphStyle("code", fontName="Courier", fontSize=6.9, leading=8.4, textColor=INK,
+                           backColor=SHADE, borderPadding=4, spaceBefore=2, spaceAfter=8),
 }  # fmt: skip
 
 
@@ -98,11 +100,16 @@ def table(header: list[str], rows: list[list], widths: list[float], numeric: set
     return t
 
 
+def code(lines: list[str]) -> Paragraph:
+    """Lines of a query plan or code, monospaced, indentation kept."""
+    return Paragraph("<br/>".join(escape(ln).replace(" ", "&nbsp;") for ln in lines), STYLES["code"])
+
+
 def keep(*flowables) -> KeepTogether:
     return KeepTogether(list(flowables))
 
 
-def build(path, title: str, subtitle: str, story: list) -> None:
+def build(path, title: str, subtitle: str, story: list, phase: str = "Phase 2") -> None:
     def footer(canvas, doc):
         canvas.saveState()
         canvas.setFont("Helvetica", 7.5)
@@ -116,11 +123,11 @@ def build(path, title: str, subtitle: str, story: list) -> None:
                             author="LUE Warehouse team", subject=subtitle)  # fmt: skip
     head = [p(escape(title), "title"),
             p(escape(subtitle) + "<br/>DL3004 Data Warehousing and Business Intelligence · "
-              f"Phase 2 · {date.today():%d %B %Y}", "subtitle")]  # fmt: skip
+              f"{phase} · {date.today():%d %B %Y}", "subtitle")]  # fmt: skip
     doc.build(head + story, onFirstPage=footer, onLaterPages=footer)
 
 
-__all__ = ["PageBreak", "Spacer", "bullets", "build", "escape", "flow", "fmt", "keep", "mm", "p", "table"]
+__all__ = ["PageBreak", "Spacer", "bullets", "build", "code", "escape", "flow", "fmt", "keep", "mm", "p", "table"]
 
 
 def flow(steps: list[tuple[str, str]], side: tuple[int, str, str] | None = None):

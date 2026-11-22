@@ -1,0 +1,114 @@
+-- B5 One unit's occupancy, rent and arrears over a fiscal year (a drill-through to one unit)
+-- after, as deployed
+GroupAggregate  (cost=1305.20..1318.89 rows=365 width=84) (actual time=0.975..1.089 rows=12 loops=1)
+  Group Key: ((f.snapshot_date_key / 100))
+  Buffers: shared hit=395
+  InitPlan 2 (returns $1)
+    ->  Result  (cost=0.37..0.38 rows=1 width=32) (actual time=0.019..0.020 rows=1 loops=1)
+          Buffers: shared hit=3
+          InitPlan 1 (returns $0)
+            ->  Limit  (cost=0.28..0.37 rows=1 width=32) (actual time=0.016..0.017 rows=1 loops=1)
+                  Buffers: shared hit=3
+                  ->  Index Scan using uq_dim_unit_version on dim_unit  (cost=0.28..160.23 rows=1799 width=32) (actual time=0.015..0.016 rows=1 loops=1)
+                        Index Cond: ((unit_nk)::text IS NOT NULL)
+                        Filter: (unit_key > 0)
+                        Buffers: shared hit=3
+  ->  Sort  (cost=1304.83..1305.74 rows=365 width=19) (actual time=0.946..0.974 rows=365 loops=1)
+        Sort Key: ((f.snapshot_date_key / 100)), f.snapshot_date_key DESC
+        Sort Method: quicksort  Memory: 42kB
+        Buffers: shared hit=395
+        ->  Nested Loop  (cost=4.96..1289.29 rows=365 width=19) (actual time=0.055..0.771 rows=365 loops=1)
+              Buffers: shared hit=395
+              ->  Index Scan using uq_dim_unit_version on dim_unit u  (cost=0.28..8.29 rows=1 width=4) (actual time=0.029..0.031 rows=1 loops=1)
+                    Index Cond: ((unit_nk)::text = $1)
+                    Buffers: shared hit=6
+              ->  Append  (cost=4.69..1276.44 rows=365 width=19) (actual time=0.024..0.691 rows=365 loops=1)
+                    Buffers: shared hit=389
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2025_07 f_1  (cost=4.69..107.50 rows=31 width=19) (actual time=0.022..0.064 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2025__unit_key_snapshot_date_key_idx6  (cost=0.00..4.68 rows=31 width=0) (actual time=0.011..0.011 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2025_08 f_2  (cost=4.69..107.54 rows=31 width=19) (actual time=0.013..0.055 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2025__unit_key_snapshot_date_key_idx7  (cost=0.00..4.68 rows=31 width=0) (actual time=0.007..0.008 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2025_09 f_3  (cost=4.67..104.20 rows=30 width=19) (actual time=0.012..0.049 rows=30 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=30
+                          Buffers: shared hit=32
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2025__unit_key_snapshot_date_key_idx8  (cost=0.00..4.67 rows=30 width=0) (actual time=0.007..0.007 rows=30 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2025_10 f_4  (cost=4.69..107.54 rows=31 width=19) (actual time=0.012..0.050 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2025_1_unit_key_snapshot_date_key_idx  (cost=0.00..4.68 rows=31 width=0) (actual time=0.007..0.008 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2025_11 f_5  (cost=4.67..104.20 rows=30 width=19) (actual time=0.013..0.052 rows=30 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=30
+                          Buffers: shared hit=32
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2025__unit_key_snapshot_date_key_idx9  (cost=0.00..4.67 rows=30 width=0) (actual time=0.008..0.008 rows=30 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2025_12 f_6  (cost=4.69..107.50 rows=31 width=19) (actual time=0.023..0.063 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2025_unit_key_snapshot_date_key_idx10  (cost=0.00..4.68 rows=31 width=0) (actual time=0.016..0.016 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2026_01 f_7  (cost=4.69..107.52 rows=31 width=19) (actual time=0.012..0.052 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2026_0_unit_key_snapshot_date_key_idx  (cost=0.00..4.68 rows=31 width=0) (actual time=0.007..0.007 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2026_02 f_8  (cost=4.65..97.53 rows=28 width=19) (actual time=0.013..0.048 rows=28 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=28
+                          Buffers: shared hit=30
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2026__unit_key_snapshot_date_key_idx1  (cost=0.00..4.64 rows=28 width=0) (actual time=0.008..0.008 rows=28 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2026_03 f_9  (cost=4.69..107.52 rows=31 width=19) (actual time=0.011..0.051 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2026__unit_key_snapshot_date_key_idx2  (cost=0.00..4.68 rows=31 width=0) (actual time=0.007..0.007 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2026_04 f_10  (cost=4.67..104.18 rows=30 width=19) (actual time=0.012..0.052 rows=30 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=30
+                          Buffers: shared hit=32
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2026__unit_key_snapshot_date_key_idx3  (cost=0.00..4.67 rows=30 width=0) (actual time=0.007..0.008 rows=30 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2026_05 f_11  (cost=4.69..109.06 rows=31 width=19) (actual time=0.012..0.050 rows=31 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=31
+                          Buffers: shared hit=33
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2026__unit_key_snapshot_date_key_idx4  (cost=0.00..4.68 rows=31 width=0) (actual time=0.007..0.007 rows=31 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+                    ->  Bitmap Heap Scan on fact_unit_occupancy_daily_2026_06 f_12  (cost=4.67..110.33 rows=30 width=19) (actual time=0.013..0.052 rows=30 loops=1)
+                          Recheck Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                          Heap Blocks: exact=30
+                          Buffers: shared hit=32
+                          ->  Bitmap Index Scan on fact_unit_occupancy_daily_2026__unit_key_snapshot_date_key_idx5  (cost=0.00..4.67 rows=30 width=0) (actual time=0.007..0.007 rows=30 loops=1)
+                                Index Cond: ((unit_key = u.unit_key) AND (snapshot_date_key >= 20250701) AND (snapshot_date_key <= 20260630))
+                                Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=12
+Planning Time: 1.013 ms
+Execution Time: 1.259 ms

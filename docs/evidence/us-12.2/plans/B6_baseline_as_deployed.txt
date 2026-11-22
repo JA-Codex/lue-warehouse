@@ -1,0 +1,17 @@
+-- B6 Current tenants by segment (a slicer list from the current SCD2 rows)
+-- baseline, as deployed
+Sort  (cost=123.28..123.45 rows=68 width=29) (actual time=1.568..1.571 rows=34 loops=1)
+  Sort Key: tenant_type, employer_sector
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared read=54
+  ->  HashAggregate  (cost=120.54..121.22 rows=68 width=29) (actual time=1.537..1.542 rows=34 loops=1)
+        Group Key: tenant_type, employer_sector
+        Batches: 1  Memory Usage: 24kB
+        Buffers: shared read=54
+        ->  Seq Scan on dim_tenant  (cost=0.00..92.02 rows=3802 width=21) (actual time=0.012..0.707 rows=3802 loops=1)
+              Filter: is_current
+              Buffers: shared read=54
+Planning:
+  Buffers: shared hit=10
+Planning Time: 0.195 ms
+Execution Time: 1.612 ms

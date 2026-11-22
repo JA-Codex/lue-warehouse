@@ -1,0 +1,29 @@
+-- B4 Occupancy by city for one quarter (a large occupancy aggregate, date-bounded)
+-- baseline, unpartitioned copy
+Sort  (cost=27597.16..27597.18 rows=6 width=56) (actual time=85.255..85.259 rows=4 loops=1)
+  Sort Key: u.city
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=39 read=2116
+  ->  HashAggregate  (cost=27596.97..27597.09 rows=6 width=56) (actual time=85.239..85.243 rows=4 loops=1)
+        Group Key: u.city
+        Batches: 1  Memory Usage: 24kB
+        Buffers: shared hit=39 read=2116
+        ->  Hash Join  (cost=3480.00..26395.48 rows=160198 width=10) (actual time=9.459..61.286 rows=163800 loops=1)
+              Hash Cond: (f.unit_key = u.unit_key)
+              Buffers: shared hit=39 read=2116
+              ->  Bitmap Heap Scan on bench_occupancy_unpartitioned f  (cost=3402.46..25896.43 rows=160198 width=6) (actual time=8.817..28.685 rows=163800 loops=1)
+                    Recheck Cond: ((snapshot_date_key >= 20260401) AND (snapshot_date_key <= 20260630))
+                    Heap Blocks: exact=1668
+                    Buffers: shared hit=2 read=2116
+                    ->  Bitmap Index Scan on bench_occupancy_unpartitioned_pkey  (cost=0.00..3362.41 rows=160198 width=0) (actual time=8.593..8.593 rows=163800 loops=1)
+                          Index Cond: ((snapshot_date_key >= 20260401) AND (snapshot_date_key <= 20260630))
+                          Buffers: shared hit=2 read=448
+              ->  Hash  (cost=55.02..55.02 rows=1802 width=12) (actual time=0.629..0.630 rows=1802 loops=1)
+                    Buckets: 2048  Batches: 1  Memory Usage: 96kB
+                    Buffers: shared hit=37
+                    ->  Seq Scan on dim_unit u  (cost=0.00..55.02 rows=1802 width=12) (actual time=0.007..0.349 rows=1802 loops=1)
+                          Buffers: shared hit=37
+Planning:
+  Buffers: shared hit=6 read=4
+Planning Time: 0.342 ms
+Execution Time: 85.325 ms

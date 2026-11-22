@@ -1,0 +1,33 @@
+-- B4 Occupancy by city for one quarter (a large occupancy aggregate, date-bounded)
+-- after, partitioned
+Sort  (cost=7321.23..7321.24 rows=6 width=56) (actual time=99.030..99.035 rows=4 loops=1)
+  Sort Key: u.city
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=2345
+  ->  HashAggregate  (cost=7321.03..7321.15 rows=6 width=56) (actual time=99.008..99.015 rows=4 loops=1)
+        Group Key: u.city
+        Batches: 1  Memory Usage: 24kB
+        Buffers: shared hit=2345
+        ->  Hash Join  (cost=77.55..6092.53 rows=163800 width=10) (actual time=0.699..71.424 rows=163800 loops=1)
+              Hash Cond: (f.unit_key = u.unit_key)
+              Buffers: shared hit=2345
+              ->  Append  (cost=0.00..5584.00 rows=163800 width=6) (actual time=0.009..39.939 rows=163800 loops=1)
+                    Buffers: shared hit=2308
+                    ->  Seq Scan on fact_unit_occupancy_daily_2026_04 f_1  (cost=0.00..1360.00 rows=54000 width=6) (actual time=0.009..8.401 rows=54000 loops=1)
+                          Filter: ((snapshot_date_key >= 20260401) AND (snapshot_date_key <= 20260630))
+                          Buffers: shared hit=550
+                    ->  Seq Scan on fact_unit_occupancy_daily_2026_05 f_2  (cost=0.00..1496.00 rows=55800 width=6) (actual time=0.015..8.608 rows=55800 loops=1)
+                          Filter: ((snapshot_date_key >= 20260401) AND (snapshot_date_key <= 20260630))
+                          Buffers: shared hit=659
+                    ->  Seq Scan on fact_unit_occupancy_daily_2026_06 f_3  (cost=0.00..1909.00 rows=54000 width=6) (actual time=0.256..7.841 rows=54000 loops=1)
+                          Filter: ((snapshot_date_key >= 20260401) AND (snapshot_date_key <= 20260630))
+                          Buffers: shared hit=1099
+              ->  Hash  (cost=55.02..55.02 rows=1802 width=12) (actual time=0.682..0.684 rows=1802 loops=1)
+                    Buckets: 2048  Batches: 1  Memory Usage: 96kB
+                    Buffers: shared hit=37
+                    ->  Seq Scan on dim_unit u  (cost=0.00..55.02 rows=1802 width=12) (actual time=0.002..0.367 rows=1802 loops=1)
+                          Buffers: shared hit=37
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.449 ms
+Execution Time: 99.095 ms

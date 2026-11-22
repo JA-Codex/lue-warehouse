@@ -1,0 +1,64 @@
+phase,query,variant,run,execution_ms,planning_ms,total_cost,plan_rows,actual_rows,scans,occupancy_partitions_read,indexes_used,shared_hit_blocks,shared_read_blocks
+baseline,B1,as deployed,1,238.802,2.919,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,1,23.154,0.499,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,1,744.059,2.938,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+baseline,B4,unpartitioned copy,1,51.163,0.226,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,1,66.466,0.448,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,1,22.518,0.963,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,1,1.286,0.088,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,2,210.811,2.249,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,2,16.243,0.371,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,2,739.17,3.004,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,2915,18166
+baseline,B4,unpartitioned copy,2,68.817,0.297,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,2,71.335,0.299,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,2,16.895,0.693,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,2,1.479,0.114,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,3,195.5,1.964,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,3,24.224,0.442,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,3,754.967,3.095,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,296,20785
+baseline,B4,unpartitioned copy,3,61.893,0.271,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,3,95.318,0.426,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,3,22.111,1.021,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,3,1.234,0.091,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,4,213.091,2.689,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,4,25.066,0.492,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,4,767.466,5.801,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,424,20657
+baseline,B4,unpartitioned copy,4,60.625,0.234,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,4,67.136,0.337,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,4,16.29,0.661,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,4,1.243,0.109,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,5,204.109,2.015,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,5,24.079,0.458,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,5,765.411,3.139,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,296,20785
+baseline,B4,unpartitioned copy,5,60.796,0.241,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,5,67.697,0.331,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,5,18.178,0.672,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,5,0.978,0.059,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,6,175.608,1.901,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,6,16.883,0.384,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,6,759.594,2.787,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,333,20748
+baseline,B4,unpartitioned copy,6,61.907,0.209,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,6,68.9,0.345,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,6,17.514,1.251,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,6,1.1,0.14,123.45,68,34,Seq Scan dim_tenant,0,,0,54
+baseline,B1,as deployed,7,293.275,3.14,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,7,22.061,0.441,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,7,918.421,4.202,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,296,20785
+baseline,B4,unpartitioned copy,7,71.795,0.367,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,7,98.976,0.418,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,7,23.314,0.838,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,7,1.394,0.095,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,8,216.148,2.324,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,8,16.332,0.395,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,8,875.591,5.176,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,296,20785
+baseline,B4,unpartitioned copy,8,62.492,0.226,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,8,70.007,0.341,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,8,17.226,0.677,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,8,1.073,0.072,123.45,68,34,Seq Scan dim_tenant,0,,54,0
+baseline,B1,as deployed,9,202.147,2.045,12494.95,14432,1440,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4526,0
+baseline,B2,as deployed,9,16.647,0.426,8837.29,42,40,Seq Scan fact_payment; Seq Scan fact_rent_invoice_line,0,,4208,0
+baseline,B3,as deployed,9,791.152,3.355,123172.76,200,3,Seq Scan fact_unit_occupancy_daily x49,49,,2915,18166
+baseline,B4,unpartitioned copy,9,61.553,0.218,27597.18,6,4,Bitmap Heap Scan bench_occupancy_unpartitioned; Bitmap Index Scan bench_occupancy_unpartitioned_pkey,0,bench_occupancy_unpartitioned_pkey,2155,0
+baseline,B4,partitioned,9,86.498,0.449,7321.24,6,4,Seq Scan fact_unit_occupancy_daily x3,3,,2345,0
+baseline,B5,as deployed,9,16.765,0.689,17043.32,365,12,Index Scan fact_unit_occupancy_daily_pkey x11; Seq Scan fact_unit_occupancy_daily,12,fact_unit_occupancy_daily_pkey,3129,0
+baseline,B6,as deployed,9,0.997,0.065,123.45,68,34,Seq Scan dim_tenant,0,,54,0

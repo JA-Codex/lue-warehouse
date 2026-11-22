@@ -1,0 +1,91 @@
+{
+  "baseline_indexes": [
+    {
+      "table": "dim_date",
+      "index": "pk_dim_date",
+      "kind": "primary key"
+    },
+    {
+      "table": "dim_date",
+      "index": "uq_dim_date_nk",
+      "kind": "unique constraint"
+    },
+    {
+      "table": "dim_tenant",
+      "index": "pk_dim_tenant",
+      "kind": "primary key"
+    },
+    {
+      "table": "dim_tenant",
+      "index": "uq_dim_tenant_one_current",
+      "kind": "unique index (one current row per member, US-1.2)"
+    },
+    {
+      "table": "dim_tenant",
+      "index": "uq_dim_tenant_version",
+      "kind": "unique constraint"
+    },
+    {
+      "table": "dim_unit",
+      "index": "pk_dim_unit",
+      "kind": "primary key"
+    },
+    {
+      "table": "dim_unit",
+      "index": "uq_dim_unit_one_current",
+      "kind": "unique index (one current row per member, US-1.2)"
+    },
+    {
+      "table": "dim_unit",
+      "index": "uq_dim_unit_version",
+      "kind": "unique constraint"
+    },
+    {
+      "table": "fact_payment",
+      "index": "pk_fact_payment",
+      "kind": "primary key"
+    },
+    {
+      "table": "fact_rent_invoice_line",
+      "index": "pk_fact_rent_invoice_line",
+      "kind": "primary key"
+    },
+    {
+      "table": "fact_rent_invoice_line",
+      "index": "uq_invoice_line",
+      "kind": "unique constraint"
+    },
+    {
+      "table": "fact_unit_occupancy_daily",
+      "index": "pk_fact_unit_occupancy_daily",
+      "kind": "primary key"
+    }
+  ],
+  "tables": {
+    "lue_dw.fact_rent_invoice_line": {
+      "heap_bytes": 16465920,
+      "rows": 129885
+    },
+    "lue_dw.fact_payment": {
+      "heap_bytes": 17399808,
+      "rows": 127210
+    },
+    "lue_dw.fact_unit_occupancy_daily": {
+      "heap_bytes": 169967616,
+      "rows": 1972800
+    },
+    "lue_dw.dim_tenant": {
+      "heap_bytes": 442368,
+      "rows": 3802
+    }
+  },
+  "runs": 9,
+  "repeat": 3,
+  "design": "interleaved rounds: baseline then after, every round; each measurement the fastest of 3 back-to-back runs",
+  "kept_indexes": false,
+  "seconds": 166.1,
+  "tolerance": "the interquartile range of the runs within 60% of the median or 2.0 ms",
+  "gain": "every run after faster than every run before, the median at least 20% and 1.0 ms lower, and the plan cost lower",
+  "jit": "off",
+  "parallel_workers": "off (max_parallel_workers_per_gather = 0)"
+}

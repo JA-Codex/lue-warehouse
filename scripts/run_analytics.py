@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 FILES = [ROOT / "sql" / "60_analytics" / "analytical.sql", ROOT / "sql" / "60_analytics" / "olap.sql"]
-LABEL = re.compile(r"^-- ([QWO]\d+[a-z]?)\s+(.*)$", re.M)
+LABEL = re.compile(r"^-- ([QWOB]\d+[a-z]?)\s+(.*)$", re.M)  # B: the benchmark workload (E12)
 
 
 @dataclass
@@ -61,7 +61,7 @@ def queries(path: Path) -> list[Query]:
         m = labels[-1]
         header, key = {}, None
         for line in before[m.end():].splitlines():
-            h = re.match(r"^-- (Grain|Tables|Definition):\s*(.*)$", line)
+            h = re.match(r"^-- (Grain|Tables|Definition|Change|Baseline):\s*(.*)$", line)
             c = re.match(r"^--\s{2,}(\S.*)$", line)
             if h:
                 key = h.group(1)

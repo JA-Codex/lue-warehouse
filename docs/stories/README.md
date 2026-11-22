@@ -71,6 +71,9 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-11.3 | Answer maintenance, owner, incentive and weather questions (Q9 to Q14) | Ahmad Waqar (done by Hanan) | Done | 2026-11-22 | [US-11.3](US-11.3.md) | [evidence](../evidence/us-11.1/) |
 | US-11.4 | Implement ROLLUP and CUBE | Hanan | Done | 2026-11-22 | [US-11.4](US-11.4.md) | [evidence](../evidence/us-11.1/) |
 | US-11.5 | Add window analytics and consolidate the SQL pack | Ahmad Waqar (done by Hanan) | Done | 2026-11-22 | [US-11.5](US-11.5.md) | [evidence](../evidence/us-11.5/) |
+| US-12.1 | Build the benchmark harness and record the baseline | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.1](US-12.1.md) | [evidence](../evidence/us-12.1/) |
+| US-12.2 | Run the indexing and partitioning experiments | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.2](US-12.2.md) | [evidence](../evidence/us-12.2/) |
+| US-12.3 | Write the Indexing Report (PDF) | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.3](US-12.3.md) | [evidence](../evidence/us-12.3/) |
 
 ## Later epics
 
@@ -132,3 +135,4 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-22 | The dimension and fact load scripts are exported from the loaders' specs as SQL (CI fails on drift, a test rebuilds the facts from them); every CI check runs without make (scripts/run_ci.py) | [US-9.3](US-9.3.md) |
 | 2026-11-22 | The reporting layer is derived from lue_dw only and recreated by every deploy; the marts store additive parts (rates are ratios of sums), refreshed by the pipeline's last stage; tenant analysis is per tenant version (segment at payment time); the management fee is an 8 percent assumption | [US-10.1](US-10.1.md), [US-10.2](US-10.2.md) |
 | 2026-11-22 | The analytical queries were drafted straight into the final files and run on the small profile first (no separate draft folder); Q3 uses the pack's four ageing buckets; a late payment is more than 15 days late; heavy rain is 10 mm or more, the day after counted; Q8 shows the event-based renewal rate with the lease-link rate beside it | [US-11.6](US-11.6.md) |
+| 2026-11-22 | The benchmark interleaves baseline and after in every round and keeps the fastest of 3 back-to-back runs (a shared machine's speed varies); serial plans (JIT and parallel workers off); a query is improved only when every run after beats every run before; the candidate indexes stay out of the deploy (D20) | [US-12.1](US-12.1.md), [US-12.2](US-12.2.md) |

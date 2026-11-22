@@ -1,0 +1,514 @@
+-- B1 Q1 What is the monthly collection rate by building? (the whole window)
+-- after, as deployed
+Incremental Sort  (cost=11185.23..12494.95 rows=14432 width=170) (actual time=326.621..329.487 rows=1440 loops=1)
+  Sort Key: u.building_code, (to_char((((date_trunc('month'::text, (d.full_date)::timestamp with time zone))::date))::timestamp with time zone, 'YYYY-MM'::text))
+  Presorted Key: u.building_code
+  Full-sort Groups: 40  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+  Buffers: shared hit=387 read=4139
+  CTE w
+    ->  Nested Loop  (cost=27.56..43.63 rows=1 width=8) (actual time=1.109..1.159 rows=1 loops=1)
+          Buffers: shared hit=260 read=1
+          ->  Nested Loop  (cost=27.28..35.32 rows=1 width=8) (actual time=1.097..1.145 rows=1 loops=1)
+                Buffers: shared hit=258
+                ->  Result  (cost=27.01..27.02 rows=1 width=8) (actual time=1.085..1.132 rows=1 loops=1)
+                      Buffers: shared hit=255
+                      InitPlan 1 (returns $0)
+                        ->  Limit  (cost=13.44..13.50 rows=1 width=4) (actual time=0.569..0.593 rows=1 loops=1)
+                              Buffers: shared hit=121
+                              ->  Merge Append  (cost=13.44..122705.60 rows=1972813 width=4) (actual time=0.567..0.590 rows=1 loops=1)
+                                    Sort Key: fact_unit_occupancy_daily.snapshot_date_key
+                                    Buffers: shared hit=121
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2023_07_pkey on fact_unit_occupancy_daily_2023_07 fact_unit_occupancy_daily_1  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.018..0.019 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2023_08_pkey on fact_unit_occupancy_daily_2023_08 fact_unit_occupancy_daily_2  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2023_09_pkey on fact_unit_occupancy_daily_2023_09 fact_unit_occupancy_daily_3  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.013..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2023_10_pkey on fact_unit_occupancy_daily_2023_10 fact_unit_occupancy_daily_4  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2023_11_pkey on fact_unit_occupancy_daily_2023_11 fact_unit_occupancy_daily_5  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.015..0.016 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2023_12_pkey on fact_unit_occupancy_daily_2023_12 fact_unit_occupancy_daily_6  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.015..0.016 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_01_pkey on fact_unit_occupancy_daily_2024_01 fact_unit_occupancy_daily_7  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_02_pkey on fact_unit_occupancy_daily_2024_02 fact_unit_occupancy_daily_8  (cost=0.29..1493.79 rows=52200 width=4) (actual time=0.016..0.016 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_03_pkey on fact_unit_occupancy_daily_2024_03 fact_unit_occupancy_daily_9  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_04_pkey on fact_unit_occupancy_daily_2024_04 fact_unit_occupancy_daily_10  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_05_pkey on fact_unit_occupancy_daily_2024_05 fact_unit_occupancy_daily_11  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.016..0.016 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_06_pkey on fact_unit_occupancy_daily_2024_06 fact_unit_occupancy_daily_12  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_07_pkey on fact_unit_occupancy_daily_2024_07 fact_unit_occupancy_daily_13  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_08_pkey on fact_unit_occupancy_daily_2024_08 fact_unit_occupancy_daily_14  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_09_pkey on fact_unit_occupancy_daily_2024_09 fact_unit_occupancy_daily_15  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.016..0.017 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_10_pkey on fact_unit_occupancy_daily_2024_10 fact_unit_occupancy_daily_16  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.013..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_11_pkey on fact_unit_occupancy_daily_2024_11 fact_unit_occupancy_daily_17  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2024_12_pkey on fact_unit_occupancy_daily_2024_12 fact_unit_occupancy_daily_18  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_01_pkey on fact_unit_occupancy_daily_2025_01 fact_unit_occupancy_daily_19  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.013..0.013 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_02_pkey on fact_unit_occupancy_daily_2025_02 fact_unit_occupancy_daily_20  (cost=0.29..1442.29 rows=50400 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_03_pkey on fact_unit_occupancy_daily_2025_03 fact_unit_occupancy_daily_21  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_04_pkey on fact_unit_occupancy_daily_2025_04 fact_unit_occupancy_daily_22  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.015..0.016 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_05_pkey on fact_unit_occupancy_daily_2025_05 fact_unit_occupancy_daily_23  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_06_pkey on fact_unit_occupancy_daily_2025_06 fact_unit_occupancy_daily_24  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_07_pkey on fact_unit_occupancy_daily_2025_07 fact_unit_occupancy_daily_25  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.026..0.026 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_08_pkey on fact_unit_occupancy_daily_2025_08 fact_unit_occupancy_daily_26  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_09_pkey on fact_unit_occupancy_daily_2025_09 fact_unit_occupancy_daily_27  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_10_pkey on fact_unit_occupancy_daily_2025_10 fact_unit_occupancy_daily_28  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_11_pkey on fact_unit_occupancy_daily_2025_11 fact_unit_occupancy_daily_29  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2025_12_pkey on fact_unit_occupancy_daily_2025_12 fact_unit_occupancy_daily_30  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.013..0.013 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_01_pkey on fact_unit_occupancy_daily_2026_01 fact_unit_occupancy_daily_31  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_02_pkey on fact_unit_occupancy_daily_2026_02 fact_unit_occupancy_daily_32  (cost=0.29..1442.29 rows=50400 width=4) (actual time=0.017..0.017 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_03_pkey on fact_unit_occupancy_daily_2026_03 fact_unit_occupancy_daily_33  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.015..0.016 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_04_pkey on fact_unit_occupancy_daily_2026_04 fact_unit_occupancy_daily_34  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_05_pkey on fact_unit_occupancy_daily_2026_05 fact_unit_occupancy_daily_35  (cost=0.29..1696.79 rows=55800 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_06_pkey on fact_unit_occupancy_daily_2026_06 fact_unit_occupancy_daily_36  (cost=0.29..2341.29 rows=54000 width=4) (actual time=0.008..0.008 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_07_pkey on fact_unit_occupancy_daily_2026_07 fact_unit_occupancy_daily_37  (cost=0.12..8.14 rows=1 width=4) (actual time=0.003..0.003 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_08_pkey on fact_unit_occupancy_daily_2026_08 fact_unit_occupancy_daily_38  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_09_pkey on fact_unit_occupancy_daily_2026_09 fact_unit_occupancy_daily_39  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_10_pkey on fact_unit_occupancy_daily_2026_10 fact_unit_occupancy_daily_40  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_11_pkey on fact_unit_occupancy_daily_2026_11 fact_unit_occupancy_daily_41  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2026_12_pkey on fact_unit_occupancy_daily_2026_12 fact_unit_occupancy_daily_42  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2027_01_pkey on fact_unit_occupancy_daily_2027_01 fact_unit_occupancy_daily_43  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2027_02_pkey on fact_unit_occupancy_daily_2027_02 fact_unit_occupancy_daily_44  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2027_03_pkey on fact_unit_occupancy_daily_2027_03 fact_unit_occupancy_daily_45  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.003 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2027_04_pkey on fact_unit_occupancy_daily_2027_04 fact_unit_occupancy_daily_46  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2027_05_pkey on fact_unit_occupancy_daily_2027_05 fact_unit_occupancy_daily_47  (cost=0.12..8.14 rows=1 width=4) (actual time=0.001..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_2027_06_pkey on fact_unit_occupancy_daily_2027_06 fact_unit_occupancy_daily_48  (cost=0.12..8.14 rows=1 width=4) (actual time=0.001..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                                    ->  Index Only Scan using fact_unit_occupancy_daily_default_pkey on fact_unit_occupancy_daily_default fact_unit_occupancy_daily_49  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=1
+                      InitPlan 2 (returns $1)
+                        ->  Limit  (cost=13.44..13.50 rows=1 width=4) (actual time=0.511..0.532 rows=1 loops=1)
+                              Buffers: shared hit=134
+                              ->  Merge Append  (cost=13.44..122705.60 rows=1972813 width=4) (actual time=0.509..0.529 rows=1 loops=1)
+                                    Sort Key: fact_unit_occupancy_daily_50.snapshot_date_key DESC
+                                    Buffers: shared hit=134
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2023_07_pkey on fact_unit_occupancy_daily_2023_07 fact_unit_occupancy_daily_51  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2023_08_pkey on fact_unit_occupancy_daily_2023_08 fact_unit_occupancy_daily_52  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2023_09_pkey on fact_unit_occupancy_daily_2023_09 fact_unit_occupancy_daily_53  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2023_10_pkey on fact_unit_occupancy_daily_2023_10 fact_unit_occupancy_daily_54  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2023_11_pkey on fact_unit_occupancy_daily_2023_11 fact_unit_occupancy_daily_55  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2023_12_pkey on fact_unit_occupancy_daily_2023_12 fact_unit_occupancy_daily_56  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_01_pkey on fact_unit_occupancy_daily_2024_01 fact_unit_occupancy_daily_57  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_02_pkey on fact_unit_occupancy_daily_2024_02 fact_unit_occupancy_daily_58  (cost=0.29..1493.79 rows=52200 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_03_pkey on fact_unit_occupancy_daily_2024_03 fact_unit_occupancy_daily_59  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.009..0.009 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_04_pkey on fact_unit_occupancy_daily_2024_04 fact_unit_occupancy_daily_60  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_05_pkey on fact_unit_occupancy_daily_2024_05 fact_unit_occupancy_daily_61  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_06_pkey on fact_unit_occupancy_daily_2024_06 fact_unit_occupancy_daily_62  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.013..0.013 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_07_pkey on fact_unit_occupancy_daily_2024_07 fact_unit_occupancy_daily_63  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_08_pkey on fact_unit_occupancy_daily_2024_08 fact_unit_occupancy_daily_64  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_09_pkey on fact_unit_occupancy_daily_2024_09 fact_unit_occupancy_daily_65  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_10_pkey on fact_unit_occupancy_daily_2024_10 fact_unit_occupancy_daily_66  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_11_pkey on fact_unit_occupancy_daily_2024_11 fact_unit_occupancy_daily_67  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.013..0.013 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2024_12_pkey on fact_unit_occupancy_daily_2024_12 fact_unit_occupancy_daily_68  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_01_pkey on fact_unit_occupancy_daily_2025_01 fact_unit_occupancy_daily_69  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_02_pkey on fact_unit_occupancy_daily_2025_02 fact_unit_occupancy_daily_70  (cost=0.29..1442.29 rows=50400 width=4) (actual time=0.014..0.014 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_03_pkey on fact_unit_occupancy_daily_2025_03 fact_unit_occupancy_daily_71  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_04_pkey on fact_unit_occupancy_daily_2025_04 fact_unit_occupancy_daily_72  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_05_pkey on fact_unit_occupancy_daily_2025_05 fact_unit_occupancy_daily_73  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.044..0.044 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_06_pkey on fact_unit_occupancy_daily_2025_06 fact_unit_occupancy_daily_74  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_07_pkey on fact_unit_occupancy_daily_2025_07 fact_unit_occupancy_daily_75  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_08_pkey on fact_unit_occupancy_daily_2025_08 fact_unit_occupancy_daily_76  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_09_pkey on fact_unit_occupancy_daily_2025_09 fact_unit_occupancy_daily_77  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_10_pkey on fact_unit_occupancy_daily_2025_10 fact_unit_occupancy_daily_78  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_11_pkey on fact_unit_occupancy_daily_2025_11 fact_unit_occupancy_daily_79  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2025_12_pkey on fact_unit_occupancy_daily_2025_12 fact_unit_occupancy_daily_80  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_01_pkey on fact_unit_occupancy_daily_2026_01 fact_unit_occupancy_daily_81  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_02_pkey on fact_unit_occupancy_daily_2026_02 fact_unit_occupancy_daily_82  (cost=0.29..1442.29 rows=50400 width=4) (actual time=0.049..0.050 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_03_pkey on fact_unit_occupancy_daily_2026_03 fact_unit_occupancy_daily_83  (cost=0.29..1596.79 rows=55800 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_04_pkey on fact_unit_occupancy_daily_2026_04 fact_unit_occupancy_daily_84  (cost=0.29..1545.29 rows=54000 width=4) (actual time=0.013..0.013 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_05_pkey on fact_unit_occupancy_daily_2026_05 fact_unit_occupancy_daily_85  (cost=0.29..1696.79 rows=55800 width=4) (actual time=0.011..0.011 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_06_pkey on fact_unit_occupancy_daily_2026_06 fact_unit_occupancy_daily_86  (cost=0.29..2341.29 rows=54000 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=3
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_07_pkey on fact_unit_occupancy_daily_2026_07 fact_unit_occupancy_daily_87  (cost=0.12..8.14 rows=1 width=4) (actual time=0.003..0.003 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_08_pkey on fact_unit_occupancy_daily_2026_08 fact_unit_occupancy_daily_88  (cost=0.12..8.14 rows=1 width=4) (actual time=0.003..0.003 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_09_pkey on fact_unit_occupancy_daily_2026_09 fact_unit_occupancy_daily_89  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_10_pkey on fact_unit_occupancy_daily_2026_10 fact_unit_occupancy_daily_90  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_11_pkey on fact_unit_occupancy_daily_2026_11 fact_unit_occupancy_daily_91  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2026_12_pkey on fact_unit_occupancy_daily_2026_12 fact_unit_occupancy_daily_92  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2027_01_pkey on fact_unit_occupancy_daily_2027_01 fact_unit_occupancy_daily_93  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2027_02_pkey on fact_unit_occupancy_daily_2027_02 fact_unit_occupancy_daily_94  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2027_03_pkey on fact_unit_occupancy_daily_2027_03 fact_unit_occupancy_daily_95  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2027_04_pkey on fact_unit_occupancy_daily_2027_04 fact_unit_occupancy_daily_96  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2027_05_pkey on fact_unit_occupancy_daily_2027_05 fact_unit_occupancy_daily_97  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_2027_06_pkey on fact_unit_occupancy_daily_2027_06 fact_unit_occupancy_daily_98  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                                    ->  Index Only Scan Backward using fact_unit_occupancy_daily_default_pkey on fact_unit_occupancy_daily_default fact_unit_occupancy_daily_99  (cost=0.12..8.14 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=1)
+                                          Index Cond: (snapshot_date_key IS NOT NULL)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=2
+                ->  Index Scan using pk_dim_date on dim_date d0  (cost=0.28..8.29 rows=1 width=8) (actual time=0.007..0.007 rows=1 loops=1)
+                      Index Cond: (date_key = ($0))
+                      Buffers: shared hit=3
+          ->  Index Scan using pk_dim_date on dim_date d1  (cost=0.28..8.29 rows=1 width=8) (actual time=0.010..0.010 rows=1 loops=1)
+                Index Cond: (date_key = ($1))
+                Buffers: shared hit=2 read=1
+  ->  WindowAgg  (cost=11135.95..11821.47 rows=14432 width=170) (actual time=326.535..328.971 rows=1440 loops=1)
+        Buffers: shared hit=387 read=4139
+        ->  Sort  (cost=11135.95..11172.03 rows=14432 width=74) (actual time=326.505..326.652 rows=1440 loops=1)
+              Sort Key: u.building_code, ((date_trunc('month'::text, (d.full_date)::timestamp with time zone))::date)
+              Sort Method: quicksort  Memory: 127kB
+              Buffers: shared hit=387 read=4139
+              ->  Hash Left Join  (cost=9774.51..10138.91 rows=14432 width=74) (actual time=324.788..325.640 rows=1440 loops=1)
+                    Hash Cond: (((u.building_code)::text = (c.building_code)::text) AND (((date_trunc('month'::text, (d.full_date)::timestamp with time zone))::date) = c.month))
+                    Buffers: shared hit=387 read=4139
+                    ->  HashAggregate  (cost=4629.65..4918.29 rows=14432 width=42) (actual time=149.744..150.267 rows=1440 loops=1)
+                          Group Key: u.building_code, (date_trunc('month'::text, (d.full_date)::timestamp with time zone))::date
+                          Batches: 1  Memory Usage: 1169kB
+                          Buffers: shared hit=312 read=2015
+                          ->  Hash Join  (cost=109.86..4521.41 rows=14432 width=16) (actual time=2.060..115.882 rows=129885 loops=1)
+                                Hash Cond: (f.unit_key = u.unit_key)
+                                Buffers: shared hit=312 read=2015
+                                ->  Hash Join  (cost=32.31..4297.65 rows=14432 width=14) (actual time=1.601..55.887 rows=129885 loops=1)
+                                      Hash Cond: (f.due_date_key = d.date_key)
+                                      Buffers: shared hit=275 read=2015
+                                      ->  Seq Scan on fact_rent_invoice_line f  (cost=0.00..3633.56 rows=129885 width=14) (actual time=0.015..21.765 rows=129885 loops=1)
+                                            Filter: (due_date_key > 0)
+                                            Buffers: shared read=2010
+                                      ->  Hash  (cost=30.27..30.27 rows=163 width=8) (actual time=1.577..1.582 rows=1096 loops=1)
+                                            Buckets: 2048 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 59kB
+                                            Buffers: shared hit=275 read=5
+                                            ->  Nested Loop  (cost=5.96..30.27 rows=163 width=8) (actual time=1.188..1.427 rows=1096 loops=1)
+                                                  Buffers: shared hit=275 read=5
+                                                  ->  CTE Scan on w  (cost=0.00..0.02 rows=1 width=8) (actual time=1.112..1.114 rows=1 loops=1)
+                                                        Buffers: shared hit=260 read=1
+                                                  ->  Bitmap Heap Scan on dim_date d  (cost=5.96..28.62 rows=163 width=8) (actual time=0.072..0.185 rows=1096 loops=1)
+                                                        Recheck Cond: ((full_date >= (date_trunc('month'::text, (w.window_start)::timestamp with time zone))::date) AND (full_date <= w.window_end))
+                                                        Heap Blocks: exact=15
+                                                        Buffers: shared hit=15 read=4
+                                                        ->  Bitmap Index Scan on uq_dim_date_nk  (cost=0.00..5.92 rows=163 width=0) (actual time=0.057..0.057 rows=1096 loops=1)
+                                                              Index Cond: ((full_date >= (date_trunc('month'::text, (w.window_start)::timestamp with time zone))::date) AND (full_date <= w.window_end))
+                                                              Buffers: shared read=4
+                                ->  Hash  (cost=55.02..55.02 rows=1802 width=10) (actual time=0.448..0.449 rows=1802 loops=1)
+                                      Buckets: 2048  Batches: 1  Memory Usage: 94kB
+                                      Buffers: shared hit=37
+                                      ->  Seq Scan on dim_unit u  (cost=0.00..55.02 rows=1802 width=10) (actual time=0.004..0.216 rows=1802 loops=1)
+                                            Buffers: shared hit=37
+                    ->  Hash  (cost=5074.19..5074.19 rows=4711 width=42) (actual time=175.016..175.026 rows=1440 loops=1)
+                          Buckets: 8192  Batches: 1  Memory Usage: 138kB
+                          Buffers: shared hit=75 read=2124
+                          ->  Subquery Scan on c  (cost=4932.86..5074.19 rows=4711 width=42) (actual time=174.313..174.835 rows=1440 loops=1)
+                                Buffers: shared hit=75 read=2124
+                                ->  HashAggregate  (cost=4932.86..5027.08 rows=4711 width=42) (actual time=174.311..174.712 rows=1440 loops=1)
+                                      Group Key: u_1.building_code, (date_trunc('month'::text, (dd.full_date)::timestamp with time zone))::date
+                                      Batches: 1  Memory Usage: 977kB
+                                      Buffers: shared hit=75 read=2124
+                                      ->  Hash Join  (cost=161.77..4897.53 rows=4711 width=16) (actual time=1.376..141.121 rows=127210 loops=1)
+                                            Hash Cond: (p.unit_key = u_1.unit_key)
+                                            Buffers: shared hit=75 read=2124
+                                            ->  Hash Join  (cost=84.23..4772.25 rows=4711 width=14) (actual time=0.888..83.966 rows=127210 loops=1)
+                                                  Hash Cond: (p.paid_date_key = pd.date_key)
+                                                  Join Filter: (pd.full_date <= w_1.window_end)
+                                                  Buffers: shared hit=38 read=2124
+                                                  ->  Hash Join  (cost=32.31..4683.19 rows=14134 width=22) (actual time=0.517..57.123 rows=127210 loops=1)
+                                                        Hash Cond: (p.due_date_key = dd.date_key)
+                                                        Buffers: shared hit=19 read=2124
+                                                        ->  Seq Scan on fact_payment p  (cost=0.00..4032.15 rows=127203 width=18) (actual time=0.017..23.814 rows=127210 loops=1)
+                                                              Filter: ((due_date_key > 0) AND (paid_date_key > 0))
+                                                              Buffers: shared read=2124
+                                                        ->  Hash  (cost=30.27..30.27 rows=163 width=12) (actual time=0.489..0.492 rows=1096 loops=1)
+                                                              Buckets: 2048 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 64kB
+                                                              Buffers: shared hit=19
+                                                              ->  Nested Loop  (cost=5.96..30.27 rows=163 width=12) (actual time=0.096..0.346 rows=1096 loops=1)
+                                                                    Buffers: shared hit=19
+                                                                    ->  CTE Scan on w w_1  (cost=0.00..0.02 rows=1 width=8) (actual time=0.002..0.003 rows=1 loops=1)
+                                                                    ->  Bitmap Heap Scan on dim_date dd  (cost=5.96..28.62 rows=163 width=8) (actual time=0.087..0.209 rows=1096 loops=1)
+                                                                          Recheck Cond: ((full_date >= (date_trunc('month'::text, (w_1.window_start)::timestamp with time zone))::date) AND (full_date <= w_1.window_end))
+                                                                          Heap Blocks: exact=15
+                                                                          Buffers: shared hit=19
+                                                                          ->  Bitmap Index Scan on uq_dim_date_nk  (cost=0.00..5.92 rows=163 width=0) (actual time=0.066..0.067 rows=1096 loops=1)
+                                                                                Index Cond: ((full_date >= (date_trunc('month'::text, (w_1.window_start)::timestamp with time zone))::date) AND (full_date <= w_1.window_end))
+                                                                                Buffers: shared hit=4
+                                                  ->  Hash  (cost=33.63..33.63 rows=1463 width=8) (actual time=0.361..0.361 rows=1463 loops=1)
+                                                        Buckets: 2048  Batches: 1  Memory Usage: 74kB
+                                                        Buffers: shared hit=19
+                                                        ->  Seq Scan on dim_date pd  (cost=0.00..33.63 rows=1463 width=8) (actual time=0.004..0.147 rows=1463 loops=1)
+                                                              Buffers: shared hit=19
+                                            ->  Hash  (cost=55.02..55.02 rows=1802 width=10) (actual time=0.476..0.477 rows=1802 loops=1)
+                                                  Buckets: 2048  Batches: 1  Memory Usage: 94kB
+                                                  Buffers: shared hit=37
+                                                  ->  Seq Scan on dim_unit u_1  (cost=0.00..55.02 rows=1802 width=10) (actual time=0.010..0.268 rows=1802 loops=1)
+                                                        Buffers: shared hit=37
+Planning:
+  Buffers: shared hit=98 read=1
+Planning Time: 3.687 ms
+Execution Time: 330.353 ms
