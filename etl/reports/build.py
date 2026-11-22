@@ -51,7 +51,7 @@ def money(v) -> str:
 
 def recon_summary(f) -> str:
     if not f.recon:
-        return "not run yet (the last stage of the pipeline)"
+        return "not run yet (the stage after the facts)"
     off = sum(1 for r in f.recon if not r[5])
     return f"{len(f.recon) - off} of {len(f.recon)} measure-months reconcile (billed, paid, tickets, lease events); unexplained {money(sum(r[4] for r in f.recon))}"
 
@@ -249,7 +249,7 @@ def quality_report(f, path: Path) -> None:
 
     s.append(p("4.3 Source to warehouse by month (DQ-07)", "h2"))
     if not f.recon:
-        s.append(p("Not run yet: the reconciliation runs as the last stage of python etl/run_pipeline.py."))
+        s.append(p("Not run yet: the reconciliation runs after the facts in python etl/run_pipeline.py."))
     else:
         s.append(p(f"Run {f.recon_run}, lue_audit.reconciliation. For every measure and month: source = warehouse + quarantined; "
                    "the unexplained rest must be 0. A rejected row counts only when its key never reached staging."))

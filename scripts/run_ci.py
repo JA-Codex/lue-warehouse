@@ -28,7 +28,7 @@ GROUPS: dict[str, list[list[str]]] = {
     "gen-test": [[PY, f"scripts/{name}.py"] for name in (
         "test_generator", "test_master_data", "test_leases", "test_payments", "test_tickets", "test_weather",
         "test_defects", "test_ingest_contract", "test_quality_contract", "test_staging_contract",
-        "test_dim_load_contract", "test_fact_load_contract", "test_pipeline_contract", "test_submission_contract")],
+        "test_dim_load_contract", "test_fact_load_contract", "test_pipeline_contract", "test_submission_contract", "test_reporting_contract")],
 }  # fmt: skip
 
 

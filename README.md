@@ -21,7 +21,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Facts (E7): loader and point-in-time key mapping, invoice and payment facts with monthly reconciliation, daily occupancy snapshot with arrears and the 35-day refresh, maintenance requests (accumulating snapshot), lease events and incentive coverage (factless): all 6 facts; grain, orphan and value tests every run | US-7.1 to US-7.6 (Done) |
 | Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
 | Phase 2 reports and submission (E9): Data Cleaning and Data Quality reports generated from the loaded warehouse, the dimension and fact load scripts as SQL, the deliverables checklist ([docs/phase2_checklist.md](docs/phase2_checklist.md)), a fresh-clone rehearsal; git tag `phase2-submission` | US-9.1 to US-9.3 (Done) |
-| Reporting views and marts, analytics, indexing, Power BI, Phase 3 reports (E10 to E14) | Pending |
+| Reporting layer (E10): the brief's three views (monthly collections, tenant analysis, unit performance) and their brief-named aliases, 9 slicer views, 4 monthly marts refreshed by the pipeline's last stage, read-only access for Power BI; every column in [docs/reporting.md](docs/reporting.md) | US-10.1 to US-10.3 (Done) |
+| Analytics, indexing, Power BI, Phase 3 reports (E11 to E14) | Pending |
 
 ## Run it from a fresh clone (Phase 2 submission, US-9.3)
 
@@ -88,11 +89,12 @@ docs/stories/     story log: what was done in each user story (start at docs/sto
 docs/contracts/   generated table and key contracts, refreshed weekly
 docs/reports/     generated PDFs: cleaning, data quality, indexing, insights
 docs/phase2_checklist.md  every Phase 2 deliverable of the brief and its files (plan Appendix B)
+docs/reporting.md  the reporting layer: every view, mart and column, and the measure definitions (E10)
 docs/evidence/    screenshots and outputs that prove each story (one folder per story)
 sql/              00_setup, 05_source, 10_ddl, 20_staging, 30_dimensions, 40_facts, 50_reporting,
                   60_analytics, 70_performance, 90_tests
 etl/              run_pipeline.py, generate_data.py, ingest/, quality/, staging/, dimensions/, facts/,
-                  reconcile.py, reports/
+                  reconcile.py, reporting.py, reports/
 data/             generated source files (not committed) and data/weather_cache.json (committed)
 powerbi/          PBIX and screenshots
 presentation/     final slides
@@ -196,12 +198,16 @@ make rebuild     reset the warehouse, generate the data and run the whole pipeli
                  profile, about 5 minutes): python scripts/db_reset.py, then python etl/run_pipeline.py --profile small
 make pipeline    run the whole pipeline on the data in data/ (one run_id; FROM=stage resumes at a stage);
                  options: --profile, --seed, --skip-generate, --from-step, --only, --data (python etl/run_pipeline.py -h)
-                 the last stage reconciles source = warehouse + quarantined by month (DQ-07; alone: python etl/reconcile.py)
+                 after the facts it reconciles source = warehouse + quarantined by month (DQ-07; alone: python etl/reconcile.py),
+                 then refreshes the reporting marts (alone: python etl/reporting.py)
                  E8 acceptance tests: python scripts/test_pipeline.py (21 PASS lines; resets the warehouse)
                  a rerun changes nothing, a failed step is resumed with FROM=stage: see Recovery below
 make reports     build the Phase 2 reports from the loaded warehouse (after make rebuild or make pipeline):
                  docs/reports/LUE_Data_Cleaning_Report.pdf and LUE_Data_Quality_Report.pdf (every number read, none
                  typed); E9 tests: python scripts/test_reports.py (11 PASS lines)
+make marts       refresh the four reporting marts (the pipeline's last stage; alone: python etl/reporting.py, US-10.2)
+make reporting-test  E10 acceptance tests: 18 PASS lines; views and marts against the facts, aliases, lue_reader's
+                 access and its denials (python scripts/test_reporting.py; needs a loaded warehouse, changes nothing)
 make load-sql    re-export sql/30_dimensions/02_dimension_loads.sql and sql/40_facts/01_fact_loads.sql from the
                  loaders' specs (US-9.3; CI fails while they differ); python scripts/test_load_sql.py (6 PASS lines)
                  runs them on the loaded warehouse, rolled back
@@ -209,7 +215,7 @@ make db-reset    drop and rebuild the warehouse, reload reference data, smoke te
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)
@@ -258,7 +264,7 @@ The pipeline is safe to rerun and safe to resume.
 
   It starts at that stage and runs the rest; every step is idempotent, so rerunning a stage that half ran is safe. Check
   the run with `SELECT step, status, rows_read, rows_inserted, rows_updated, rows_rejected FROM lue_audit.etl_run_log
-  WHERE run_id = <run>` and finish when the last stage, reconcile, passes.
+  WHERE run_id = <run>` and finish when the last stage, marts, passes.
 - **Other generated data.** A warehouse holds one generation of the data (profile, seed, content hash). A run on another
   one stops at `check_generation` before anything changes; to switch, reset first: `python scripts/db_reset.py`, or
   `make rebuild PROFILE=full`.
@@ -283,10 +289,12 @@ The briefs use `project_*` names. We use LUE names; this mapping is **pending in
 |---|---|---|
 | `project_staging` | `lue_staging` | Bronze tables `brz_*`, Silver tables `stg_*` |
 | `project_dw` | `lue_dw` | 13 dimensions and 6 facts |
-| `project_reporting` | `lue_reporting` | Gold marts and views, including `vw_dim_*` |
+| `project_reporting` | `lue_reporting` | 4 marts (`mart_*`), the reporting views and 9 slicer views (`vw_dim_*`): [docs/reporting.md](docs/reporting.md) |
 | (none) | `lue_audit` | `etl_run_log`, `quarantine`, `reconciliation`, `lineage` |
 | (none) | `lue_source.src_pms` | Source system S1; separate database `lue_source` |
-| `vw_monthly_sales`, `vw_customer_analysis`, `vw_product_performance` | alias views in `lue_reporting` | Phase 3: created with the reporting views (US-10.1, D18); Phase 2 has none |
+| `vw_monthly_sales` | `vw_monthly_collections` | Alias view in `lue_reporting` (D18): `SELECT *` from the LUE view (US-10.1) |
+| `vw_customer_analysis` | `vw_tenant_analysis` | Alias view (D18) |
+| `vw_product_performance` | `vw_unit_performance` | Alias view (D18) |
 
 The warehouse database is `lue_warehouse`.
 
@@ -358,6 +366,26 @@ later rules skip it. Warnings (a conflicting duplicate, a tenant that has not ar
 are findings only. Everything is in `lue_audit.dq_result`; staging keeps the bronze rows without a rejection.
 `--compare` checks the findings against the answer key and writes `data/dq_validation.csv`: on the full profile all
 6,915 planted defects in scope are found, with no false positive, and a clean control batch gets no finding.
+
+### Reporting layer (E10)
+
+`lue_reporting` is what Power BI and the analysts read; every column and measure is defined in
+[docs/reporting.md](docs/reporting.md). `sql/50_reporting/01_reporting.sql` (deployed by `scripts/db_deploy.py`) creates:
+
+| Object | Grain | What it answers |
+|---|---|---|
+| `vw_monthly_collections` (alias `vw_monthly_sales`) | month | billed, collected and the **cohort collection rate (D17)**, cash received, arrears, growth (LAG) |
+| `vw_tenant_analysis` (alias `vw_customer_analysis`) | tenant version | payments, late payments, days past due, collected, arrears, payer segment (Q4) |
+| `vw_unit_performance` (alias `vw_product_performance`) | building x unit type | occupancy, vacancy, rent, maintenance cost per unit-month, days to resolve, SLA breaches |
+| `mart_collections_monthly` | month x building | the collections measures as additive parts |
+| `mart_occupancy_monthly` | month x building x unit type | unit-days, occupied days, vacancy spells, month-end rent roll and arrears |
+| `mart_maintenance_monthly` | raised month x building x unit type x category x vendor | requests, resolution, SLA, cost |
+| `mart_owner_portfolio_monthly` | month x owner | rent collected, maintenance cost, the 8 percent fee assumption, NOI (Q12) |
+| `vw_dim_*` (9) | one row per member or version | the slicers: date, month, building, unit, tenant, owner, vendor, maintenance category, payment method |
+
+The marts are refreshed by the pipeline's last stage (`marts`; alone `python etl/reporting.py`), concurrently so
+readers are never blocked. `lue_reader` reads `lue_reporting` only: it cannot read `lue_staging`, `lue_dw` or
+`lue_audit`, write, or refresh (`python scripts/test_reporting.py` shows the denials).
 
 ### Planted defects, answer key and patterns (US-2.6)
 

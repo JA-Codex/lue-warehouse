@@ -200,7 +200,7 @@ def options(cur, data: Path) -> None:
     code, out = run(["--data", str(data), "--skip-generate", "--from-step", "dimensions"])
     cur.execute("SELECT array_agg(DISTINCT left(step, 4)) FROM lue_audit.etl_run_log WHERE run_id = %s", (last_run(cur),))
     kinds = set(cur.fetchone()[0])
-    check(code == 0 and kinds == {"dim_", "fact", "reco"}, "--from-step dimensions: the dimensions, the facts and the reconciliation, nothing before")
+    check(code == 0 and kinds == {"dim_", "fact", "reco", "refr"}, "--from-step dimensions: the dimensions, the facts, the reconciliation and the marts (E10), nothing before")
 
 
 def reconciliation(cur) -> None:

@@ -1,0 +1,91 @@
+E10 evidence: the reporting views on the full profile (seed 3004)
+
+====================================================================================================
+vw_monthly_collections: sample rows
+====================================================================================================
+SELECT year_month, invoice_lines, billed_due, collected_cohort, collection_rate_cohort, cash_received, arrears_month_end, billed_growth, cash_received_growth FROM lue_reporting.vw_monthly_collections ORDER BY month_key DESC LIMIT 6
+
+year_month  invoice_lines  billed_due    collected_cohort  collection_rate_cohort  cash_received  arrears_month_end  billed_growth  cash_received_growth
+----------  -------------  ------------  ----------------  ----------------------  -------------  -----------------  -------------  --------------------
+2026-06     3566           178023520.00  157249986.00      0.8833                  166527221.00   329363109.00       0.0388         0.0307              
+2026-05     3530           171376648.00  157913125.00      0.9214                  161563903.00   317866810.00       -0.0034        0.0008              
+2026-04     3576           171967262.00  161108653.00      0.9369                  161429706.00   308054065.00       -0.0039        -0.0214             
+2026-03     3650           172645194.00  163174385.00      0.9451                  164955899.00   297516509.00       0.0116         0.0455              
+2026-02     3633           170657300.00  159931233.00      0.9371                  157777844.00   289827214.00       -0.0030        -0.0279             
+2026-01     3662           171173160.00  160780182.00      0.9393                  162302708.00   276947758.00       0.0250         0.0271              
+
+vw_monthly_collections: reconciliation against the facts
+
+SELECT 'view' AS side, sum(billed_due) AS billed_due, sum(collected_cohort) AS collected_cohort, sum(cash_received) AS cash_received
+FROM lue_reporting.vw_monthly_collections
+UNION ALL
+SELECT 'facts', (SELECT sum(net_amount) FROM lue_dw.fact_rent_invoice_line WHERE due_date_key BETWEEN 20230701 AND 20260630),
+       (SELECT sum(payment_amount) FROM lue_dw.fact_payment WHERE due_date_key BETWEEN 20230701 AND 20260630 AND paid_date_key BETWEEN 1 AND 20260630),
+       (SELECT sum(payment_amount) FROM lue_dw.fact_payment WHERE paid_date_key BETWEEN 20230701 AND 20260630)
+
+side   billed_due     collected_cohort  cash_received
+-----  -------------  ----------------  -------------
+view   5676652818.00  5347289709.00     5347289709.00
+facts  5676652818.00  5347289709.00     5347289709.00
+
+====================================================================================================
+vw_tenant_analysis: sample rows
+====================================================================================================
+SELECT tenant_code, tenant_type, employer_sector, payments, late_payments, late_payment_share, avg_days_past_due, total_collected, current_arrears, payer_segment FROM lue_reporting.vw_tenant_analysis ORDER BY current_arrears DESC LIMIT 6
+
+tenant_code  tenant_type  employer_sector       payments  late_payments  late_payment_share  avg_days_past_due  total_collected  current_arrears  payer_segment    
+-----------  -----------  --------------------  --------  -------------  ------------------  -----------------  ---------------  ---------------  -----------------
+T-0089       Corporate    Legal and Consulting  16        8              0.5000              21.6               2259362.00       17904734.00      Chronically late 
+T-0399       Corporate    Hospitality           15        7              0.4667              34.0               2091706.00       9352838.00       Occasionally late
+T-0521       Corporate    Government            10        10             1.0000              86.7               651140.00        8073896.00       Chronically late 
+T-0380       Corporate    Banking               25        20             0.8000              63.2               1931528.00       7676428.00       Chronically late 
+T-0800       Individual   IT and Software       2         2              1.0000              89.4               425580.00        6711880.00       Chronically late 
+T-1411       Corporate    Retail                6         3              0.5000              21.8               1031472.00       6484400.00       Chronically late 
+
+vw_tenant_analysis: reconciliation against the facts
+
+SELECT 'view' AS side, sum(total_collected) AS collected, sum(late_payments) AS late_payments
+FROM lue_reporting.vw_tenant_analysis
+UNION ALL
+SELECT 'facts', sum(payment_amount), (SELECT count(DISTINCT (tenant_key, payment_reference)) FROM lue_dw.fact_payment WHERE NOT is_reversal AND days_past_due > 0)
+FROM lue_dw.fact_payment
+
+side   collected      late_payments
+-----  -------------  -------------
+view   5347289709.00  18031        
+facts  5347289709.00  18031        
+
+====================================================================================================
+vw_unit_performance: sample rows
+====================================================================================================
+SELECT building_code, unit_type, units, occupancy_rate, avg_vacancy_days, avg_contract_rent, maintenance_cost_per_unit_month, avg_days_to_resolve, sla_breach_rate FROM lue_reporting.vw_unit_performance ORDER BY occupancy_rate LIMIT 6
+
+building_code  unit_type  units  occupancy_rate  avg_vacancy_days  avg_contract_rent  maintenance_cost_per_unit_month  avg_days_to_resolve  sla_breach_rate
+-------------  ---------  -----  --------------  ----------------  -----------------  -------------------------------  -------------------  ---------------
+PCH01          Apartment  46     0.7470          155.5             60918.76           727.69                           1.7                  0.2675         
+E1102          Shop       3      0.7597          158.0             98951.22           325.00                           1.5                  0.1667         
+BHD01          Apartment  35     0.7625          136.0             57334.55           524.48                           1.7                  0.2672         
+MDT02          Apartment  43     0.7731          146.5             56907.27           1103.39                          1.9                  0.2796         
+CLF01          Apartment  55     0.7745          127.1             57080.23           753.41                           1.7                  0.2167         
+GSI01          Apartment  37     0.7818          140.5             71096.54           580.52                           1.7                  0.2190         
+
+vw_unit_performance: reconciliation against the facts
+
+SELECT 'view' AS side, sum(units) AS units, sum(unit_days) AS unit_days, sum(occupied_days) AS occupied_days, sum(maintenance_cost) AS maintenance_cost
+FROM lue_reporting.vw_unit_performance
+UNION ALL
+SELECT 'facts', (SELECT count(*) FROM lue_dw.fact_unit_occupancy_daily WHERE snapshot_date_key = 20260630),
+       count(*), sum(is_occupied), (SELECT sum(actual_cost) FROM lue_dw.fact_maintenance_request)
+FROM lue_dw.fact_unit_occupancy_daily
+
+side   units  unit_days  occupied_days  maintenance_cost
+-----  -----  ---------  -------------  ----------------
+view   1800   1972800    1667578        32984300.00     
+facts  1800   1972800    1667578        32984300.00     
+
+====================================================================================================
+The brief-named aliases (D18): rows that differ from their targets
+====================================================================================================
+  vw_monthly_sales vs vw_monthly_collections: 36 rows, 0 differ
+  vw_customer_analysis vs vw_tenant_analysis: 3,455 rows, 0 differ
+  vw_product_performance vs vw_unit_performance: 80 rows, 0 differ

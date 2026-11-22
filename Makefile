@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -36,6 +36,12 @@ gen-test: ## Generator and contract tests, no database needed (US-2.1 to US-2.6,
 
 load-sql: ## Re-export the dimension and fact load scripts from the specs (US-9.3)
 	$(PYTHON) scripts/export_load_sql.py
+
+marts: ## Refresh the four reporting marts from the facts, as the pipeline's last stage does (US-10.2)
+	$(PYTHON) etl/reporting.py
+
+reporting-test: ## Reporting layer acceptance tests (US-10.1 to US-10.3); needs a loaded warehouse, changes nothing
+	$(PYTHON) scripts/test_reporting.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
