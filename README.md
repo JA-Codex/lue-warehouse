@@ -22,7 +22,8 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Pipeline (E8): `etl/run_pipeline.py`, one command and one run_id from an empty warehouse to a loaded one, logging and lineage; source-to-warehouse reconciliation (DQ-07); safe to rerun and resume; full rebuild in about 5 minutes | US-8.1 to US-8.4 (Done) |
 | Phase 2 reports and submission (E9): Data Cleaning and Data Quality reports generated from the loaded warehouse, the dimension and fact load scripts as SQL, the deliverables checklist ([docs/phase2_checklist.md](docs/phase2_checklist.md)), a fresh-clone rehearsal; git tag `phase2-submission` | US-9.1 to US-9.3 (Done) |
 | Reporting layer (E10): the brief's three views (monthly collections, tenant analysis, unit performance) and their brief-named aliases, 9 slicer views, 4 monthly marts refreshed by the pipeline's last stage, read-only access for Power BI; every column in [docs/reporting.md](docs/reporting.md) | US-10.1 to US-10.3 (Done) |
-| Analytics, indexing, Power BI, Phase 3 reports (E11 to E14) | Pending |
+| Analytical SQL and OLAP (E11): the 14 business questions, window analytics, ROLLUP and CUBE with GROUPING() and their verification, in `sql/60_analytics/`; answers and interpretations in [docs/analytics.md](docs/analytics.md); three results cross-checked with pandas | US-11.1 to US-11.6 (Done) |
+| Indexing, Power BI, Phase 3 reports (E12 to E14) | Pending |
 
 ## Run it from a fresh clone (Phase 2 submission, US-9.3)
 
@@ -90,6 +91,7 @@ docs/contracts/   generated table and key contracts, refreshed weekly
 docs/reports/     generated PDFs: cleaning, data quality, indexing, insights
 docs/phase2_checklist.md  every Phase 2 deliverable of the brief and its files (plan Appendix B)
 docs/reporting.md  the reporting layer: every view, mart and column, and the measure definitions (E10)
+docs/analytics.md  the 14 business questions answered, with results and interpretations (E11)
 docs/evidence/    screenshots and outputs that prove each story (one folder per story)
 sql/              00_setup, 05_source, 10_ddl, 20_staging, 30_dimensions, 40_facts, 50_reporting,
                   60_analytics, 70_performance, 90_tests
@@ -208,6 +210,10 @@ make reports     build the Phase 2 reports from the loaded warehouse (after make
 make marts       refresh the four reporting marts (the pipeline's last stage; alone: python etl/reporting.py, US-10.2)
 make reporting-test  E10 acceptance tests: 18 PASS lines; views and marts against the facts, aliases, lue_reader's
                  access and its denials (python scripts/test_reporting.py; needs a loaded warehouse, changes nothing)
+make analytics   run the SQL pack (sql/60_analytics/analytical.sql, olap.sql) query by query: rows, time, a sample
+                 (also: psql -d lue_warehouse -f sql/60_analytics/analytical.sql); answers in docs/analytics.md (E11)
+make analytics-test  E11 acceptance tests: 22 PASS lines on the full profile (16 on the small): the marts, the planted
+                 patterns, the ROLLUP/CUBE verification and three pandas cross-checks (python scripts/test_analytics.py)
 make load-sql    re-export sql/30_dimensions/02_dimension_loads.sql and sql/40_facts/01_fact_loads.sql from the
                  loaders' specs (US-9.3; CI fails while they differ); python scripts/test_load_sql.py (6 PASS lines)
                  runs them on the loaded warehouse, rolled back
@@ -215,7 +221,7 @@ make db-reset    drop and rebuild the warehouse, reload reference data, smoke te
 make db-smoke    count the warehouse objects: 13 dims, 6 facts, 10 audit tables, 41 FKs, 48 partitions
 make generate    generate seeded source data into data/ (US-2.1); PROFILE=small|full SEED=n CLEAN=1 (no defects)
 make patterns    measure the six planted patterns in data/ with pandas (US-2.6)
-make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13)
+make gen-test    generator acceptance tests, no database needed (US-2.1: 39, US-2.2: 129, US-2.3: 114, US-2.4: 80, US-2.5: 69 + 56, US-2.6: 71, E3 contract: 17, E4 contract: 20, E5 contract: 36, E6 contract: 19, E7 contract: 26, E8 contract: 22, US-9.3 contract: 10, E10 contract: 13, E11 contract: 14)
 make weather     download the S5 weather once into data/weather_cache.json (US-2.5; needs internet)
 make weather-check  check the weather cache covers every city and day (no internet)
 make db-load-source  load data/s1 into lue_source.src_pms as lue_etl; safe to re-run (US-2.2 to US-2.4)

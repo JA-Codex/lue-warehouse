@@ -1,0 +1,418 @@
+====================================================================================================
+Q1  What is the monthly collection rate by building?
+====================================================================================================
+Grain: building x due month (months of the window with billing)
+Tables: fact_rent_invoice_line, fact_payment, dim_unit, dim_date
+Definition: D17, cohort basis: payments against the lines due in month M, as of the window end, divided by the net amount of the lines due in M. LAG gives the change against the building's previous month. Agrees with mart_collections_monthly and vw_monthly_collections.
+
+6 rows in 0.02 s
+
+building_code  month    billed      collected   collection_rate  change_vs_previous_month
+-------------  -------  ----------  ----------  ---------------  ------------------------
+DHL01          2026-04  3494768.00  3280084.00  0.9386
+DHL01          2026-05  3503848.00  2789830.00  0.7962           -0.1424
+DHL01          2026-06  3374408.00  2457028.00  0.7281           -0.0681
+GSI01          2026-04  4635468.00  4479161.00  0.9663
+GSI01          2026-05  4571858.00  4438625.00  0.9709           0.0046
+GSI01          2026-06  4707428.00  4161070.00  0.8839           -0.0869
+
+====================================================================================================
+Q2  Which buildings have the highest arrears ratio?
+====================================================================================================
+Grain: building, as of the window end
+Tables: fact_rent_invoice_line, fact_payment, dim_unit, dim_date
+Definition: arrears ratio = arrears / net amount billed (lines due in the window). Arrears = the open balance of the lines past due on the last day: net amount of the lines due before it, minus the payments against them made by then (a payment before the due date counts from the day after it; the rule of fact_unit_occupancy_daily.current_lease_arrears). RANK orders the buildings.
+
+2 rows in 0.01 s
+
+building_code  city     billed       arrears     arrears_ratio  arrears_rank
+-------------  -------  -----------  ----------  -------------  ------------
+DHL01          Lahore   10373024.00  1846082.00  0.1780         1
+GSI01          Karachi  13914754.00  835898.00   0.0601         2
+
+====================================================================================================
+Q3  How are overdue balances distributed across ageing buckets?
+====================================================================================================
+Grain: ageing bucket, as of the window end (the last month-end snapshot)
+Tables: fact_rent_invoice_line, fact_payment, dim_date
+Definition: per line, open balance = net amount - payments made by the snapshot day; a line is overdue when it is past due (due before the day) with an open balance above 0. Days past due = snapshot day - due date. Buckets 0-30, 31-60, 61-90, 90+ (the pack's KPI; the plan's "61 and over" is the last two together). Credit lines and overpayments (balance 0 or below) are not overdue.
+
+3 rows in 0.01 s
+
+bucket  overdue_lines  overdue_balance  share_of_overdue
+------  -------------  ---------------  ----------------
+0-30    47             1463738.00       0.5458
+31-60   33             847251.00        0.3159
+61-90   14             370991.00        0.1383
+
+====================================================================================================
+Q4a  Which tenants pay late repeatedly?
+====================================================================================================
+Grain: tenant (tenant code), over the last 12 months of the window
+Tables: fact_payment, dim_tenant, dim_date
+Definition: a payment is late when it was made more than 15 days after its due date (days_past_due > 15); reversals are not payments. A repeat late payer has 3 or more late payments in the 12 months to the window end. The sector is the tenant version's when it paid (fact_payment.tenant_key).
+
+0 rows in 0.01 s
+
+tenant_code  tenant_name  tenant_type  employer_sector_when_paid  payments  late_payments  avg_days_late_when_late
+-----------  -----------  -----------  -------------------------  --------  -------------  -----------------------
+
+====================================================================================================
+Q4b  Does late payment differ by employer sector at the time of payment?
+====================================================================================================
+Grain: employer sector of the tenant version that paid, over the last 12 months of the window
+Tables: fact_payment, dim_tenant, dim_date
+Definition: as Q4a; late share = late payments / payments; repeat late payers as in Q4a.
+
+15 rows in 0.01 s; the first 6
+
+employer_sector       payments  late_payments  late_share  repeat_late_payers
+--------------------  --------  -------------  ----------  ------------------
+Self-employed         8         2              0.2500      0
+Government            22        5              0.2273      0
+Hospitality           12        2              0.1667      0
+Energy                16        2              0.1250      0
+Retail                17        2              0.1176      0
+Legal and Consulting  13        1              0.0769      0
+
+====================================================================================================
+Q5  Which payment methods settle fastest after the due date?
+====================================================================================================
+Grain: payment method (and its channel group), over the window
+Tables: fact_payment, dim_payment_method
+Definition: settlement lag = days from the paid date to the settlement date (fact_payment. settlement_lag_days, from the S3 settlement files: electronic methods only; cash and cheques have no settlement file, so their lag is NULL); days past due = paid date - due date. One row per payment allocation; reversals left out. Ranked by settlement lag, fastest first.
+
+6 rows in 0.00 s
+
+method_code  method_name    channel_group    allocations  settled_allocations  avg_settlement_lag_days  median_settlement_lag_days  avg_days_past_due  avg_days_due_to_settled  settlement_rank
+-----------  -------------  ---------------  -----------  -------------------  -----------------------  --------------------------  -----------------  -----------------------  ---------------
+RAAST        Raast          Instant payment  83           83                   0.72                     0.0                         2.63               3.35                     1
+JAZZ         JazzCash       Mobile wallet    37           34                   1.47                     1.0                         -0.03              0.91                     2
+BANK         Bank transfer  Bank             101          99                   1.73                     1.0                         0.66               2.48                     3
+EASY         Easypaisa      Mobile wallet    61           60                   1.73                     1.0                         7.11               9.00                     4
+CASH         Cash           Cash             129          0                                                                         3.33                                        5
+CHEQUE       Cheque         Cheque           50           0                                                                         4.02                                        5
+
+====================================================================================================
+Q6a  How do occupancy and vacancy trend by city and unit type?
+====================================================================================================
+Grain: month x city x unit type
+Tables: fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: occupancy = the monthly average of daily occupancy = occupied unit-days / unit-days (never a sum of daily counts); vacancy = 1 - occupancy; average units = unit-days / days in the month. Reconciles with mart_occupancy_monthly. LAG gives the change against the previous month.
+
+144 rows in 0.19 s; the first 6
+
+month    city     unit_type  avg_units  avg_occupied_units  occupancy_rate  vacancy_rate  change_vs_previous_month
+-------  -------  ---------  ---------  ------------------  --------------  ------------  ------------------------
+2023-07  Karachi  Apartment  47.0       0.0                 0.0000          1.0000
+2023-08  Karachi  Apartment  47.0       0.0                 0.0000          1.0000        0.0000
+2023-09  Karachi  Apartment  47.0       0.0                 0.0000          1.0000        0.0000
+2023-10  Karachi  Apartment  47.0       0.0                 0.0000          1.0000        0.0000
+2023-11  Karachi  Apartment  47.0       0.0                 0.0000          1.0000        0.0000
+2023-12  Karachi  Apartment  47.0       0.0                 0.0000          1.0000        0.0000
+
+====================================================================================================
+Q6b  When do new tenants move in? (the seasonal side of the occupancy trend)
+====================================================================================================
+Grain: calendar month (1 to 12), over the window
+Tables: dim_lease, lue_reporting.vw_reporting_window
+Definition: a move-in is a new tenant's lease starting: a lease with no previous lease (a renewal keeps the tenant in place, so it is not a move-in), counted by its start month inside the window. The index is the month's move-ins over the average month's (1.00 = an average month).
+
+10 rows in 0.01 s; the first 6
+
+month_no  month_name  move_ins  index_vs_average_month
+--------  ----------  --------  ----------------------
+2         February    9         1.11
+3         March       10        1.23
+5         May         2         0.25
+6         June        11        1.36
+7         July        6         0.74
+8         August      12        1.48
+
+====================================================================================================
+Q7  Which unit types stay vacant longest?
+====================================================================================================
+Grain: unit type, over the window
+Tables: fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: gaps and islands: a vacancy spell is a run of consecutive vacant days of one unit. CENSORING RULE: only completed spells count; a spell that begins on the window's first day (it began earlier, its length is unknown) or is still open on its last day (it ends later) is left out. Length = days in the spell.
+
+1 rows in 0.17 s
+
+unit_type  completed_spells  avg_vacancy_days  median_vacancy_days  longest_spell_days  longest_vacancy_rank
+---------  ----------------  ----------------  -------------------  ------------------  --------------------
+Apartment  1                 31.0              31.0                 31                  1
+
+====================================================================================================
+Q8  What is the lease renewal rate, and which buildings lose tenants at renewal?
+====================================================================================================
+Grain: building, over the window
+Tables: fact_lease_event, dim_lease_event_type, dim_lease, dim_unit, dim_date
+Definition: renewal rate = renewed leases / leases that reached expiry. A lease reached expiry when its end date falls in the window. It was renewed when a RENEW event (fact_lease_event) sits on its successor lease (dim_lease.previous_lease_number). Lost at renewal = expired, not renewed. The lease-link column counts successors whether or not their RENEW event survived quality checks (some were quarantined as planted defects): the gap between the two is that rejection.
+
+2 rows in 0.01 s
+
+building_code  city     leases_expired  renewed  renewal_rate  lost_at_renewal  renewal_rate_lease_link  lowest_renewal_rank
+-------------  -------  --------------  -------  ------------  ---------------  -----------------------  -------------------
+DHL01          Lahore   2               0        0.0000        2                0.0000                   1
+GSI01          Karachi  6               0        0.0000        6                0.0000                   1
+
+====================================================================================================
+Q9a  What is the average time to resolve a request by category and vendor?
+====================================================================================================
+Grain: maintenance category x vendor (code), resolved requests over the window
+Tables: fact_maintenance_request, dim_maintenance_category, dim_vendor
+Definition: average days to resolve of the resolved requests; over SLA = days to resolve x 24 / the subcategory's SLA hours (above 1 is late); the vendor's rating is the one valid when the request was raised (SCD2). RANK within the category, slowest first.
+
+11 rows in 0.00 s; the first 6
+
+category_name  vendor_code  vendor_name                       rating_when_raised  resolved_requests  avg_days_to_resolve  median_resolve_over_sla  slowest_in_category
+-------------  -----------  --------------------------------  ------------------  -----------------  -------------------  -----------------------  -------------------
+Civil          V-008        Niazi Construction & Sons         C                   4                  2.37                 0.49                     1
+Civil          V-007        Ghafoor Construction Enterprises  A                   1                  1.84                 0.61                     2
+Electrical     V-003        Memon Electric Associates         C                   6                  0.69                 0.89                     1
+HVAC           V-006        Hussain Cooling Associates        A                   2                  3.19                 0.83                     1
+HVAC           V-005        Dar Cooling Services              B                   4                  2.14                 0.66                     2
+Other          V-011        Siddiqui Maintenance & Sons       C                   1                  6.45                 1.61                     1
+
+====================================================================================================
+Q9b  Were low-rated vendors slower?
+====================================================================================================
+Grain: vendor rating band at the time of the request (SCD2) x trade
+Tables: fact_maintenance_request, dim_vendor
+Definition: as Q9a, by the rating band of the vendor version valid when the request was raised.
+
+12 rows in 0.00 s; the first 6
+
+trade                rating_when_raised  resolved_requests  avg_days_to_resolve  sla_breach_rate
+-------------------  ------------------  -----------------  -------------------  ---------------
+Civil                A                   1                  1.84                 0.0000
+Civil                C                   4                  2.37                 0.2500
+Electrical           C                   6                  0.69                 0.3333
+General maintenance  A                   1                  1.81                 1.0000
+General maintenance  C                   1                  6.45                 1.0000
+HVAC                 A                   2                  3.19                 0.5000
+
+====================================================================================================
+Q10  Which buildings breach the maintenance SLA most often?
+====================================================================================================
+Grain: building, resolved requests over the window
+Tables: fact_maintenance_request, dim_unit
+Definition: SLA breach rate = SLA breaches / resolved requests (the pack's KPI).
+
+2 rows in 0.00 s
+
+building_code  city     resolved_requests  sla_breaches  sla_breach_rate  breach_rank
+-------------  -------  -----------------  ------------  ---------------  -----------
+GSI01          Karachi  13                 5             0.3846           1
+DHL01          Lahore   22                 6             0.2727           2
+
+====================================================================================================
+Q11  What is the maintenance cost per unit per month by building?
+====================================================================================================
+Grain: building, over the window
+Tables: fact_maintenance_request, fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: actual cost / unit-months; unit-months = the building's units on each month's last day, summed over the months (the pack's KPI).
+
+2 rows in 0.05 s
+
+building_code  city     unit_months  requests  actual_cost  cost_per_unit_month  cost_rank
+-------------  -------  -----------  --------  -----------  -------------------  ---------
+DHL01          Lahore   1440         23        111250.00    77.26                1
+GSI01          Karachi  1800         13        53150.00     29.53                2
+
+====================================================================================================
+Q12  What is the net operating income per owner portfolio?
+====================================================================================================
+Grain: owner, over the window
+Tables: fact_payment, dim_charge_type, fact_maintenance_request, fact_unit_occupancy_daily, dim_owner, dim_date, lue_reporting.vw_reporting_parameter
+Definition: NOI = rent collected - actual maintenance cost - LUE management fee. Rent collected = payments against charge type RENT only (late fees, utilities, service charges and credits left out). FEE ASSUMPTION: the management fee is 8 percent of the rent collected (management_fee_rate in lue_reporting.vw_reporting_parameter; the brief gives no rate). NOI margin = NOI / rent collected. Units = units owned on the window's last day.
+
+40 rows in 0.01 s; the first 6
+
+owner_code  owner_name           owner_type  units_owned_at_end  rent_collected  maintenance_cost  management_fee  noi         noi_margin  noi_rank
+----------  -------------------  ----------  ------------------  --------------  ----------------  --------------  ----------  ----------  --------
+OW-0031     Paracha Investments  Company     4                   1207813.00      28200.00          96625.04        1082987.96  0.8967      1
+OW-0024     Zeeshan Hussain      Individual  3                   1151520.00      0                 92121.60        1059398.40  0.9200      2
+OW-0018     Hassan Memon         Individual  4                   913500.00       0                 73080.00        840420.00   0.9200      3
+OW-0015     Shahid Butt          Individual  5                   894057.00       3100.00           71524.56        819432.44   0.9165      4
+OW-0012     Amna Khan            Individual  2                   818000.00       0                 65440.00        752560.00   0.9200      5
+OW-0013     Sana Khan            Individual  4                   829500.00       11500.00          66360.00        751640.00   0.9061      6
+
+====================================================================================================
+Q13  Do vacancy incentives shorten vacancy, and which offer type works best?
+====================================================================================================
+Grain: offer type (and no offer), completed vacancy spells over the window
+Tables: fact_unit_occupancy_daily, fact_vacancy_incentive_coverage, dim_incentive, dim_unit, dim_date
+Definition: completed vacancy spells as in Q7 (same censoring rule). A spell is covered when its unit had an offer on at least one of its days (the coverage fact holds one row per vacant unit, day and offer); its offer type is the one with the most days in the spell. COMPARISON GROUP: the spells with no offer. Ratio = the group's average length / the no-offer average (below 1 = shorter).
+
+2 rows in 0.16 s
+
+offer_group  completed_spells  avg_vacancy_days  ratio_to_no_offer
+-----------  ----------------  ----------------  -----------------
+Any offer    1                 31.0
+Discount     1                 31.0
+
+====================================================================================================
+Q14  Do leak and plumbing requests rise on heavy-rain days?
+====================================================================================================
+Grain: day class (heavy rain or the day after, other days), over the window, all cities
+Tables: fact_maintenance_request, dim_maintenance_category, dim_weather, fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: leak requests = subcategories PLB-LEAK (leak), CIV-SEEP (seepage), CIV-ROOF (roof leak). RAIN THRESHOLD: a heavy-rain day has 10.0 mm of rain or more in the city (dim_weather, the unit's city and the raised date); the day after one counts with it (water shows up late). Rate = requests per 1,000 unit-days of that class. Ratio = heavy-rain rate / other days' rate.
+
+2 rows in 0.33 s
+
+day_class                                    city_days  unit_days  leak_requests  leak_requests_per_1000_unit_days  ratio_to_other_days
+-------------------------------------------  ---------  ---------  -------------  --------------------------------  -------------------
+Heavy rain (10 mm or more) or the day after  150        6280       1              0.1592                            2.45
+Other days                                   2042       92360      6              0.0650                            1.00
+
+====================================================================================================
+W1  RANK of buildings by arrears, within their city and overall (US-11.5)
+====================================================================================================
+Grain: building, as of the window end
+Tables: lue_reporting.mart_collections_monthly, lue_reporting.vw_dim_building, lue_reporting.vw_dim_month
+Definition: arrears at the last month end (the rule of Q2); DENSE_RANK in the city, RANK overall.
+
+2 rows in 0.00 s
+
+city     building_code  arrears     rank_in_city  rank_overall  share_of_arrears
+-------  -------------  ----------  ------------  ------------  ----------------
+Lahore   DHL01          1846082.00  1             1             0.6883
+Karachi  GSI01          835898.00   1             2             0.3117
+
+====================================================================================================
+W2  LAG growth in collections, month on month (US-11.5)
+====================================================================================================
+Grain: month (the portfolio)
+Tables: lue_reporting.vw_monthly_collections
+Definition: cash received and the cohort collection rate (D17), each against the previous month (LAG).
+
+36 rows in 0.00 s; the first 6
+
+year_month  cash_received  previous_month  growth  collection_rate_cohort  rate_change
+----------  -------------  --------------  ------  ----------------------  -----------
+2023-07     0.00
+2023-08     0.00           0.00
+2023-09     0.00           0.00
+2023-10     0.00           0.00
+2023-11     0.00           0.00
+2023-12     0.00           0.00
+
+====================================================================================================
+W3  Running total of cash received within each fiscal year (US-11.5)
+====================================================================================================
+Grain: month (the portfolio), fiscal year July to June
+Tables: lue_reporting.vw_monthly_collections
+Definition: SUM over the fiscal year's months so far; the year's share reached so far (none for a fiscal year without cash, as in the small profile's early years).
+
+36 rows in 0.00 s; the first 6
+
+fiscal_year_label  year_month  cash_received  fiscal_year_to_date  share_of_fiscal_year
+-----------------  ----------  -------------  -------------------  --------------------
+FY2023-24          2023-07     0.00           0.00
+FY2023-24          2023-08     0.00           0.00
+FY2023-24          2023-09     0.00           0.00
+FY2023-24          2023-10     0.00           0.00
+FY2023-24          2023-11     0.00           0.00
+FY2023-24          2023-12     0.00           0.00
+
+====================================================================================================
+W4  Three-month moving average of collections (US-11.5)
+====================================================================================================
+Grain: month (the portfolio)
+Tables: lue_reporting.vw_monthly_collections
+Definition: the average cash received of the month and the two before it; the cohort collection rate over the same three months as a ratio of sums (collected / billed), not an average of rates.
+
+36 rows in 0.00 s; the first 6
+
+year_month  cash_received  cash_received_3m_avg  collection_rate_cohort  collection_rate_3m  months_in_average
+----------  -------------  --------------------  ----------------------  ------------------  -----------------
+2023-07     0.00           0.00                                                              1
+2023-08     0.00           0.00                                                              2
+2023-09     0.00           0.00                                                              3
+2023-10     0.00           0.00                                                              3
+2023-11     0.00           0.00                                                              3
+2023-12     0.00           0.00                                                              3
+
+====================================================================================================
+O1  Collected amount with building, city, region and grand totals (ROLLUP)
+====================================================================================================
+Grain: region > city > building (the brief's Region > Category > Product), plus every subtotal
+Tables: fact_payment, dim_unit, dim_date, lue_reporting.vw_reporting_window
+Definition: GROUP BY ROLLUP (region, city, building_code); row_level and the "All ..." labels come from GROUPING(); grouping_id = GROUPING(region, city, building_code) (0 a building, 1 a city subtotal, 3 a region subtotal, 7 the grand total). Details first, then each subtotal.
+
+7 rows in 0.00 s; the first 6
+
+row_level        region  city        building       grouping_id  payment_rows  collected    share_of_total
+---------------  ------  ----------  -------------  -----------  ------------  -----------  --------------
+Building         Punjab  Lahore      DHL01          0            188           8526942.00   0.3947
+City subtotal    Punjab  Lahore      All buildings  1            188           8526942.00   0.3947
+Region subtotal  Punjab  All cities  All buildings  3            188           8526942.00   0.3947
+Building         Sindh   Karachi     GSI01          0            278           13078856.00  0.6053
+City subtotal    Sindh   Karachi     All buildings  1            278           13078856.00  0.6053
+Region subtotal  Sindh   All cities  All buildings  3            278           13078856.00  0.6053
+
+====================================================================================================
+O2  Collected amount by city and payment channel group, with every subtotal (CUBE)
+====================================================================================================
+Grain: city x channel group (the brief's Region x Channel), every combination of subtotals
+Tables: fact_payment, dim_unit, dim_payment_method, dim_date, lue_reporting.vw_reporting_window
+Definition: GROUP BY CUBE (city, channel_group); GROUPING() labels the rows: a city's total over every channel, a channel's total over every city, and the grand total. Share = of the city's total.
+
+18 rows in 0.00 s; the first 6
+
+row_level                  city     channel_group    grouping_id  payment_rows  collected    share_of_city
+-------------------------  -------  ---------------  -----------  ------------  -----------  -------------
+City x channel             Karachi  Bank             0            55            3042322.00   0.2326
+City x channel             Karachi  Cash             0            74            3412189.00   0.2609
+City x channel             Karachi  Cheque           0            41            1766334.00   0.1351
+City x channel             Karachi  Instant payment  0            48            2590632.00   0.1981
+City x channel             Karachi  Mobile wallet    0            60            2267379.00   0.1734
+City total (all channels)  Karachi  All channels     1            278           13078856.00  1.0000
+
+====================================================================================================
+O3  Verification of O1 and O2: every subtotal equals the sum of its parts
+====================================================================================================
+Grain: one row per check
+Tables: fact_payment, dim_unit, dim_payment_method, dim_date, lue_reporting.vw_reporting_window
+Definition: the ROLLUP and the CUBE computed again; each check compares a subtotal with the plain sum of the rows below it (or the base total of the payments). differing = rows whose difference is not 0; max_difference = the largest absolute difference. Every row must read 0 and 0.
+
+8 rows in 0.00 s; the first 6
+
+check_name                                           items_checked  differing  max_difference
+---------------------------------------------------  -------------  ---------  --------------
+ROLLUP city subtotal = the sum of its buildings      2              0          0.00
+ROLLUP grand total = the base total of the payments  1              0          0.00
+ROLLUP grand total = the sum of the regions          1              0          0.00
+ROLLUP region subtotal = the sum of its cities       2              0          0.00
+CUBE channel total = the sum of its cities           5              0          0.00
+CUBE city total = the ROLLUP city subtotal           2              0          0.00
+
+====================================================================================================
+ Summary
+====================================================================================================
+  Q1    analytical.sql        6 rows    0.02 s  What is the monthly collection rate by building?
+  Q2    analytical.sql        2 rows    0.01 s  Which buildings have the highest arrears ratio?
+  Q3    analytical.sql        3 rows    0.01 s  How are overdue balances distributed across ageing buckets?
+  Q4a   analytical.sql        0 rows    0.01 s  Which tenants pay late repeatedly?
+  Q4b   analytical.sql       15 rows    0.01 s  Does late payment differ by employer sector at the time of payment?
+  Q5    analytical.sql        6 rows    0.00 s  Which payment methods settle fastest after the due date?
+  Q6a   analytical.sql      144 rows    0.19 s  How do occupancy and vacancy trend by city and unit type?
+  Q6b   analytical.sql       10 rows    0.01 s  When do new tenants move in? (the seasonal side of the occupancy trend
+  Q7    analytical.sql        1 rows    0.17 s  Which unit types stay vacant longest?
+  Q8    analytical.sql        2 rows    0.01 s  What is the lease renewal rate, and which buildings lose tenants at re
+  Q9a   analytical.sql       11 rows    0.00 s  What is the average time to resolve a request by category and vendor?
+  Q9b   analytical.sql       12 rows    0.00 s  Were low-rated vendors slower?
+  Q10   analytical.sql        2 rows    0.00 s  Which buildings breach the maintenance SLA most often?
+  Q11   analytical.sql        2 rows    0.05 s  What is the maintenance cost per unit per month by building?
+  Q12   analytical.sql       40 rows    0.01 s  What is the net operating income per owner portfolio?
+  Q13   analytical.sql        2 rows    0.16 s  Do vacancy incentives shorten vacancy, and which offer type works best
+  Q14   analytical.sql        2 rows    0.33 s  Do leak and plumbing requests rise on heavy-rain days?
+  W1    analytical.sql        2 rows    0.00 s  RANK of buildings by arrears, within their city and overall (US-11.5)
+  W2    analytical.sql       36 rows    0.00 s  LAG growth in collections, month on month (US-11.5)
+  W3    analytical.sql       36 rows    0.00 s  Running total of cash received within each fiscal year (US-11.5)
+  W4    analytical.sql       36 rows    0.00 s  Three-month moving average of collections (US-11.5)
+  O1    olap.sql              7 rows    0.00 s  Collected amount with building, city, region and grand totals (ROLLUP)
+  O2    olap.sql             18 rows    0.00 s  Collected amount by city and payment channel group, with every subtota
+  O3    olap.sql              8 rows    0.00 s  Verification of O1 and O2: every subtotal equals the sum of its parts
+ RESULT: 24/24 queries ran

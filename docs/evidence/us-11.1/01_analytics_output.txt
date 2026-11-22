@@ -1,0 +1,968 @@
+====================================================================================================
+Q1  What is the monthly collection rate by building?
+====================================================================================================
+Grain: building x due month (months of the window with billing)
+Tables: fact_rent_invoice_line, fact_payment, dim_unit, dim_date
+Definition: D17, cohort basis: payments against the lines due in month M, as of the window end, divided by the net amount of the lines due in M. LAG gives the change against the building's previous month. Agrees with mart_collections_monthly and vw_monthly_collections.
+
+1,440 rows in 0.27 s; the first 40
+
+building_code  month    billed      collected   collection_rate  change_vs_previous_month
+-------------  -------  ----------  ----------  ---------------  ------------------------
+BHD01          2023-07  1681264.00  1656757.00  0.9854
+BHD01          2023-08  1620464.00  1606871.00  0.9916           0.0062
+BHD01          2023-09  1816834.00  1800873.00  0.9912           -0.0004
+BHD01          2023-10  1755044.00  1755044.00  1.0000           0.0088
+BHD01          2023-11  1893174.00  1875584.00  0.9907           -0.0093
+BHD01          2023-12  1777274.00  1725624.00  0.9709           -0.0198
+BHD01          2024-01  2066558.00  2014908.00  0.9750           0.0041
+BHD01          2024-02  1990578.00  1938928.00  0.9741           -0.0010
+BHD01          2024-03  1894848.00  1843198.00  0.9727           -0.0013
+BHD01          2024-04  1942278.00  1804228.00  0.9289           -0.0438
+BHD01          2024-05  1850438.00  1798788.00  0.9721           0.0432
+BHD01          2024-06  2024728.00  1973078.00  0.9745           0.0024
+BHD01          2024-07  1944868.00  1870198.00  0.9616           -0.0129
+BHD01          2024-08  1907778.00  1672084.00  0.8765           -0.0852
+BHD01          2024-09  1962198.00  1822838.00  0.9290           0.0525
+BHD01          2024-10  2058498.00  1820121.00  0.8842           -0.0448
+BHD01          2024-11  1848728.00  1639648.00  0.8869           0.0027
+BHD01          2024-12  1701178.00  1579509.00  0.9285           0.0416
+BHD01          2025-01  1726504.00  1638666.00  0.9491           0.0206
+BHD01          2025-02  1881984.00  1580336.00  0.8397           -0.1094
+BHD01          2025-03  1959362.00  1646777.00  0.8405           0.0007
+BHD01          2025-04  2009292.00  1689064.00  0.8406           0.0002
+BHD01          2025-05  2195912.00  1864250.00  0.8490           0.0083
+BHD01          2025-06  2357412.00  2012956.00  0.8539           0.0049
+BHD01          2025-07  2094142.00  1934482.00  0.9238           0.0699
+BHD01          2025-08  2023302.00  1707092.00  0.8437           -0.0800
+BHD01          2025-09  2006122.00  1845659.00  0.9200           0.0763
+BHD01          2025-10  2248484.00  2044618.00  0.9093           -0.0107
+BHD01          2025-11  2189254.00  1980539.00  0.9047           -0.0047
+BHD01          2025-12  2184794.00  1984279.00  0.9082           0.0036
+BHD01          2026-01  2244734.00  2114509.00  0.9420           0.0338
+BHD01          2026-02  2234264.00  2137333.00  0.9566           0.0146
+BHD01          2026-03  2172124.00  2129322.00  0.9803           0.0237
+BHD01          2026-04  2028464.00  2010363.00  0.9911           0.0108
+BHD01          2026-05  1852914.00  1708065.00  0.9218           -0.0693
+BHD01          2026-06  2231454.00  2085811.00  0.9347           0.0129
+BLA01          2023-07  7494712.00  7077856.00  0.9444
+BLA01          2023-08  7991502.00  7657162.00  0.9582           0.0138
+BLA01          2023-09  7576352.00  7182307.00  0.9480           -0.0102
+BLA01          2023-10  7430058.00  6844190.00  0.9211           -0.0268
+
+====================================================================================================
+Q2  Which buildings have the highest arrears ratio?
+====================================================================================================
+Grain: building, as of the window end
+Tables: fact_rent_invoice_line, fact_payment, dim_unit, dim_date
+Definition: arrears ratio = arrears / net amount billed (lines due in the window). Arrears = the open balance of the lines past due on the last day: net amount of the lines due before it, minus the payments against them made by then (a payment before the due date counts from the day after it; the rule of fact_unit_occupancy_daily.current_lease_arrears). RANK orders the buildings.
+
+40 rows in 0.33 s
+
+building_code  city        billed        arrears      arrears_ratio  arrears_rank
+-------------  ----------  ------------  -----------  -------------  ------------
+GLB03          Lahore      294805970.00  64267854.00  0.2180         1
+DGR01          Faisalabad  91667458.00   9060746.00   0.0988         2
+FS701          Islamabad   202030132.00  19245546.00  0.0953         3
+E1102          Islamabad   135868082.00  11733360.00  0.0864         4
+NNZ02          Karachi     98299256.00   8167398.00   0.0831         5
+MDT03          Lahore      132221288.00  10356251.00  0.0783         6
+BLA02          Islamabad   279157444.00  21250789.00  0.0761         7
+CLF01          Karachi     117749850.00  8609858.00   0.0731         8
+BHD01          Karachi     71377248.00   5064848.00   0.0710         9
+PCH02          Karachi     93176212.00   6604178.00   0.0709         10
+CLF02          Karachi     90775380.00   5858448.00   0.0645         11
+PCH03          Karachi     168359556.00  10742105.00  0.0638         12
+CNL01          Faisalabad  89202048.00   5514934.00   0.0618         13
+DHL01          Lahore      120861026.00  7425685.00   0.0614         14
+DHL02          Lahore      100210074.00  5724419.00   0.0571         15
+GLB01          Lahore      116661580.00  6565052.00   0.0563         16
+MDT02          Lahore      93192318.00   5226378.00   0.0561         17
+DGR02          Faisalabad  67139788.00   3623742.00   0.0540         18
+BLA01          Islamabad   299471272.00  15918271.00  0.0532         19
+G1101          Islamabad   187373274.00  9437464.00   0.0504         20
+CNT02          Lahore      218620454.00  10277334.00  0.0470         21
+MDT01          Lahore      121332312.00  5498170.00   0.0453         22
+DHL03          Lahore      92407266.00   4146958.00   0.0449         23
+JHT01          Lahore      149683594.00  6700359.00   0.0448         24
+GLB02          Lahore      143945600.00  6283251.00   0.0437         25
+SSR01          Faisalabad  87318180.00   3715877.00   0.0426         26
+CNL03          Faisalabad  80938522.00   3436380.00   0.0425         27
+CNL02          Faisalabad  61617854.00   2520534.00   0.0409         28
+GSI01          Karachi     92176494.00   3672995.00   0.0398         29
+WPT01          Lahore      88065452.00   3384884.00   0.0384         30
+GLB04          Lahore      161104560.00  5959081.00   0.0370         31
+PCH01          Karachi     95266512.00   3501582.00   0.0368         32
+F1001          Islamabad   198203498.00  6561933.00   0.0331         33
+CNT01          Lahore      214645524.00  6710988.00   0.0313         34
+DHK01          Karachi     110329202.00  3434410.00   0.0311         35
+WPT02          Lahore      109207172.00  3272055.00   0.0300         36
+NNZ01          Karachi     109237938.00  2115584.00   0.0194         37
+DHI01          Islamabad   201354254.00  2818311.00   0.0140         38
+DHL04          Lahore      184167028.00  2025431.00   0.0110         39
+E1101          Islamabad   307432146.00  2929666.00   0.0095         40
+
+====================================================================================================
+Q3  How are overdue balances distributed across ageing buckets?
+====================================================================================================
+Grain: ageing bucket, as of the window end (the last month-end snapshot)
+Tables: fact_rent_invoice_line, fact_payment, dim_date
+Definition: per line, open balance = net amount - payments made by the snapshot day; a line is overdue when it is past due (due before the day) with an open balance above 0. Days past due = snapshot day - due date. Buckets 0-30, 31-60, 61-90, 90+ (the pack's KPI; the plan's "61 and over" is the last two together). Credit lines and overpayments (balance 0 or below) are not overdue.
+
+4 rows in 0.23 s
+
+bucket  overdue_lines  overdue_balance  share_of_overdue
+------  -------------  ---------------  ----------------
+0-30    583            20773534.00      0.0631
+31-60   370            13463523.00      0.0409
+61-90   300            10858609.00      0.0330
+90+     8913           284267443.00     0.8631
+
+====================================================================================================
+Q4a  Which tenants pay late repeatedly?
+====================================================================================================
+Grain: tenant (tenant code), over the last 12 months of the window
+Tables: fact_payment, dim_tenant, dim_date
+Definition: a payment is late when it was made more than 15 days after its due date (days_past_due > 15); reversals are not payments. A repeat late payer has 3 or more late payments in the 12 months to the window end. The sector is the tenant version's when it paid (fact_payment.tenant_key).
+
+328 rows in 0.10 s; the first 40
+
+tenant_code  tenant_name          tenant_type  employer_sector_when_paid  payments  late_payments  avg_days_late_when_late
+-----------  -------------------  -----------  -------------------------  --------  -------------  -----------------------
+T-0362       Qureshi Traders      Corporate    Energy                     79        32             47.1
+T-0307       Siddiqui Trading Co  Corporate    Education                  46        20             88.0
+T-0294       Malik Solutions      Corporate    IT and Software            42        19             82.6
+T-0429       Virk Enterprises     Corporate    Healthcare                 49        19             68.3
+T-0416       Khan Solutions       Corporate    Self-employed              26        14             30.8
+T-1662       Mubashir Chaudhry    Individual   Manufacturing              24        13             75.6
+T-1654       Imran Zafar          Individual   Energy                     25        13             55.9
+T-2517       Usman Dar            Individual   Healthcare                 24        12             71.1
+T-0570       Noor Hussain         Individual   Hospitality                22        11             114.6
+T-2464       Zainab Khawaja       Individual   Healthcare                 22        11             54.4
+T-2457       Jawad Saeed          Individual   Hospitality                23        11             50.7
+T-1973       Talha Mirza          Individual   Energy                     22        11             45.6
+T-1698       Dua Akhtar           Individual   Unknown                    14        11             29.8
+T-1271       Waqas Qureshi        Individual   Media                      20        10             212.3
+T-0286       Rabia Awan           Individual   Legal and Consulting       19        10             140.3
+T-0279       Fatima Saeed         Individual   IT and Software            21        10             118.5
+T-0119       Fahad Khawaja        Individual   Unknown                    21        10             105.9
+T-2362       Anum Zaidi           Individual   Manufacturing              21        10             81.1
+T-2474       Yasir Ejaz           Individual   Healthcare                 22        10             52.5
+T-0192       Ibrahim Gondal       Individual   Manufacturing              22        10             51.8
+T-1012       Aisha Iqbal          Individual   Education                  22        10             49.2
+T-2340       Qasim Baig           Individual   Unknown                    15        10             48.8
+T-2809       Nimra Nawaz          Individual   Hospitality                21        10             48.7
+T-2651       Asad Zaidi           Individual   Construction               22        10             45.9
+T-2903       Fatima Jamil         Individual   Retail                     22        10             43.2
+T-0075       Virk Trading Co      Corporate    Education                  22        10             43.1
+T-2881       Areeba Awan          Individual   Logistics                  21        10             40.8
+T-1323       Babar Jamil          Individual   Banking                    22        10             39.7
+T-1230       Fatima Khan          Individual   Manufacturing              14        10             29.0
+T-2325       Ayesha Shah          Individual   Education                  21        9              57.7
+T-2698       Yusra Niazi          Individual   Unknown                    21        9              55.6
+T-2523       Zeeshan Zafar        Individual   Retail                     21        9              53.9
+T-2788       Noor Bhatti          Individual   Retail                     21        9              52.0
+T-1082       Hashmi Trading Co    Corporate    IT and Software            21        9              49.4
+T-2188       Iqra Memon           Individual   Media                      19        9              49.3
+T-1237       Saba Hashmi          Individual   Media                      21        9              48.4
+T-0664       Zain Saeed           Individual   Telecom                    21        9              47.2
+T-2853       Waqas Khawaja        Individual   Media                      21        9              46.6
+T-3060       Nadia Dar            Individual   Banking                    20        9              45.4
+T-0250       Raza Mirza           Individual   Education                  21        9              44.7
+
+====================================================================================================
+Q4b  Does late payment differ by employer sector at the time of payment?
+====================================================================================================
+Grain: employer sector of the tenant version that paid, over the last 12 months of the window
+Tables: fact_payment, dim_tenant, dim_date
+Definition: as Q4a; late share = late payments / payments; repeat late payers as in Q4a.
+
+16 rows in 0.12 s
+
+employer_sector       payments  late_payments  late_share  repeat_late_payers
+--------------------  --------  -------------  ----------  ------------------
+Manufacturing         1010      145            0.1436      19
+Unknown               1077      149            0.1383      20
+Media                 1218      168            0.1379      26
+Energy                1448      196            0.1354      26
+Healthcare            1438      188            0.1307      24
+Telecom               1344      174            0.1295      27
+Hospitality           1207      156            0.1292      25
+Construction          1116      136            0.1219      22
+Self-employed         1224      145            0.1185      20
+Education             1369      158            0.1154      22
+IT and Software       1217      140            0.1150      16
+Retail                1227      130            0.1059      15
+Banking               1214      123            0.1013      17
+Legal and Consulting  1140      103            0.0904      16
+Logistics             1220      104            0.0852      16
+Government            1294      109            0.0842      17
+
+====================================================================================================
+Q5  Which payment methods settle fastest after the due date?
+====================================================================================================
+Grain: payment method (and its channel group), over the window
+Tables: fact_payment, dim_payment_method
+Definition: settlement lag = days from the paid date to the settlement date (fact_payment. settlement_lag_days, from the S3 settlement files: electronic methods only; cash and cheques have no settlement file, so their lag is NULL); days past due = paid date - due date. One row per payment allocation; reversals left out. Ranked by settlement lag, fastest first.
+
+6 rows in 0.08 s
+
+method_code  method_name    channel_group    allocations  settled_allocations  avg_settlement_lag_days  median_settlement_lag_days  avg_days_past_due  avg_days_due_to_settled  settlement_rank
+-----------  -------------  ---------------  -----------  -------------------  -----------------------  --------------------------  -----------------  -----------------------  ---------------
+RAAST        Raast          Instant payment  17366        17015                0.31                     0.0                         6.92               7.28                     1
+BANK         Bank transfer  Bank             36199        35483                1.59                     1.0                         4.88               6.48                     2
+JAZZ         JazzCash       Mobile wallet    12383        12160                1.78                     1.0                         4.87               6.66                     3
+EASY         Easypaisa      Mobile wallet    12314        12071                1.86                     2.0                         4.78               6.69                     4
+CASH         Cash           Cash             26662        0                                                                         5.33                                        5
+CHEQUE       Cheque         Cheque           21352        0                                                                         4.34                                        5
+
+====================================================================================================
+Q6a  How do occupancy and vacancy trend by city and unit type?
+====================================================================================================
+Grain: month x city x unit type
+Tables: fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: occupancy = the monthly average of daily occupancy = occupied unit-days / unit-days (never a sum of daily counts); vacancy = 1 - occupancy; average units = unit-days / days in the month. Reconciles with mart_occupancy_monthly. LAG gives the change against the previous month.
+
+396 rows in 1.52 s; the first 40
+
+month    city        unit_type  avg_units  avg_occupied_units  occupancy_rate  vacancy_rate  change_vs_previous_month
+-------  ----------  ---------  ---------  ------------------  --------------  ------------  ------------------------
+2023-07  Faisalabad  Apartment  236.0      198.0               0.8390          0.1610
+2023-08  Faisalabad  Apartment  236.0      199.0               0.8432          0.1568        0.0042
+2023-09  Faisalabad  Apartment  236.0      202.0               0.8559          0.1441        0.0127
+2023-10  Faisalabad  Apartment  236.0      199.0               0.8432          0.1568        -0.0127
+2023-11  Faisalabad  Apartment  236.0      201.0               0.8517          0.1483        0.0085
+2023-12  Faisalabad  Apartment  236.0      202.0               0.8559          0.1441        0.0042
+2024-01  Faisalabad  Apartment  236.0      201.0               0.8517          0.1483        -0.0042
+2024-02  Faisalabad  Apartment  236.0      202.0               0.8559          0.1441        0.0042
+2024-03  Faisalabad  Apartment  236.0      200.0               0.8475          0.1525        -0.0085
+2024-04  Faisalabad  Apartment  236.0      198.0               0.8390          0.1610        -0.0085
+2024-05  Faisalabad  Apartment  236.0      202.0               0.8559          0.1441        0.0169
+2024-06  Faisalabad  Apartment  236.0      211.0               0.8941          0.1059        0.0381
+2024-07  Faisalabad  Apartment  236.0      208.0               0.8814          0.1186        -0.0127
+2024-08  Faisalabad  Apartment  236.0      207.0               0.8771          0.1229        -0.0042
+2024-09  Faisalabad  Apartment  236.0      205.0               0.8686          0.1314        -0.0085
+2024-10  Faisalabad  Apartment  236.0      201.0               0.8517          0.1483        -0.0169
+2024-11  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        -0.0254
+2024-12  Faisalabad  Apartment  236.0      193.0               0.8178          0.1822        -0.0085
+2025-01  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        0.0085
+2025-02  Faisalabad  Apartment  236.0      198.0               0.8390          0.1610        0.0127
+2025-03  Faisalabad  Apartment  236.0      199.0               0.8432          0.1568        0.0042
+2025-04  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        -0.0169
+2025-05  Faisalabad  Apartment  236.0      199.0               0.8432          0.1568        0.0169
+2025-06  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        -0.0169
+2025-07  Faisalabad  Apartment  236.0      190.0               0.8051          0.1949        -0.0212
+2025-08  Faisalabad  Apartment  236.0      196.0               0.8305          0.1695        0.0254
+2025-09  Faisalabad  Apartment  236.0      194.0               0.8220          0.1780        -0.0085
+2025-10  Faisalabad  Apartment  236.0      194.0               0.8220          0.1780        0.0000
+2025-11  Faisalabad  Apartment  236.0      197.0               0.8347          0.1653        0.0127
+2025-12  Faisalabad  Apartment  236.0      184.0               0.7797          0.2203        -0.0551
+2026-01  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        0.0466
+2026-02  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        0.0000
+2026-03  Faisalabad  Apartment  236.0      196.0               0.8305          0.1695        0.0042
+2026-04  Faisalabad  Apartment  236.0      195.0               0.8263          0.1737        -0.0042
+2026-05  Faisalabad  Apartment  236.0      193.0               0.8178          0.1822        -0.0085
+2026-06  Faisalabad  Apartment  236.0      201.0               0.8517          0.1483        0.0339
+2023-07  Faisalabad  Shop       15.0       14.0                0.9333          0.0667
+2023-08  Faisalabad  Shop       15.0       13.0                0.8667          0.1333        -0.0667
+2023-09  Faisalabad  Shop       15.0       13.0                0.8667          0.1333        0.0000
+2023-10  Faisalabad  Shop       15.0       12.0                0.8000          0.2000        -0.0667
+
+====================================================================================================
+Q6b  When do new tenants move in? (the seasonal side of the occupancy trend)
+====================================================================================================
+Grain: calendar month (1 to 12), over the window
+Tables: dim_lease, lue_reporting.vw_reporting_window
+Definition: a move-in is a new tenant's lease starting: a lease with no previous lease (a renewal keeps the tenant in place, so it is not a move-in), counted by its start month inside the window. The index is the month's move-ins over the average month's (1.00 = an average month).
+
+12 rows in 0.00 s
+
+month_no  month_name  move_ins  index_vs_average_month
+--------  ----------  --------  ----------------------
+1         January     242       1.21
+2         February    223       1.11
+3         March       200       1.00
+4         April       152       0.76
+5         May         168       0.84
+6         June        283       1.41
+7         July        176       0.88
+8         August      317       1.58
+9         September   167       0.83
+10        October     159       0.79
+11        November    164       0.82
+12        December    154       0.77
+
+====================================================================================================
+Q7  Which unit types stay vacant longest?
+====================================================================================================
+Grain: unit type, over the window
+Tables: fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: gaps and islands: a vacancy spell is a run of consecutive vacant days of one unit. CENSORING RULE: only completed spells count; a spell that begins on the window's first day (it began earlier, its length is unknown) or is still open on its last day (it ends later) is left out. Length = days in the spell.
+
+3 rows in 0.68 s
+
+unit_type  completed_spells  avg_vacancy_days  median_vacancy_days  longest_spell_days  longest_vacancy_rank
+---------  ----------------  ----------------  -------------------  ------------------  --------------------
+Office     94                141.4             120.0                762                 1
+Shop       114               131.7             122.0                397                 2
+Apartment  1897              113.4             92.0                 702                 3
+
+====================================================================================================
+Q8  What is the lease renewal rate, and which buildings lose tenants at renewal?
+====================================================================================================
+Grain: building, over the window
+Tables: fact_lease_event, dim_lease_event_type, dim_lease, dim_unit, dim_date
+Definition: renewal rate = renewed leases / leases that reached expiry. A lease reached expiry when its end date falls in the window. It was renewed when a RENEW event (fact_lease_event) sits on its successor lease (dim_lease.previous_lease_number). Lost at renewal = expired, not renewed. The lease-link column counts successors whether or not their RENEW event survived quality checks (some were quarantined as planted defects): the gap between the two is that rejection.
+
+40 rows in 0.02 s
+
+building_code  city        leases_expired  renewed  renewal_rate  lost_at_renewal  renewal_rate_lease_link  lowest_renewal_rank
+-------------  ----------  --------------  -------  ------------  ---------------  -----------------------  -------------------
+PCH02          Karachi     118             16       0.1356        102              0.1356                   1
+PCH03          Karachi     48              7        0.1458        41               0.1667                   2
+CLF01          Karachi     147             22       0.1497        125              0.1497                   3
+PCH01          Karachi     118             18       0.1525        100              0.1610                   4
+DHK01          Karachi     83              13       0.1566        70               0.2169                   5
+GSI01          Karachi     99              18       0.1818        81               0.1818                   6
+CLF02          Karachi     78              15       0.1923        63               0.2051                   7
+BHD01          Karachi     86              17       0.1977        69               0.1977                   8
+NNZ01          Karachi     93              22       0.2366        71               0.2581                   9
+MDT02          Lahore      101             24       0.2376        77               0.2376                   10
+NNZ02          Karachi     97              25       0.2577        72               0.2577                   11
+CNT02          Lahore      41              11       0.2683        30               0.2927                   12
+SSR01          Faisalabad  99              27       0.2727        72               0.3030                   13
+MDT01          Lahore      110             31       0.2818        79               0.2909                   14
+MDT03          Lahore      35              10       0.2857        25               0.3143                   15
+E1101          Islamabad   37              11       0.2973        26               0.2973                   16
+E1102          Islamabad   110             33       0.3000        77               0.3000                   17
+DHL03          Lahore      90              28       0.3111        62               0.3222                   18
+WPT01          Lahore      97              32       0.3299        65               0.3814                   19
+DGR02          Faisalabad  72              24       0.3333        48               0.3889                   20
+CNL01          Faisalabad  102             35       0.3431        67               0.3627                   21
+BLA02          Islamabad   54              19       0.3519        35               0.3889                   22
+BLA01          Islamabad   42              15       0.3571        27               0.4048                   23
+G1101          Islamabad   117             42       0.3590        75               0.3675                   24
+DGR01          Faisalabad  105             38       0.3619        67               0.3714                   25
+WPT02          Lahore      87              32       0.3678        55               0.3793                   26
+JHT01          Lahore      101             38       0.3762        63               0.3861                   27
+CNT01          Lahore      150             57       0.3800        93               0.4000                   28
+GLB03          Lahore      192             73       0.3802        119              0.3906                   29
+GLB04          Lahore      112             43       0.3839        69               0.4018                   30
+CNL02          Faisalabad  91              35       0.3846        56               0.3956                   31
+CNL03          Faisalabad  93              36       0.3871        57               0.3978                   32
+DHL04          Lahore      111             43       0.3874        68               0.3964                   33
+F1001          Islamabad   100             39       0.3900        61               0.4000                   34
+DHI01          Islamabad   88              35       0.3977        53               0.4091                   35
+GLB02          Lahore      95              38       0.4000        57               0.4105                   36
+GLB01          Lahore      102             42       0.4118        60               0.4216                   37
+FS701          Islamabad   108             46       0.4259        62               0.4630                   38
+DHL02          Lahore      74              33       0.4459        41               0.4730                   39
+DHL01          Lahore      94              45       0.4787        49               0.4894                   40
+
+====================================================================================================
+Q9a  What is the average time to resolve a request by category and vendor?
+====================================================================================================
+Grain: maintenance category x vendor (code), resolved requests over the window
+Tables: fact_maintenance_request, dim_maintenance_category, dim_vendor
+Definition: average days to resolve of the resolved requests; over SLA = days to resolve x 24 / the subcategory's SLA hours (above 1 is late); the vendor's rating is the one valid when the request was raised (SCD2). RANK within the category, slowest first.
+
+140 rows in 0.01 s; the first 40
+
+category_name  vendor_code  vendor_name                     rating_when_raised  resolved_requests  avg_days_to_resolve  median_resolve_over_sla  slowest_in_category
+-------------  -----------  ------------------------------  ------------------  -----------------  -------------------  -----------------------  -------------------
+Civil          V-086        Memon Construction Enterprises  C                   37                 4.15                 0.76                     1
+Civil          V-103        Niazi Construction Enterprises  C                   27                 4.10                 0.96                     2
+Civil          V-083        Baig Construction Associates    C                   32                 4.01                 0.84                     3
+Civil          V-105        Awan Construction Services      B                   43                 3.88                 0.71                     4
+Civil          V-092        Lodhi Construction Services     B/C                 31                 3.86                 0.73                     5
+Civil          V-091        Farooq Construction & Sons      C                   38                 3.78                 0.75                     6
+Civil          V-089        Cheema Construction Services    B                   43                 3.66                 0.69                     7
+Civil          V-087        Virk Construction Works         C                   25                 3.57                 0.66                     8
+Civil          V-084        Lodhi Construction Associates   B                   54                 3.48                 0.71                     9
+Civil          V-098        Saeed Construction Enterprises  C                   30                 3.48                 0.66                     10
+Civil          V-095        Gondal Construction Services    B                   29                 3.47                 0.53                     11
+Civil          V-085        Niazi Construction Associates   B                   51                 3.13                 0.64                     12
+Civil          V-096        Zafar Construction Enterprises  B                   50                 3.13                 0.56                     13
+Civil          V-097        Kazmi Construction & Sons       A/C                 38                 3.12                 0.70                     14
+Civil          V-094        Hashmi Construction Associates  B                   49                 3.12                 0.74                     15
+Civil          V-088        Gill Construction Services      B                   53                 2.93                 0.55                     16
+Civil          V-090        Rana Construction Associates    A                   60                 2.92                 0.55                     17
+Civil          V-081        Malik Construction & Sons       A                   62                 2.90                 0.55                     18
+Civil          V-102        Ghafoor Construction & Sons     A/B                 52                 2.86                 0.54                     19
+Civil          V-104        Qureshi Construction & Sons     B                   53                 2.78                 0.58                     20
+Civil          V-082        Gondal Construction & Sons      A                   56                 2.65                 0.48                     21
+Civil          V-101        Kazmi Construction Associates   A                   66                 2.63                 0.57                     22
+Civil          V-100        Zafar Construction Works        A                   56                 2.52                 0.53                     23
+Civil          V-093        Javed Construction Associates   A                   55                 2.39                 0.49                     24
+Civil          V-099        Rizvi Construction Works        A                   50                 2.33                 0.53                     25
+Electrical     V-039        Cheema Electric Services        C                   15                 1.51                 0.84                     1
+Electrical     V-031        Iqbal Electric & Sons           C                   31                 1.49                 1.00                     2
+Electrical     V-032        Gill Electric & Sons            C                   26                 1.48                 0.96                     3
+Electrical     V-047        Baig Electric Works             B                   28                 1.47                 0.79                     4
+Electrical     V-056        Rana Electric Enterprises       B/C                 28                 1.37                 0.77                     5
+Electrical     V-040        Ejaz Electric Associates        B                   38                 1.32                 0.71                     6
+Electrical     V-049        Pervez Electric & Sons          C                   22                 1.30                 0.79                     7
+Electrical     V-060        Qureshi Electric Works          B                   35                 1.28                 0.84                     8
+Electrical     V-052        Anwar Electric Associates       B                   24                 1.20                 0.57                     9
+Electrical     V-043        Memon Electric Enterprises      A                   55                 1.18                 0.79                     10
+Electrical     V-053        Hayat Electric Enterprises      A                   51                 1.17                 0.73                     11
+Electrical     V-041        Anwar Electric Services         B                   23                 1.17                 0.74                     12
+Electrical     V-059        Mirza Electric Enterprises      A                   55                 1.16                 0.63                     13
+Electrical     V-042        Jutt Electric Works             B                   44                 1.14                 0.72                     14
+Electrical     V-034        Malik Electric & Sons           B                   34                 1.12                 0.70                     15
+
+====================================================================================================
+Q9b  Were low-rated vendors slower?
+====================================================================================================
+Grain: vendor rating band at the time of the request (SCD2) x trade
+Tables: fact_maintenance_request, dim_vendor
+Definition: as Q9a, by the rating band of the vendor version valid when the request was raised.
+
+18 rows in 0.00 s
+
+trade                rating_when_raised  resolved_requests  avg_days_to_resolve  sla_breach_rate
+-------------------  ------------------  -----------------  -------------------  ---------------
+Civil                A                   450                2.62                 0.1133
+Civil                B                   457                3.22                 0.1838
+Civil                C                   233                3.93                 0.3476
+Electrical           A                   414                1.05                 0.2560
+Electrical           B                   601                1.09                 0.3078
+Electrical           C                   103                1.43                 0.4272
+General maintenance  A                   274                1.27                 0.2993
+General maintenance  B                   251                1.17                 0.2829
+General maintenance  C                   108                1.46                 0.3704
+HVAC                 A                   253                1.59                 0.1700
+HVAC                 B                   640                1.95                 0.1922
+HVAC                 C                   37                 2.16                 0.1892
+Pest control         A                   28                 1.36                 0.0714
+Pest control         B                   274                1.68                 0.2299
+Pest control         C                   59                 1.91                 0.2881
+Plumbing             A                   740                1.22                 0.2392
+Plumbing             B                   466                1.33                 0.2661
+Plumbing             C                   271                1.78                 0.4096
+
+====================================================================================================
+Q10  Which buildings breach the maintenance SLA most often?
+====================================================================================================
+Grain: building, resolved requests over the window
+Tables: fact_maintenance_request, dim_unit
+Definition: SLA breach rate = SLA breaches / resolved requests (the pack's KPI).
+
+40 rows in 0.00 s
+
+building_code  city        resolved_requests  sla_breaches  sla_breach_rate  breach_rank
+-------------  ----------  -----------------  ------------  ---------------  -----------
+SSR01          Faisalabad  150                52            0.3467           1
+CLF02          Karachi     89                 30            0.3371           2
+CNT02          Lahore      165                55            0.3333           3
+BLA01          Islamabad   62                 18            0.2903           4
+GLB01          Lahore      126                36            0.2857           5
+MDT02          Lahore      287                82            0.2857           5
+PCH01          Karachi     236                66            0.2797           7
+GLB02          Lahore      93                 26            0.2796           8
+JHT01          Lahore      93                 26            0.2796           8
+PCH02          Karachi     208                57            0.2740           10
+CNL02          Faisalabad  126                34            0.2698           11
+CNL03          Faisalabad  149                40            0.2685           12
+BLA02          Islamabad   194                52            0.2680           13
+BHD01          Karachi     134                35            0.2612           14
+GLB03          Lahore      161                42            0.2609           15
+GLB04          Lahore      73                 19            0.2603           16
+DHL03          Lahore      99                 25            0.2525           17
+PCH03          Karachi     179                45            0.2514           18
+DHL02          Lahore      60                 15            0.2500           19
+G1101          Islamabad   120                30            0.2500           19
+DGR02          Faisalabad  101                25            0.2475           21
+NNZ01          Karachi     146                36            0.2466           22
+NNZ02          Karachi     138                34            0.2464           23
+FS701          Islamabad   119                29            0.2437           24
+E1101          Islamabad   66                 16            0.2424           25
+MDT03          Lahore      174                42            0.2414           26
+WPT01          Lahore      211                49            0.2322           27
+DGR01          Faisalabad  135                31            0.2296           28
+DHL04          Lahore      125                28            0.2240           29
+E1102          Islamabad   228                51            0.2237           30
+GSI01          Karachi     140                31            0.2214           31
+CLF01          Karachi     268                57            0.2127           32
+MDT01          Lahore      160                34            0.2125           33
+CNT01          Lahore      157                33            0.2102           34
+DHK01          Karachi     121                25            0.2066           35
+F1001          Islamabad   88                 18            0.2045           36
+CNL01          Faisalabad  152                31            0.2039           37
+DHL01          Lahore      132                24            0.1818           38
+WPT02          Lahore      110                19            0.1727           39
+DHI01          Islamabad   84                 13            0.1548           40
+
+====================================================================================================
+Q11  What is the maintenance cost per unit per month by building?
+====================================================================================================
+Grain: building, over the window
+Tables: fact_maintenance_request, fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: actual cost / unit-months; unit-months = the building's units on each month's last day, summed over the months (the pack's KPI).
+
+40 rows in 0.41 s
+
+building_code  city        unit_months  requests  actual_cost  cost_per_unit_month  cost_rank
+-------------  ----------  -----------  --------  -----------  -------------------  ---------
+MDT02          Lahore      1656         287       1752850.00   1058.48              1
+E1102          Islamabad   1764         229       1305700.00   740.19               2
+WPT01          Lahore      1656         214       1214300.00   733.27               3
+MDT03          Lahore      1404         174       1028100.00   732.26               4
+PCH02          Karachi     1764         208       1270900.00   720.46               5
+CLF01          Karachi     2124         268       1512050.00   711.89               6
+PCH01          Karachi     1764         236       1253450.00   710.57               7
+PCH03          Karachi     1692         179       1061150.00   627.16               8
+NNZ01          Karachi     1404         146       871000.00    620.37               9
+CNL03          Faisalabad  1440         149       844100.00    586.18               10
+DHL01          Lahore      1404         132       814550.00    580.16               11
+CNT02          Lahore      1872         165       1070500.00   571.85               12
+NNZ02          Karachi     1404         138       797550.00    568.06               13
+GSI01          Karachi     1404         140       793950.00    565.49               14
+BLA02          Islamabad   2196         194       1225400.00   558.01               15
+CNL02          Faisalabad  1404         126       746200.00    531.48               16
+FS701          Islamabad   1620         119       859900.00    530.80               17
+SSR01          Faisalabad  1728         150       911800.00    527.66               18
+CNL01          Faisalabad  1620         153       850400.00    524.94               19
+WPT02          Lahore      1332         110       688250.00    516.70               20
+BHD01          Karachi     1332         134       674350.00    506.27               21
+MDT01          Lahore      1728         160       874700.00    506.19               22
+DGR02          Faisalabad  1188         101       598200.00    503.54               23
+CLF02          Karachi     1152         89        544150.00    472.35               24
+GLB01          Lahore      1584         127       734750.00    463.86               25
+DHK01          Karachi     1332         121       573200.00    430.33               26
+DGR01          Faisalabad  1656         136       676300.00    408.39               27
+DHL04          Lahore      1836         125       700600.00    381.59               28
+GLB02          Lahore      1548         93        589850.00    381.04               29
+DHL03          Lahore      1368         100       514800.00    376.32               30
+DHI01          Islamabad   1368         85        487000.00    355.99               31
+CNT01          Lahore      2412         157       858200.00    355.80               32
+G1101          Islamabad   1944         120       666500.00    342.85               33
+GLB03          Lahore      2916         161       981400.00    336.56               34
+E1101          Islamabad   1476         66        467350.00    316.63               35
+GLB04          Lahore      1656         74        519750.00    313.86               36
+DHL02          Lahore      1152         60        343550.00    298.22               37
+F1001          Islamabad   1584         89        471550.00    297.70               38
+JHT01          Lahore      1548         93        456350.00    294.80               39
+BLA01          Islamabad   1368         62        379650.00    277.52               40
+
+====================================================================================================
+Q12  What is the net operating income per owner portfolio?
+====================================================================================================
+Grain: owner, over the window
+Tables: fact_payment, dim_charge_type, fact_maintenance_request, fact_unit_occupancy_daily, dim_owner, dim_date, lue_reporting.vw_reporting_parameter
+Definition: NOI = rent collected - actual maintenance cost - LUE management fee. Rent collected = payments against charge type RENT only (late fees, utilities, service charges and credits left out). FEE ASSUMPTION: the management fee is 8 percent of the rent collected (management_fee_rate in lue_reporting.vw_reporting_parameter; the brief gives no rate). NOI margin = NOI / rent collected. Units = units owned on the window's last day.
+
+900 rows in 0.05 s; the first 40
+
+owner_code  owner_name            owner_type  units_owned_at_end  rent_collected  maintenance_cost  management_fee  noi          noi_margin  noi_rank
+----------  --------------------  ----------  ------------------  --------------  ----------------  --------------  -----------  ----------  --------
+OW-0834     Yusra Jamil           Individual  8                   28398821.00     129650.00         2271905.68      25997265.32  0.9154      1
+OW-0806     Qasim Cheema          Individual  5                   27081049.00     94550.00          2166483.92      24820015.08  0.9165      2
+OW-0264     Mahmood Investments   Company     4                   27034300.00     59050.00          2162744.00      24812506.00  0.9178      3
+OW-0469     Anum Niazi            Individual  1                   25833780.00     29200.00          2066702.40      23737877.60  0.9189      4
+OW-0510     Usman Shah            Individual  8                   22632478.00     191000.00         1810598.24      20630879.76  0.9116      5
+OW-0176     Dua Qureshi           Individual  5                   21536092.00     138050.00         1722887.36      19675154.64  0.9136      6
+OW-0661     Ali Hussain           Individual  6                   21033800.00     168350.00         1682704.00      19182746.00  0.9120      7
+OW-0527     Nadia Shah            Individual  3                   20086180.00     19900.00          1606894.40      18459385.60  0.9190      8
+OW-0770     Laiba Siddiqui        Individual  2                   19472512.00     28600.00          1557800.96      17886111.04  0.9185      9
+OW-0362     Chaudhry Investments  Company     5                   18405004.00     126000.00         1472400.32      16806603.68  0.9132      10
+OW-0616     Amna Saeed            Individual  4                   18156140.00     72700.00          1452491.20      16630948.80  0.9160      11
+OW-0230     Mehwish Naqvi         Individual  3                   18118100.00     47050.00          1449448.00      16621602.00  0.9174      12
+OW-0188     Jawad Rana            Individual  2                   17838960.00     16500.00          1427116.80      16395343.20  0.9191      13
+OW-0690     Akhtar Holdings       Company     4                   17778964.00     76450.00          1422317.12      16280196.88  0.9157      14
+OW-0356     Bhatti Estates        Company     4                   17469691.00     72600.00          1397575.28      15999515.72  0.9158      15
+OW-0303     Mehwish Paracha       Individual  7                   17422774.00     83400.00          1393821.92      15945552.08  0.9152      16
+OW-0305     Khalid Akhtar         Individual  6                   17211297.00     119600.00         1376903.76      15714793.24  0.9131      17
+OW-0671     Iqra Tariq            Individual  5                   16821695.00     31850.00          1345735.60      15444109.40  0.9181      18
+OW-0275     Asad Awan             Individual  4                   16674560.00     57900.00          1333964.80      15282695.20  0.9165      19
+OW-0835     Maham Raza            Individual  8                   16278848.00     195000.00         1302307.84      14781540.16  0.9080      20
+OW-0674     Komal Awan            Individual  4                   15544200.00     27300.00          1243536.00      14273364.00  0.9182      21
+OW-0256     Iqbal Investments     Company     6                   15293840.00     118450.00         1223507.20      13951882.80  0.9123      22
+OW-0281     Farhan Ejaz           Individual  5                   14567695.00     76850.00          1165415.60      13325429.40  0.9147      23
+OW-0681     Kazmi Holdings        Company     2                   14555599.00     73200.00          1164447.92      13317951.08  0.9150      24
+OW-0215     Dua Hashmi            Individual  5                   14269440.00     83500.00          1141555.20      13044384.80  0.9141      25
+OW-0054     Sara Khan             Individual  1                   14080080.00     12400.00          1126406.40      12941273.60  0.9191      26
+OW-0069     Khawaja Holdings      Company     5                   14115958.00     59000.00          1129276.64      12927681.36  0.9158      27
+OW-0167     Niazi Estates         Company     6                   14010950.00     119100.00         1120876.00      12770974.00  0.9115      28
+OW-0750     Sheikh Investments    Company     4                   13849038.00     74000.00          1107923.04      12667114.96  0.9147      29
+OW-0326     Faisal Kazmi          Individual  7                   13736035.00     55850.00          1098882.80      12581302.20  0.9159      30
+OW-0089     Gondal Holdings       Company     5                   13829712.00     146000.00         1106376.96      12577335.04  0.9094      31
+OW-0060     Naveed Raza           Individual  3                   13626260.00     30150.00          1090100.80      12506009.20  0.9178      32
+OW-0412     Uzma Farooq           Individual  5                   13586620.00     40450.00          1086929.60      12459240.40  0.9170      33
+OW-0678     Khalid Pervez         Individual  3                   13609500.00     68950.00          1088760.00      12451790.00  0.9149      34
+OW-0251     Asad Khan             Individual  5                   13254361.00     122650.00         1060348.88      12071362.12  0.9107      35
+OW-0747     Areeba Chaudhry       Individual  4                   13050931.00     115600.00         1044074.48      11891256.52  0.9111      36
+OW-0511     Sana Nawaz            Individual  4                   12940000.00     54850.00          1035200.00      11849950.00  0.9158      37
+OW-0584     Shahid Jamil          Individual  5                   12715600.00     24450.00          1017248.00      11673902.00  0.9181      38
+OW-0607     Nimra Chaudhry        Individual  4                   12752200.00     65200.00          1020176.00      11666824.00  0.9149      39
+OW-0686     Farhan Dar            Individual  2                   12636000.00     54750.00          1010880.00      11570370.00  0.9157      40
+
+====================================================================================================
+Q13  Do vacancy incentives shorten vacancy, and which offer type works best?
+====================================================================================================
+Grain: offer type (and no offer), completed vacancy spells over the window
+Tables: fact_unit_occupancy_daily, fact_vacancy_incentive_coverage, dim_incentive, dim_unit, dim_date
+Definition: completed vacancy spells as in Q7 (same censoring rule). A spell is covered when its unit had an offer on at least one of its days (the coverage fact holds one row per vacant unit, day and offer); its offer type is the one with the most days in the spell. COMPARISON GROUP: the spells with no offer. Ratio = the group's average length / the no-offer average (below 1 = shorter).
+
+5 rows in 0.70 s
+
+offer_group       completed_spells  avg_vacancy_days  ratio_to_no_offer
+----------------  ----------------  ----------------  -----------------
+No offer          1594              134.3             1.000
+Any offer         511               57.5              0.428
+Discount          246               56.6              0.421
+Rent-free days    165               57.8              0.431
+Free maintenance  100               59.0              0.439
+
+====================================================================================================
+Q14  Do leak and plumbing requests rise on heavy-rain days?
+====================================================================================================
+Grain: day class (heavy rain or the day after, other days), over the window, all cities
+Tables: fact_maintenance_request, dim_maintenance_category, dim_weather, fact_unit_occupancy_daily, dim_unit, dim_date
+Definition: leak requests = subcategories PLB-LEAK (leak), CIV-SEEP (seepage), CIV-ROOF (roof leak). RAIN THRESHOLD: a heavy-rain day has 10.0 mm of rain or more in the city (dim_weather, the unit's city and the raised date); the day after one counts with it (water shows up late). Rate = requests per 1,000 unit-days of that class. Ratio = heavy-rain rate / other days' rate.
+
+2 rows in 4.55 s
+
+day_class                                    city_days  unit_days  leak_requests  leak_requests_per_1000_unit_days  ratio_to_other_days
+-------------------------------------------  ---------  ---------  -------------  --------------------------------  -------------------
+Heavy rain (10 mm or more) or the day after  394        185412     380            2.0495                            6.34
+Other days                                   3990       1787388    578            0.3234                            1.00
+
+====================================================================================================
+W1  RANK of buildings by arrears, within their city and overall (US-11.5)
+====================================================================================================
+Grain: building, as of the window end
+Tables: lue_reporting.mart_collections_monthly, lue_reporting.vw_dim_building, lue_reporting.vw_dim_month
+Definition: arrears at the last month end (the rule of Q2); DENSE_RANK in the city, RANK overall.
+
+40 rows in 0.01 s
+
+city        building_code  arrears      rank_in_city  rank_overall  share_of_arrears
+----------  -------------  -----------  ------------  ------------  ----------------
+Lahore      GLB03          64267854.00  1             1             0.1951
+Islamabad   BLA02          21250789.00  1             2             0.0645
+Islamabad   FS701          19245546.00  2             3             0.0584
+Islamabad   BLA01          15918271.00  3             4             0.0483
+Islamabad   E1102          11733360.00  4             5             0.0356
+Karachi     PCH03          10742105.00  1             6             0.0326
+Lahore      MDT03          10356251.00  2             7             0.0314
+Lahore      CNT02          10277334.00  3             8             0.0312
+Islamabad   G1101          9437464.00   5             9             0.0287
+Faisalabad  DGR01          9060746.00   1             10            0.0275
+Karachi     CLF01          8609858.00   2             11            0.0261
+Karachi     NNZ02          8167398.00   3             12            0.0248
+Lahore      DHL01          7425685.00   4             13            0.0225
+Lahore      CNT01          6710988.00   5             14            0.0204
+Lahore      JHT01          6700359.00   6             15            0.0203
+Karachi     PCH02          6604178.00   4             16            0.0201
+Lahore      GLB01          6565052.00   7             17            0.0199
+Islamabad   F1001          6561933.00   6             18            0.0199
+Lahore      GLB02          6283251.00   8             19            0.0191
+Lahore      GLB04          5959081.00   9             20            0.0181
+Karachi     CLF02          5858448.00   5             21            0.0178
+Lahore      DHL02          5724419.00   10            22            0.0174
+Faisalabad  CNL01          5514934.00   2             23            0.0167
+Lahore      MDT01          5498170.00   11            24            0.0167
+Lahore      MDT02          5226378.00   12            25            0.0159
+Karachi     BHD01          5064848.00   6             26            0.0154
+Lahore      DHL03          4146958.00   13            27            0.0126
+Faisalabad  SSR01          3715877.00   3             28            0.0113
+Karachi     GSI01          3672995.00   7             29            0.0112
+Faisalabad  DGR02          3623742.00   4             30            0.0110
+Karachi     PCH01          3501582.00   8             31            0.0106
+Faisalabad  CNL03          3436380.00   5             32            0.0104
+Karachi     DHK01          3434410.00   9             33            0.0104
+Lahore      WPT01          3384884.00   14            34            0.0103
+Lahore      WPT02          3272055.00   15            35            0.0099
+Islamabad   E1101          2929666.00   7             36            0.0089
+Islamabad   DHI01          2818311.00   8             37            0.0086
+Faisalabad  CNL02          2520534.00   6             38            0.0077
+Karachi     NNZ01          2115584.00   10            39            0.0064
+Lahore      DHL04          2025431.00   16            40            0.0061
+
+====================================================================================================
+W2  LAG growth in collections, month on month (US-11.5)
+====================================================================================================
+Grain: month (the portfolio)
+Tables: lue_reporting.vw_monthly_collections
+Definition: cash received and the cohort collection rate (D17), each against the previous month (LAG).
+
+36 rows in 0.00 s
+
+year_month  cash_received  previous_month  growth   collection_rate_cohort  rate_change
+----------  -------------  --------------  -------  ----------------------  -----------
+2023-07     130989646.00                            0.9811
+2023-08     139676671.00   130989646.00    0.0663   0.9766                  -0.0045
+2023-09     136213322.00   139676671.00    -0.0248  0.9672                  -0.0094
+2023-10     134359487.00   136213322.00    -0.0136  0.9580                  -0.0092
+2023-11     132714396.00   134359487.00    -0.0122  0.9573                  -0.0007
+2023-12     135791285.00   132714396.00    0.0232   0.9519                  -0.0054
+2024-01     135916194.00   135791285.00    0.0009   0.9494                  -0.0025
+2024-02     138000874.00   135916194.00    0.0153   0.9541                  0.0047
+2024-03     137222923.00   138000874.00    -0.0056  0.9455                  -0.0086
+2024-04     135010876.00   137222923.00    -0.0161  0.9390                  -0.0065
+2024-05     137285975.00   135010876.00    0.0169   0.9409                  0.0019
+2024-06     147681149.00   137285975.00    0.0757   0.9419                  0.0010
+2024-07     150109574.00   147681149.00    0.0164   0.9443                  0.0024
+2024-08     151831180.00   150109574.00    0.0115   0.9360                  -0.0083
+2024-09     149875502.00   151831180.00    -0.0129  0.9343                  -0.0017
+2024-10     147678147.00   149875502.00    -0.0147  0.9386                  0.0043
+2024-11     141870950.00   147678147.00    -0.0393  0.9323                  -0.0063
+2024-12     147373370.00   141870950.00    0.0388   0.9379                  0.0056
+2025-01     139178245.00   147373370.00    -0.0556  0.9369                  -0.0010
+2025-02     144411352.00   139178245.00    0.0376   0.9434                  0.0065
+2025-03     149027837.00   144411352.00    0.0320   0.9414                  -0.0020
+2025-04     148925842.00   149027837.00    -0.0007  0.9436                  0.0022
+2025-05     150696478.00   148925842.00    0.0119   0.9395                  -0.0041
+2025-06     154019762.00   150696478.00    0.0221   0.9430                  0.0035
+2025-07     158404317.00   154019762.00    0.0285   0.9397                  -0.0033
+2025-08     160678129.00   158404317.00    0.0144   0.9334                  -0.0063
+2025-09     158972785.00   160678129.00    -0.0106  0.9401                  0.0067
+2025-10     161616130.00   158972785.00    0.0166   0.9432                  0.0031
+2025-11     159182251.00   161616130.00    -0.0151  0.9416                  -0.0016
+2025-12     158017779.00   159182251.00    -0.0073  0.9420                  0.0004
+2026-01     162302708.00   158017779.00    0.0271   0.9393                  -0.0027
+2026-02     157777844.00   162302708.00    -0.0279  0.9371                  -0.0022
+2026-03     164955899.00   157777844.00    0.0455   0.9451                  0.0080
+2026-04     161429706.00   164955899.00    -0.0214  0.9369                  -0.0082
+2026-05     161563903.00   161429706.00    0.0008   0.9214                  -0.0155
+2026-06     166527221.00   161563903.00    0.0307   0.8833                  -0.0381
+
+====================================================================================================
+W3  Running total of cash received within each fiscal year (US-11.5)
+====================================================================================================
+Grain: month (the portfolio), fiscal year July to June
+Tables: lue_reporting.vw_monthly_collections
+Definition: SUM over the fiscal year's months so far; the year's share reached so far (none for a fiscal year without cash, as in the small profile's early years).
+
+36 rows in 0.00 s
+
+fiscal_year_label  year_month  cash_received  fiscal_year_to_date  share_of_fiscal_year
+-----------------  ----------  -------------  -------------------  --------------------
+FY2023-24          2023-07     130989646.00   130989646.00         0.0798
+FY2023-24          2023-08     139676671.00   270666317.00         0.1650
+FY2023-24          2023-09     136213322.00   406879639.00         0.2480
+FY2023-24          2023-10     134359487.00   541239126.00         0.3299
+FY2023-24          2023-11     132714396.00   673953522.00         0.4107
+FY2023-24          2023-12     135791285.00   809744807.00         0.4935
+FY2023-24          2024-01     135916194.00   945661001.00         0.5763
+FY2023-24          2024-02     138000874.00   1083661875.00        0.6604
+FY2023-24          2024-03     137222923.00   1220884798.00        0.7441
+FY2023-24          2024-04     135010876.00   1355895674.00        0.8263
+FY2023-24          2024-05     137285975.00   1493181649.00        0.9100
+FY2023-24          2024-06     147681149.00   1640862798.00        1.0000
+FY2024-25          2024-07     150109574.00   150109574.00         0.0846
+FY2024-25          2024-08     151831180.00   301940754.00         0.1701
+FY2024-25          2024-09     149875502.00   451816256.00         0.2545
+FY2024-25          2024-10     147678147.00   599494403.00         0.3377
+FY2024-25          2024-11     141870950.00   741365353.00         0.4177
+FY2024-25          2024-12     147373370.00   888738723.00         0.5007
+FY2024-25          2025-01     139178245.00   1027916968.00        0.5791
+FY2024-25          2025-02     144411352.00   1172328320.00        0.6605
+FY2024-25          2025-03     149027837.00   1321356157.00        0.7444
+FY2024-25          2025-04     148925842.00   1470281999.00        0.8283
+FY2024-25          2025-05     150696478.00   1620978477.00        0.9132
+FY2024-25          2025-06     154019762.00   1774998239.00        1.0000
+FY2025-26          2025-07     158404317.00   158404317.00         0.0820
+FY2025-26          2025-08     160678129.00   319082446.00         0.1652
+FY2025-26          2025-09     158972785.00   478055231.00         0.2475
+FY2025-26          2025-10     161616130.00   639671361.00         0.3312
+FY2025-26          2025-11     159182251.00   798853612.00         0.4136
+FY2025-26          2025-12     158017779.00   956871391.00         0.4954
+FY2025-26          2026-01     162302708.00   1119174099.00        0.5795
+FY2025-26          2026-02     157777844.00   1276951943.00        0.6611
+FY2025-26          2026-03     164955899.00   1441907842.00        0.7465
+FY2025-26          2026-04     161429706.00   1603337548.00        0.8301
+FY2025-26          2026-05     161563903.00   1764901451.00        0.9138
+FY2025-26          2026-06     166527221.00   1931428672.00        1.0000
+
+====================================================================================================
+W4  Three-month moving average of collections (US-11.5)
+====================================================================================================
+Grain: month (the portfolio)
+Tables: lue_reporting.vw_monthly_collections
+Definition: the average cash received of the month and the two before it; the cohort collection rate over the same three months as a ratio of sums (collected / billed), not an average of rates.
+
+36 rows in 0.00 s
+
+year_month  cash_received  cash_received_3m_avg  collection_rate_cohort  collection_rate_3m  months_in_average
+----------  -------------  --------------------  ----------------------  ------------------  -----------------
+2023-07     130989646.00   130989646.00          0.9811                  0.9811              1
+2023-08     139676671.00   135333158.50          0.9766                  0.9788              2
+2023-09     136213322.00   135626546.33          0.9672                  0.9749              3
+2023-10     134359487.00   136749826.67          0.9580                  0.9674              3
+2023-11     132714396.00   134429068.33          0.9573                  0.9609              3
+2023-12     135791285.00   134288389.33          0.9519                  0.9557              3
+2024-01     135916194.00   134807291.67          0.9494                  0.9528              3
+2024-02     138000874.00   136569451.00          0.9541                  0.9518              3
+2024-03     137222923.00   137046663.67          0.9455                  0.9497              3
+2024-04     135010876.00   136744891.00          0.9390                  0.9462              3
+2024-05     137285975.00   136506591.33          0.9409                  0.9418              3
+2024-06     147681149.00   139992666.67          0.9419                  0.9406              3
+2024-07     150109574.00   145025566.00          0.9443                  0.9424              3
+2024-08     151831180.00   149873967.67          0.9360                  0.9407              3
+2024-09     149875502.00   150605418.67          0.9343                  0.9382              3
+2024-10     147678147.00   149794943.00          0.9386                  0.9363              3
+2024-11     141870950.00   146474866.33          0.9323                  0.9351              3
+2024-12     147373370.00   145640822.33          0.9379                  0.9363              3
+2025-01     139178245.00   142807521.67          0.9369                  0.9357              3
+2025-02     144411352.00   143654322.33          0.9434                  0.9394              3
+2025-03     149027837.00   144205811.33          0.9414                  0.9406              3
+2025-04     148925842.00   147455010.33          0.9436                  0.9428              3
+2025-05     150696478.00   149550052.33          0.9395                  0.9415              3
+2025-06     154019762.00   151214027.33          0.9430                  0.9420              3
+2025-07     158404317.00   154373519.00          0.9397                  0.9407              3
+2025-08     160678129.00   157700736.00          0.9334                  0.9386              3
+2025-09     158972785.00   159351743.67          0.9401                  0.9377              3
+2025-10     161616130.00   160422348.00          0.9432                  0.9389              3
+2025-11     159182251.00   159923722.00          0.9416                  0.9417              3
+2025-12     158017779.00   159605386.67          0.9420                  0.9423              3
+2026-01     162302708.00   159834246.00          0.9393                  0.9409              3
+2026-02     157777844.00   159366110.33          0.9371                  0.9395              3
+2026-03     164955899.00   161678817.00          0.9451                  0.9405              3
+2026-04     161429706.00   161387816.33          0.9369                  0.9397              3
+2026-05     161563903.00   162649836.00          0.9214                  0.9345              3
+2026-06     166527221.00   163173610.00          0.8833                  0.9135              3
+
+====================================================================================================
+O1  Collected amount with building, city, region and grand totals (ROLLUP)
+====================================================================================================
+Grain: region > city > building (the brief's Region > Category > Product), plus every subtotal
+Tables: fact_payment, dim_unit, dim_date, lue_reporting.vw_reporting_window
+Definition: GROUP BY ROLLUP (region, city, building_code); row_level and the "All ..." labels come from GROUPING(); grouping_id = GROUPING(region, city, building_code) (0 a building, 1 a city subtotal, 3 a region subtotal, 7 the grand total). Details first, then each subtotal.
+
+48 rows in 0.07 s; the first 40
+
+row_level        region                       city        building       grouping_id  payment_rows  collected      share_of_total
+---------------  ---------------------------  ----------  -------------  -----------  ------------  -------------  --------------
+Building         Islamabad Capital Territory  Islamabad   BLA01          0            3084          283553001.00   0.0530
+Building         Islamabad Capital Territory  Islamabad   BLA02          0            4669          257906655.00   0.0482
+Building         Islamabad Capital Territory  Islamabad   DHI01          0            2912          198535943.00   0.0371
+Building         Islamabad Capital Territory  Islamabad   E1101          0            3299          304502480.00   0.0569
+Building         Islamabad Capital Territory  Islamabad   E1102          0            3065          124134722.00   0.0232
+Building         Islamabad Capital Territory  Islamabad   F1001          0            3277          191641565.00   0.0358
+Building         Islamabad Capital Territory  Islamabad   FS701          0            3254          182784586.00   0.0342
+Building         Islamabad Capital Territory  Islamabad   G1101          0            3799          177935810.00   0.0333
+City subtotal    Islamabad Capital Territory  Islamabad   All buildings  1            27359         1720994762.00  0.3218
+Region subtotal  Islamabad Capital Territory  All cities  All buildings  3            27359         1720994762.00  0.3218
+Building         Punjab                       Faisalabad  CNL01          0            3099          83687114.00    0.0157
+Building         Punjab                       Faisalabad  CNL02          0            2784          59097320.00    0.0111
+Building         Punjab                       Faisalabad  CNL03          0            2759          77502142.00    0.0145
+Building         Punjab                       Faisalabad  DGR01          0            3033          82606712.00    0.0154
+Building         Punjab                       Faisalabad  DGR02          0            2357          63516046.00    0.0119
+Building         Punjab                       Faisalabad  SSR01          0            3301          83602303.00    0.0156
+City subtotal    Punjab                       Faisalabad  All buildings  1            17333         450011637.00   0.0842
+Building         Punjab                       Lahore      CNT01          0            5269          207934536.00   0.0389
+Building         Punjab                       Lahore      CNT02          0            4132          208343120.00   0.0390
+Building         Punjab                       Lahore      DHL01          0            2847          113435341.00   0.0212
+Building         Punjab                       Lahore      DHL02          0            2260          94485655.00    0.0177
+Building         Punjab                       Lahore      DHL03          0            2648          88260308.00    0.0165
+Building         Punjab                       Lahore      DHL04          0            3744          182141597.00   0.0341
+Building         Punjab                       Lahore      GLB01          0            3144          110096528.00   0.0206
+Building         Punjab                       Lahore      GLB02          0            3204          137662349.00   0.0257
+Building         Punjab                       Lahore      GLB03          0            5188          230538116.00   0.0431
+Building         Punjab                       Lahore      GLB04          0            3567          155145479.00   0.0290
+Building         Punjab                       Lahore      JHT01          0            3131          142983235.00   0.0267
+Building         Punjab                       Lahore      MDT01          0            3414          115834142.00   0.0217
+Building         Punjab                       Lahore      MDT02          0            3020          87965940.00    0.0165
+Building         Punjab                       Lahore      MDT03          0            3112          121865037.00   0.0228
+Building         Punjab                       Lahore      WPT01          0            3231          84680568.00    0.0158
+Building         Punjab                       Lahore      WPT02          0            2740          105935117.00   0.0198
+City subtotal    Punjab                       Lahore      All buildings  1            54651         2187307068.00  0.4090
+Region subtotal  Punjab                       All cities  All buildings  3            71984         2637318705.00  0.4932
+Building         Sindh                        Karachi     BHD01          0            2245          66312400.00    0.0124
+Building         Sindh                        Karachi     CLF01          0            3633          109139992.00   0.0204
+Building         Sindh                        Karachi     CLF02          0            2329          84916932.00    0.0159
+Building         Sindh                        Karachi     DHK01          0            2516          106894792.00   0.0200
+Building         Sindh                        Karachi     GSI01          0            2478          88503499.00    0.0166
+
+====================================================================================================
+O2  Collected amount by city and payment channel group, with every subtotal (CUBE)
+====================================================================================================
+Grain: city x channel group (the brief's Region x Channel), every combination of subtotals
+Tables: fact_payment, dim_unit, dim_payment_method, dim_date, lue_reporting.vw_reporting_window
+Definition: GROUP BY CUBE (city, channel_group); GROUPING() labels the rows: a city's total over every channel, a channel's total over every city, and the grand total. Share = of the city's total.
+
+30 rows in 0.07 s
+
+row_level                   city        channel_group    grouping_id  payment_rows  collected      share_of_city
+--------------------------  ----------  ---------------  -----------  ------------  -------------  -------------
+City x channel              Faisalabad  Bank             0            4618          127456317.00   0.2832
+City x channel              Faisalabad  Cash             0            3596          89659131.00    0.1992
+City x channel              Faisalabad  Cheque           0            2487          59378589.00    0.1319
+City x channel              Faisalabad  Instant payment  0            2592          67091373.00    0.1491
+City x channel              Faisalabad  Mobile wallet    0            4040          106426227.00   0.2365
+City total (all channels)   Faisalabad  All channels     1            17333         450011637.00   1.0000
+City x channel              Islamabad   Bank             0            9094          570615260.00   0.3316
+City x channel              Islamabad   Cash             0            5244          340546399.00   0.1979
+City x channel              Islamabad   Cheque           0            5572          346959892.00   0.2016
+City x channel              Islamabad   Instant payment  0            3298          212606766.00   0.1235
+City x channel              Islamabad   Mobile wallet    0            4151          250266445.00   0.1454
+City total (all channels)   Islamabad   All channels     1            27359         1720994762.00  1.0000
+City x channel              Karachi     Bank             0            8048          284981156.00   0.2882
+City x channel              Karachi     Cash             0            6048          224333645.00   0.2268
+City x channel              Karachi     Cheque           0            4941          164167697.00   0.1660
+City x channel              Karachi     Instant payment  0            3795          139233294.00   0.1408
+City x channel              Karachi     Mobile wallet    0            5035          176260450.00   0.1782
+City total (all channels)   Karachi     All channels     1            27867         988976242.00   1.0000
+City x channel              Lahore      Bank             0            14439         563655763.00   0.2577
+City x channel              Lahore      Cash             0            11774         498596725.00   0.2280
+City x channel              Lahore      Cheque           0            9286          343784922.00   0.1572
+City x channel              Lahore      Instant payment  0            7681          316996902.00   0.1449
+City x channel              Lahore      Mobile wallet    0            11471         464272756.00   0.2123
+City total (all channels)   Lahore      All channels     1            54651         2187307068.00  1.0000
+Channel total (all cities)  All cities  Bank             2            36199         1546708496.00  0.2893
+Channel total (all cities)  All cities  Cash             2            26662         1153135900.00  0.2156
+Channel total (all cities)  All cities  Cheque           2            22286         914291100.00   0.1710
+Channel total (all cities)  All cities  Instant payment  2            17366         735928335.00   0.1376
+Channel total (all cities)  All cities  Mobile wallet    2            24697         997225878.00   0.1865
+Grand total                 All cities  All channels     3            127210        5347289709.00  1.0000
+
+====================================================================================================
+O3  Verification of O1 and O2: every subtotal equals the sum of its parts
+====================================================================================================
+Grain: one row per check
+Tables: fact_payment, dim_unit, dim_payment_method, dim_date, lue_reporting.vw_reporting_window
+Definition: the ROLLUP and the CUBE computed again; each check compares a subtotal with the plain sum of the rows below it (or the base total of the payments). differing = rows whose difference is not 0; max_difference = the largest absolute difference. Every row must read 0 and 0.
+
+8 rows in 0.20 s
+
+check_name                                           items_checked  differing  max_difference
+---------------------------------------------------  -------------  ---------  --------------
+ROLLUP city subtotal = the sum of its buildings      4              0          0.00
+ROLLUP grand total = the base total of the payments  1              0          0.00
+ROLLUP grand total = the sum of the regions          1              0          0.00
+ROLLUP region subtotal = the sum of its cities       3              0          0.00
+CUBE channel total = the sum of its cities           5              0          0.00
+CUBE city total = the ROLLUP city subtotal           4              0          0.00
+CUBE city total = the sum of its channels            4              0          0.00
+CUBE grand total = the base total of the payments    1              0          0.00
+
+====================================================================================================
+ Summary
+====================================================================================================
+  Q1    analytical.sql    1,440 rows    0.27 s  What is the monthly collection rate by building?
+  Q2    analytical.sql       40 rows    0.33 s  Which buildings have the highest arrears ratio?
+  Q3    analytical.sql        4 rows    0.23 s  How are overdue balances distributed across ageing buckets?
+  Q4a   analytical.sql      328 rows    0.10 s  Which tenants pay late repeatedly?
+  Q4b   analytical.sql       16 rows    0.12 s  Does late payment differ by employer sector at the time of payment?
+  Q5    analytical.sql        6 rows    0.08 s  Which payment methods settle fastest after the due date?
+  Q6a   analytical.sql      396 rows    1.52 s  How do occupancy and vacancy trend by city and unit type?
+  Q6b   analytical.sql       12 rows    0.00 s  When do new tenants move in? (the seasonal side of the occupancy trend
+  Q7    analytical.sql        3 rows    0.68 s  Which unit types stay vacant longest?
+  Q8    analytical.sql       40 rows    0.02 s  What is the lease renewal rate, and which buildings lose tenants at re
+  Q9a   analytical.sql      140 rows    0.01 s  What is the average time to resolve a request by category and vendor?
+  Q9b   analytical.sql       18 rows    0.00 s  Were low-rated vendors slower?
+  Q10   analytical.sql       40 rows    0.00 s  Which buildings breach the maintenance SLA most often?
+  Q11   analytical.sql       40 rows    0.41 s  What is the maintenance cost per unit per month by building?
+  Q12   analytical.sql      900 rows    0.05 s  What is the net operating income per owner portfolio?
+  Q13   analytical.sql        5 rows    0.70 s  Do vacancy incentives shorten vacancy, and which offer type works best
+  Q14   analytical.sql        2 rows    4.55 s  Do leak and plumbing requests rise on heavy-rain days?
+  W1    analytical.sql       40 rows    0.01 s  RANK of buildings by arrears, within their city and overall (US-11.5)
+  W2    analytical.sql       36 rows    0.00 s  LAG growth in collections, month on month (US-11.5)
+  W3    analytical.sql       36 rows    0.00 s  Running total of cash received within each fiscal year (US-11.5)
+  W4    analytical.sql       36 rows    0.00 s  Three-month moving average of collections (US-11.5)
+  O1    olap.sql             48 rows    0.07 s  Collected amount with building, city, region and grand totals (ROLLUP)
+  O2    olap.sql             30 rows    0.07 s  Collected amount by city and payment channel group, with every subtota
+  O3    olap.sql              8 rows    0.20 s  Verification of O1 and O2: every subtotal equals the sum of its parts
+ RESULT: 24/24 queries ran
