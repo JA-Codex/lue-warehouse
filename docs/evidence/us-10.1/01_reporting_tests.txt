@@ -1,0 +1,34 @@
+======================================================================
+ E10 acceptance tests: the reporting layer (database)
+======================================================================
+US-10.2 The marts
+  [PASS] refreshed by the pipeline after the facts (run 1, step refresh_marts, 41,381 rows); no manual step
+  [PASS] each mart's grain is unique: a unique index on its grain (so it refreshes concurrently) and no grain twice
+  [PASS] mart_collections_monthly = the facts in all 36 months (36 with billing): billed by due month, collected against those lines (D17), cash by paid month
+  [PASS] arrears at month end = lines past due - payments made against them by then, computed day by day (9 building-months: first, middle, last month)
+  [PASS] mart_occupancy_monthly = the facts in every month: unit-days, occupied unit-days, month-end rent roll and arrears, active leases, completed vacancy spells (a vacant day followed by a let one)
+  [PASS] occupancy = occupied unit-days / unit-days = the average of daily occupied units over units (84.53%), never a sum across days
+  [PASS] mart_maintenance_monthly = the facts in every raised month: requests, resolved, days to resolve, SLA breaches, estimated and actual cost
+  [PASS] mart_owner_portfolio_monthly = the facts in every month (rent collected, cash, maintenance cost, unit-days); fee = 8% of rent collected, NOI = rent - cost - fee on every row
+US-10.1 The views
+  [PASS] every view returns rows: vw_monthly_collections 36, vw_tenant_analysis 3,455, vw_unit_performance 80
+  [PASS] vw_monthly_collections: one row per month (36); totals = the facts (billed 5,676,652,818, collected 5,347,289,709, cash 5,347,289,709); rate = collected / billed (D17); growth = LAG
+  [PASS] vw_tenant_analysis: one row per tenant version; collected = the facts (5,347,289,709), late payments = the facts (18,031), arrears = the collections mart at the window end (329,363,109); 4 payer segments
+  [PASS] vw_unit_performance: per building and unit type; units at the window end (1,800), unit-days, occupied days, maintenance cost and requests = the facts
+  [PASS] the brief-named aliases return exactly their targets' rows (D18): vw_monthly_sales = vw_monthly_collections, vw_customer_analysis = vw_tenant_analysis, vw_product_performance = vw_unit_performance
+  [PASS] 9 slicer views (vw_dim_*): date, month, building, unit, tenant, owner, vendor, maintenance category, payment method; no technical columns
+US-10.3 Access
+  [PASS] lue_reader reads all 19 objects of lue_reporting (views, aliases, slicers, marts)
+  [PASS] lue_reader cannot read lue_dw, lue_staging or lue_audit
+         read lue_dw.fact_payment: permission denied for schema lue_dw
+         read lue_staging.stg_tenant: permission denied for schema lue_staging
+         read lue_audit.etl_run_log: permission denied for schema lue_audit
+  [PASS] lue_reader cannot write, create, or refresh the marts; its sessions start read-only
+         write a mart: cannot execute DELETE in a read-only transaction
+         create a table in lue_reporting: cannot execute CREATE TABLE in a read-only transaction
+         write in a read-write transaction: permission denied for schema lue_reporting
+         refresh the marts: permission denied for function refresh_marts
+  [PASS] nothing the reader tried was created
+======================================================================
+ RESULT: 18/18 checks passed
+======================================================================

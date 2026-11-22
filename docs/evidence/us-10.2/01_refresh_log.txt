@@ -1,0 +1,37 @@
+E10 evidence: the marts refreshed by the pipeline (full profile)
+
+The refresh log entry (lue_audit.etl_run_log), the last pipeline run:
+
+run_id  step           started_at           ended_at             rows_read  status 
+------  -------------  -------------------  -------------------  ---------  -------
+1       refresh_marts  2026-11-22 05:38:54  2026-11-22 05:39:00  41381      Success
+
+The stages of that run:
+
+step              status   rows_read  rows_inserted  rows_updated
+----------------  -------  ---------  -------------  ------------
+check_generation  Success  1          0              0           
+fact_tests        Success  71         0              0           
+reconcile_dq07    Success  194        0              0           
+refresh_marts     Success  41381      0              0           
+
+The marts, their grain and rows (each grain is a unique index):
+
+mart                          unique_index                                                                                                                                                                 rows 
+----------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -----
+mart_collections_monthly      CREATE UNIQUE INDEX uq_mart_collections_monthly ON lue_reporting.mart_collections_monthly USING btree (month_key, building_code)                                             1440 
+mart_maintenance_monthly      CREATE UNIQUE INDEX uq_mart_maintenance_monthly ON lue_reporting.mart_maintenance_monthly USING btree (month_key, building_code, unit_type, maint_category_key, vendor_key)  5637 
+mart_occupancy_monthly        CREATE UNIQUE INDEX uq_mart_occupancy_monthly ON lue_reporting.mart_occupancy_monthly USING btree (month_key, building_code, unit_type)                                      2880 
+mart_owner_portfolio_monthly  CREATE UNIQUE INDEX uq_mart_owner_portfolio_monthly ON lue_reporting.mart_owner_portfolio_monthly USING btree (month_key, owner_key)                                         31424
+
+The lineage of the marts (lue_audit.lineage):
+
+target_table                                source_table                      layer_path       
+------------------------------------------  --------------------------------  -----------------
+lue_reporting.mart_collections_monthly      lue_dw.fact_payment               warehouse -> mart
+lue_reporting.mart_collections_monthly      lue_dw.fact_rent_invoice_line     warehouse -> mart
+lue_reporting.mart_maintenance_monthly      lue_dw.fact_maintenance_request   warehouse -> mart
+lue_reporting.mart_occupancy_monthly        lue_dw.fact_unit_occupancy_daily  warehouse -> mart
+lue_reporting.mart_owner_portfolio_monthly  lue_dw.fact_maintenance_request   warehouse -> mart
+lue_reporting.mart_owner_portfolio_monthly  lue_dw.fact_payment               warehouse -> mart
+lue_reporting.mart_owner_portfolio_monthly  lue_dw.fact_unit_occupancy_daily  warehouse -> mart
