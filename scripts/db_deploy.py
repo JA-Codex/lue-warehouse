@@ -3,9 +3,11 @@
 
     python scripts/db_deploy.py
 
-Runs every file in sql/10_ddl/ and then sql/20_staging/ (the bronze tables, US-3.2 to US-3.4) in
-name order, as lue_etl in lue_warehouse, so lue_etl owns every object.
-Run scripts/db_setup.py first (US-1.1). Safe to re-run: the files use IF NOT EXISTS and ON CONFLICT.
+Runs every file in sql/10_ddl/, then sql/20_staging/ (the bronze tables, US-3.2 to US-3.4), then
+sql/50_reporting/ (the reporting layer, E10) in name order, as lue_etl in lue_warehouse, so
+lue_etl owns every object. Run scripts/db_setup.py first (US-1.1). Safe to re-run: the DDL uses IF
+NOT EXISTS and ON CONFLICT; the reporting layer, derived from lue_dw only, is dropped and created
+again (its marts filled from the facts as they stand).
 """
 
 import sys
@@ -20,7 +22,7 @@ from db_setup import (  # noqa: E402
     run_sql_file,
 )
 
-DDL_DIRS = [ROOT / "sql" / "10_ddl", ROOT / "sql" / "20_staging"]
+DDL_DIRS = [ROOT / "sql" / "10_ddl", ROOT / "sql" / "20_staging", ROOT / "sql" / "50_reporting"]
 
 
 def main() -> int:

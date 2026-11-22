@@ -45,8 +45,8 @@ def main() -> int:
     print(" E8 contract tests: the pipeline orchestrator (no database)")
     print("=" * 70)
     print("US-8.1 Stages and order")
-    order = ["generate", "setup", "deploy", "reference", "source", "ingest", "validate", "transform", "dimensions", "facts", "reconcile"]
-    check(p.NAMES == order, "the brief's order: generate, set up and deploy, load sources, ingest, validate, transform, dimensions, facts (tests inside), reconcile")
+    order = ["generate", "setup", "deploy", "reference", "source", "ingest", "validate", "transform", "dimensions", "facts", "reconcile", "marts"]
+    check(p.NAMES == order, "the brief's order: generate, set up and deploy, load sources, ingest, validate, transform, dimensions, facts (tests inside), reconcile, then the marts (E10)")
     before = [s.name for s in p.STAGES if s.before_run]
     check(before == p.NAMES[:4] and not any(s.before_run for s in p.STAGES[4:]),
           "generate, setup, deploy and reference run before the run exists (they create the audit tables), all others inside it")
@@ -62,7 +62,7 @@ def main() -> int:
     names = lambda stages: [s.name for s in stages]  # noqa: E731
     check(names(p.select(None, None, False)) == order and names(p.select(None, None, True)) == order[1:],
           "no option: every stage; --skip-generate: all but generate")
-    check(names(p.select(None, "dimensions", False)) == ["dimensions", "facts", "reconcile"] and names(p.select(None, "ingest", True)) == order[5:],
+    check(names(p.select(None, "dimensions", False)) == ["dimensions", "facts", "reconcile", "marts"] and names(p.select(None, "ingest", True)) == order[5:],
           "--from-step resumes at that stage and runs the rest in order")
     check(names(p.select(["facts", "ingest"], None, False)) == ["ingest", "facts"],
           "--only runs just the named stages, in pipeline order")
@@ -90,7 +90,7 @@ def main() -> int:
 
     from etl import reconcile
 
-    check(list(reconcile.BY_NAME) == ["billed", "paid", "tickets", "lease events"] and p.NAMES[-2:] == ["facts", "reconcile"],
+    check(list(reconcile.BY_NAME) == ["billed", "paid", "tickets", "lease events"] and p.NAMES[p.NAMES.index("facts") + 1] == "reconcile",
           "the plan's four measures (billed, paid, tickets, lease events), reconciled after the facts are loaded")
     bad = []
     for m in reconcile.MEASURES:
