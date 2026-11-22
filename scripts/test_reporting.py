@@ -28,8 +28,9 @@ results: list[bool] = []
 VIEWS = ["vw_monthly_collections", "vw_tenant_analysis", "vw_unit_performance"]
 ALIASES = {"vw_monthly_sales": "vw_monthly_collections", "vw_customer_analysis": "vw_tenant_analysis",
            "vw_product_performance": "vw_unit_performance"}  # fmt: skip
-DIMS = ["vw_dim_date", "vw_dim_month", "vw_dim_building", "vw_dim_unit", "vw_dim_tenant", "vw_dim_owner",
-        "vw_dim_vendor", "vw_dim_maintenance_category", "vw_dim_payment_method"]  # fmt: skip
+DIMS = ["vw_dim_date", "vw_dim_month", "vw_dim_building", "vw_dim_unit", "vw_dim_unit_type", "vw_dim_tenant",
+        "vw_dim_owner", "vw_dim_vendor", "vw_dim_maintenance_category", "vw_dim_payment_method"]  # fmt: skip
+DASHBOARD = ["vw_tenant_by_building"]  # the drill-through from a building to its tenants (E13, test_powerbi.py)
 MARTS = {"mart_collections_monthly": ["month_key", "building_code"],
          "mart_occupancy_monthly": ["month_key", "building_code", "unit_type"],
          "mart_maintenance_monthly": ["month_key", "building_code", "unit_type", "maint_category_key", "vendor_key"],
@@ -74,7 +75,7 @@ def reader_tries(s: dict) -> dict:
                             dbname="lue_warehouse", connect_timeout=10)  # fmt: skip
     conn.autocommit = True
     try:
-        attempts = {f"read lue_reporting.{n}": f"SELECT count(*) FROM lue_reporting.{n}" for n in [*VIEWS, *ALIASES, *DIMS, *MARTS]}
+        attempts = {f"read lue_reporting.{n}": f"SELECT count(*) FROM lue_reporting.{n}" for n in [*VIEWS, *ALIASES, *DIMS, *MARTS, *DASHBOARD]}
         attempts |= {
             "read lue_dw.fact_payment": "SELECT count(*) FROM lue_dw.fact_payment",
             "read lue_staging.stg_tenant": "SELECT count(*) FROM lue_staging.stg_tenant",
@@ -217,12 +218,12 @@ def main() -> int:
         cur.execute("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'lue_reporting' AND table_name LIKE 'vw\\_dim\\_%%'")
         tech = [f"{t}.{c}" for t, c in cur.fetchall() if c in TECHNICAL]
         check(not tech and len(DIMS) == scalar(cur, "SELECT count(*) FROM information_schema.views WHERE table_schema = 'lue_reporting' AND table_name LIKE 'vw\\_dim\\_%%'"),
-              f"{len(DIMS)} slicer views (vw_dim_*): date, month, building, unit, tenant, owner, vendor, maintenance category, payment method; no technical columns" + (f": {tech}" if tech else ""))
+              f"{len(DIMS)} slicer views (vw_dim_*): date, month, building, unit, unit type, tenant, owner, vendor, maintenance category, payment method; no technical columns" + (f": {tech}" if tech else ""))
 
         print("US-10.3 Access")
         tries = reader_tries(settings())
         reads = [n for n in tries if n.startswith("read lue_reporting.")]
-        check(all(tries[n][0] for n in reads), f"lue_reader reads all {len(reads)} objects of lue_reporting (views, aliases, slicers, marts)" + (f": refused {[n for n in reads if not tries[n][0]]}" if not all(tries[n][0] for n in reads) else ""))
+        check(all(tries[n][0] for n in reads), f"lue_reader reads all {len(reads)} objects of lue_reporting (views, aliases, slicers, marts, the dashboard's tenant view)" + (f": refused {[n for n in reads if not tries[n][0]]}" if not all(tries[n][0] for n in reads) else ""))
         denied = ["read lue_dw.fact_payment", "read lue_staging.stg_tenant", "read lue_audit.etl_run_log"]
         check(not any(tries[n][0] for n in denied), "lue_reader cannot read lue_dw, lue_staging or lue_audit")
         for n in denied:
