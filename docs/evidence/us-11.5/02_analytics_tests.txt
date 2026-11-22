@@ -1,0 +1,34 @@
+======================================================================
+ E11 acceptance tests: the analytical SQL pack (database)
+======================================================================
+US-11.6 Every query runs
+  [PASS] all 24 queries of analytical.sql and olap.sql run read-only and return rows (full profile)
+  [PASS] both files run end to end in psql -v ON_ERROR_STOP=1: analytical.sql exit 0, olap.sql exit 0
+US-11.1 Finance (Q1 to Q5)
+  [PASS] Q1 = mart_collections_monthly in all 1,440 building-months and = vw_monthly_collections in total (billed 5,676,652,818, collected 5,347,289,709); rate = collected / billed (D17)
+  [PASS] Q2's arrears = the collections mart at the window end for all 40 buildings; ranked by arrears ratio
+  [PASS] Q3: the ageing buckets in order (0-30, 31-60, 61-90, 90+), their shares add up to the overdue balance
+  [PASS] Q4: 328 repeat late payers (3 or more payments over 15 days late in 12 months); late share by sector at payment time
+  [PASS] Q5: methods ranked by settlement lag, fastest first; cash and cheques have no settlement file and say so (no lag)
+US-11.2 Occupancy and leasing (Q6 to Q8)
+  [PASS] Q6: the monthly average of daily occupancy = mart_occupancy_monthly in all 396 month, city and unit-type rows
+  [PASS] Q7: 2,105 completed spells, the censored ones left out (the mart, which keeps spells that began before the window, has 2,405)
+  [PASS] Q8: renewed + lost = expired for every building; the event-based rate never exceeds the lease-link rate
+US-11.3 Maintenance, owners, incentives, weather (Q9 to Q14)
+  [PASS] Q12: rent (charge type RENT only) - cost - fee on every owner; rent and cost = the owner mart; the fee assumption is stated
+  [PASS] pattern 2: V-001 is the slowest plumber, median 1.36 x SLA against 0.68 for the median other plumber (at least 1.6 times)
+  [PASS] pattern 1: GLB03 has the highest arrears ratio (21.8%), at least twice the next building's (9.9%)
+  [PASS] pattern 3: June to August average 259 new-tenant move-ins a month, 1.43 times the other months (at least 1.3)
+  [PASS] pattern 4: vacancy with an offer lasts 0.428 of the vacancy without one (at most 0.75)
+  [PASS] pattern 5: leak requests per unit-day are 6.34 times higher on heavy-rain days (10 mm or more) or the day after (at least 3)
+  [PASS] pattern 6: Karachi renews 17.9% of expiring leases against 36.1% elsewhere (at most 0.75 of it); 9 of the 10 lowest-ranked buildings are in Karachi
+US-11.4 ROLLUP and CUBE
+  [PASS] every subtotal row is labelled by GROUPING() (building, city, region, grand total; city x channel and both margins); no NULL label
+  [PASS] the verification query: 8 checks, 23 subtotals, 0 differences
+US-11.5 Cross-checks with pandas, to the cent
+  [PASS] Q1 recomputed in pandas: billed and collected equal in all 1,440 building-months
+  [PASS] Q12 recomputed in pandas: NOI equal for all 900 owners with rent or cost (fee 8%)
+  [PASS] O1 recomputed in pandas: all 48 ROLLUP rows equal (buildings, city, region and grand totals)
+======================================================================
+ RESULT: 22/22 checks passed
+======================================================================

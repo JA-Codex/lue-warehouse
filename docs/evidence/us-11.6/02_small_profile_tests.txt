@@ -1,0 +1,30 @@
+======================================================================
+ E11 acceptance tests: the analytical SQL pack (database)
+======================================================================
+US-11.6 Every query runs
+  [PASS] all 24 queries of analytical.sql and olap.sql run read-only (small profile)
+  [note] empty on the small profile, as its 3 months allow: Q4a (each returns rows on the full profile)
+  [PASS] both files run end to end in psql -v ON_ERROR_STOP=1: analytical.sql exit 0, olap.sql exit 0
+US-11.1 Finance (Q1 to Q5)
+  [PASS] Q1 = mart_collections_monthly in all 6 building-months and = vw_monthly_collections in total (billed 24,287,778, collected 21,605,798); rate = collected / billed (D17)
+  [PASS] Q2's arrears = the collections mart at the window end for all 2 buildings; ranked by arrears ratio
+  [PASS] Q3: the ageing buckets in order (0-30, 31-60, 61-90, 90+), their shares add up to the overdue balance
+  [PASS] Q4: 0 repeat late payers (3 or more payments over 15 days late in 12 months); late share by sector at payment time
+  [PASS] Q5: methods ranked by settlement lag, fastest first; cash and cheques have no settlement file and say so (no lag)
+US-11.2 Occupancy and leasing (Q6 to Q8)
+  [PASS] Q6: the monthly average of daily occupancy = mart_occupancy_monthly in all 144 month, city and unit-type rows
+  [PASS] Q7: 1 completed spells, the censored ones left out (the mart, which keeps spells that began before the window, has 81)
+  [PASS] Q8: renewed + lost = expired for every building; the event-based rate never exceeds the lease-link rate
+US-11.3 Maintenance, owners, incentives, weather (Q9 to Q14)
+  [PASS] Q12: rent (charge type RENT only) - cost - fee on every owner; rent and cost = the owner mart; the fee assumption is stated
+  [note] the planted patterns are measured on the full profile only (the small one is too small): skipped
+US-11.4 ROLLUP and CUBE
+  [PASS] every subtotal row is labelled by GROUPING() (building, city, region, grand total; city x channel and both margins); no NULL label
+  [PASS] the verification query: 8 checks, 16 subtotals, 0 differences
+US-11.5 Cross-checks with pandas, to the cent
+  [PASS] Q1 recomputed in pandas: billed and collected equal in all 6 building-months
+  [PASS] Q12 recomputed in pandas: NOI equal for all 39 owners with rent or cost (fee 8%)
+  [PASS] O1 recomputed in pandas: all 7 ROLLUP rows equal (buildings, city, region and grand totals)
+======================================================================
+ RESULT: 16/16 checks passed
+======================================================================

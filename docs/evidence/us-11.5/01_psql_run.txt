@@ -1,0 +1,11 @@
+E11: both files run end to end in psql (full profile, seed 3004), psql (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+
+$ psql -d lue_warehouse -v ON_ERROR_STOP=1 -f sql/60_analytics/analytical.sql
+exit 0 in 9227 ms; 21 result sets:
+(1440 rows) (40 rows) (4 rows) (328 rows) (16 rows) (6 rows) (396 rows) (12 rows) (3 rows) (40 rows) (140 rows) (18 rows) (40 rows) (40 rows) (900 rows) (5 rows) (2 rows) (40 rows) (36 rows) (36 rows) (36 rows) 
+errors: 0
+
+$ psql -d lue_warehouse -v ON_ERROR_STOP=1 -f sql/60_analytics/olap.sql
+exit 0 in 459 ms; 3 result sets:
+(48 rows) (30 rows) (8 rows) 
+errors: 0

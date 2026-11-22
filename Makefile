@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -42,6 +42,12 @@ marts: ## Refresh the four reporting marts from the facts, as the pipeline's las
 
 reporting-test: ## Reporting layer acceptance tests (US-10.1 to US-10.3); needs a loaded warehouse, changes nothing
 	$(PYTHON) scripts/test_reporting.py
+
+analytics: ## Run the 14 business questions, window analytics and OLAP queries, each with its rows and time (E11)
+	$(PYTHON) scripts/run_analytics.py
+
+analytics-test: ## Analytical SQL acceptance tests (US-11.1 to US-11.6): marts, planted patterns, pandas cross-checks
+	$(PYTHON) scripts/test_analytics.py
 
 generate: ## Generate the seeded source data: make generate PROFILE=small SEED=3004 [CLEAN=1] (US-2.1, US-2.6)
 	$(PYTHON) etl/generate_data.py --profile $(or $(PROFILE),small) --seed $(or $(SEED),3004) $(if $(CLEAN),--clean)
