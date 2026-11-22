@@ -1,0 +1,23 @@
+======================================================================
+ E13 acceptance tests: the dashboard's model and measures (database)
+======================================================================
+US-13.1 The model loads as lue_reader
+  [PASS] lue_reader reads all 15 tables of docs/powerbi/model.json (Import mode) with no access error
+  [PASS] python scripts/powerbi_expected.py runs as lue_reader and writes expected_measures.csv and decisions.txt
+  [PASS] all 17 relationships are many-to-one: the key is unique on the one side (after the model's filters) and every many-side row finds it, so no visual shows a blank member
+  [PASS] every building has all 36 months in the collections mart and every building and unit type reaches the last month in the occupancy mart, so a month-end measure at the last month adds every building
+US-13.1 Every measure equals the facts
+  [PASS] Window: 24 measures (collections, occupancy, maintenance) = the facts; billed PKR 5,676,652,818, collection rate 94.2%, arrears PKR 329,363,109, occupancy 84.5%
+  [PASS] Month 2025-03: 24 measures (collections, occupancy, maintenance) = the facts; billed PKR 157,557,764, collection rate 94.1%, arrears PKR 181,181,521, occupancy 84.1%
+  [PASS] FY2024-25: 24 measures (collections, occupancy, maintenance) = the facts; billed PKR 1,889,759,182, collection rate 93.9%, arrears PKR 207,519,053, occupancy 85.1%
+  [PASS] Lahore: 24 measures (collections, occupancy, maintenance) = the facts; billed PKR 2,341,131,218, collection rate 93.4%, arrears PKR 153,824,150, occupancy 85.8%
+  [PASS] the portfolio measures ignore the city (REMOVEFILTERS on the building), and the owner measures are not filtered by building (no relationship)
+US-13.3 The tenants by building
+  [PASS] one row per tenant version and building (3,879); by tenant it equals vw_tenant_analysis (collected, arrears); by building it equals Q2's billed and arrears (40 buildings)
+US-13.4 The decision texts pick what the facts pick
+  [PASS] D1: GLB03, Q2's highest arrears ratio (21.8% against the portfolio's 5.8%)
+  [PASS] D2: V-001, the vendor slowest against its own trade (2.32 times its trade's days) of those with 20 or more resolved requests on the facts
+  [PASS] D3: Apartment in Karachi, the lowest occupancy of the cities and unit types with 10 or more units on the facts (78.2%)
+======================================================================
+ RESULT: 13/13 checks passed
+======================================================================

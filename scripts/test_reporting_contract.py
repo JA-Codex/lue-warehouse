@@ -28,8 +28,9 @@ DOC = ROOT / "docs" / "reporting.md"
 VIEWS = ["vw_monthly_collections", "vw_tenant_analysis", "vw_unit_performance"]
 ALIASES = {"vw_monthly_sales": "vw_monthly_collections", "vw_customer_analysis": "vw_tenant_analysis",
            "vw_product_performance": "vw_unit_performance"}  # fmt: skip
-SLICERS = ["vw_dim_date", "vw_dim_month", "vw_dim_building", "vw_dim_unit", "vw_dim_tenant", "vw_dim_owner",
-           "vw_dim_vendor", "vw_dim_maintenance_category", "vw_dim_payment_method"]  # fmt: skip
+SLICERS = ["vw_dim_date", "vw_dim_month", "vw_dim_building", "vw_dim_unit", "vw_dim_unit_type", "vw_dim_tenant",
+           "vw_dim_owner", "vw_dim_vendor", "vw_dim_maintenance_category", "vw_dim_payment_method"]  # fmt: skip
+DASHBOARD = ["vw_tenant_by_building"]  # the dashboard's drill-through from a building to its tenants (US-13.3)
 GRAIN = {"mart_collections_monthly": ["month_key", "building_code"],
          "mart_occupancy_monthly": ["month_key", "building_code", "unit_type"],
          "mart_maintenance_monthly": ["month_key", "building_code", "unit_type", "maint_category_key", "vendor_key"],
@@ -88,8 +89,8 @@ def main() -> int:
     doc = DOC.read_text(encoding="utf-8")
 
     print("US-10.1 The views")
-    wanted = [*VIEWS, *ALIASES, *SLICERS, *GRAIN, "vw_reporting_window", "vw_reporting_parameter"]
-    check(set(wanted) == set(objs), f"the file creates the brief's 3 views, their 3 aliases (D18), {len(SLICERS)} slicer views, the 4 marts and 2 parameter views ({len(objs)} objects)"
+    wanted = [*VIEWS, *ALIASES, *SLICERS, *GRAIN, *DASHBOARD, "vw_reporting_window", "vw_reporting_parameter"]
+    check(set(wanted) == set(objs), f"the file creates the brief's 3 views, their 3 aliases (D18), {len(SLICERS)} slicer views, the 4 marts, 2 parameter views and the dashboard's tenant view ({len(objs)} objects)"
           + (f": missing {sorted(set(wanted) - set(objs))}, extra {sorted(set(objs) - set(wanted))}" if set(wanted) != set(objs) else ""))
     plain = {a: (q.targetList and len(q.targetList) == 1 and column(q.targetList[0]) == "*" and not q.whereClause and len(q.fromClause) == 1
                  and q.fromClause[0].relname == ALIASES[a]) for a, (_k, _c, q) in objs.items() if a in ALIASES}  # fmt: skip

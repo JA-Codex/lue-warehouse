@@ -1,0 +1,337 @@
+// docs/powerbi/measures.dax: every measure of the LUE dashboard (US-13.1 to US-13.4)
+//
+// How to use: in Power BI Desktop open DAX query view, paste this whole file, click Run, then
+// "Update model with changes". Every measure is added to the _Measures table (create it first:
+// docs/powerbi/README.md, step 4). Then set the formats (README, step 5): the format of each
+// measure is named on the line above it.
+//
+// Rules the measures follow (docs/reporting.md):
+//   * a rate is a ratio of sums, never an average of rates, so it is right at any level;
+//   * month-end values (arrears, active leases, units, rent roll) are semi-additive: summed across
+//     buildings and unit types at the last month in the selection, never across months;
+//   * the collection rate is the cohort rate (D17); cash received is a separate measure.
+// scripts/powerbi_expected.py computes every numeric measure below from the same marts, for the
+// validation table (docs/powerbi/validation.dax); scripts/test_powerbi.py checks those values
+// against the facts.
+
+DEFINE
+
+    // ------------------------------------------------------------------------------- Collections
+    // format: whole number
+    MEASURE '_Measures'[Invoice Lines] = SUM ( mart_collections_monthly[invoice_lines] )
+    // format: PKR
+    MEASURE '_Measures'[Billed] = SUM ( mart_collections_monthly[billed_due] )
+    // format: PKR
+    MEASURE '_Measures'[Collected (Cohort)] = SUM ( mart_collections_monthly[collected_cohort] )
+    // format: percent
+    MEASURE '_Measures'[Collection Rate] = DIVIDE ( [Collected (Cohort)], [Billed] )
+    // format: PKR
+    MEASURE '_Measures'[Cash Received] = SUM ( mart_collections_monthly[cash_received] )
+    // format: PKR. Blank unless the whole selection has a year before it inside the data
+    MEASURE '_Measures'[Cash Received PY] =
+        VAR FirstDay = MIN ( vw_dim_date[full_date] )
+        VAR DataStart = CALCULATE ( MIN ( vw_dim_date[full_date] ), REMOVEFILTERS ( vw_dim_date ) )
+        RETURN
+            IF (
+                EDATE ( FirstDay, -12 ) >= DataStart,
+                CALCULATE ( [Cash Received], SAMEPERIODLASTYEAR ( vw_dim_date[full_date] ) )
+            )
+    // format: percent
+    MEASURE '_Measures'[Cash Received YoY %] =
+        VAR PY = [Cash Received PY]
+        RETURN IF ( NOT ISBLANK ( PY ), DIVIDE ( [Cash Received] - PY, PY ) )
+    // format: PKR. Semi-additive: the last month in the selection
+    MEASURE '_Measures'[Arrears] =
+        VAR LastMonth = MAX ( mart_collections_monthly[month_key] )
+        RETURN
+            CALCULATE (
+                SUM ( mart_collections_monthly[arrears_month_end] ),
+                mart_collections_monthly[month_key] = LastMonth
+            )
+    // format: PKR. Billed from the window start to the end of the selection: the lines the arrears come from
+    MEASURE '_Measures'[Billed to Date] =
+        VAR LastMonth = MAX ( mart_collections_monthly[month_key] )
+        RETURN
+            CALCULATE (
+                SUM ( mart_collections_monthly[billed_due] ),
+                REMOVEFILTERS ( vw_dim_date ),
+                mart_collections_monthly[month_key] <= LastMonth
+            )
+    // format: percent. Arrears at the end of the selection / billed up to then (Q2 over the whole window)
+    MEASURE '_Measures'[Arrears Ratio] = DIVIDE ( [Arrears], [Billed to Date] )
+
+    // ------------------------------------------------------------------------------- Occupancy
+    // format: whole number
+    MEASURE '_Measures'[Unit Days] = SUM ( mart_occupancy_monthly[unit_days] )
+    // format: whole number
+    MEASURE '_Measures'[Occupied Days] = SUM ( mart_occupancy_monthly[occupied_days] )
+    // format: percent
+    MEASURE '_Measures'[Occupancy %] = DIVIDE ( [Occupied Days], [Unit Days] )
+    // format: decimal
+    MEASURE '_Measures'[Avg Vacancy Days] =
+        DIVIDE ( SUM ( mart_occupancy_monthly[vacant_days] ), SUM ( mart_occupancy_monthly[completed_vacancy_spells] ) )
+    // format: whole number. Semi-additive: leases with an occupied day in the last month
+    MEASURE '_Measures'[Active Leases] =
+        VAR LastMonth = MAX ( mart_occupancy_monthly[month_key] )
+        RETURN
+            CALCULATE ( SUM ( mart_occupancy_monthly[active_leases] ), mart_occupancy_monthly[month_key] = LastMonth )
+    // format: whole number. Semi-additive
+    MEASURE '_Measures'[Units] =
+        VAR LastMonth = MAX ( mart_occupancy_monthly[month_key] )
+        RETURN
+            CALCULATE ( SUM ( mart_occupancy_monthly[units_month_end] ), mart_occupancy_monthly[month_key] = LastMonth )
+    // format: whole number. Semi-additive
+    MEASURE '_Measures'[Occupied Units] =
+        VAR LastMonth = MAX ( mart_occupancy_monthly[month_key] )
+        RETURN
+            CALCULATE (
+                SUM ( mart_occupancy_monthly[occupied_units_month_end] ),
+                mart_occupancy_monthly[month_key] = LastMonth
+            )
+    // format: PKR. Semi-additive: monthly contract rent of the occupied units
+    MEASURE '_Measures'[Rent Roll] =
+        VAR LastMonth = MAX ( mart_occupancy_monthly[month_key] )
+        RETURN
+            CALCULATE ( SUM ( mart_occupancy_monthly[rent_roll_month_end] ), mart_occupancy_monthly[month_key] = LastMonth )
+    // format: PKR
+    MEASURE '_Measures'[Avg Contract Rent] = DIVIDE ( [Rent Roll], [Occupied Units] )
+
+    // ------------------------------------------------------------------------------- Maintenance
+    // format: whole number
+    MEASURE '_Measures'[Requests] = SUM ( mart_maintenance_monthly[requests] )
+    // format: whole number
+    MEASURE '_Measures'[Resolved Requests] = SUM ( mart_maintenance_monthly[resolved_requests] )
+    // format: decimal
+    MEASURE '_Measures'[Avg Days to Resolve] =
+        DIVIDE ( SUM ( mart_maintenance_monthly[days_to_resolve_sum] ), [Resolved Requests] )
+    // format: whole number
+    MEASURE '_Measures'[SLA Breaches] = SUM ( mart_maintenance_monthly[sla_breached] )
+    // format: percent
+    MEASURE '_Measures'[SLA Breach %] = DIVIDE ( [SLA Breaches], [Resolved Requests] )
+    // format: PKR
+    MEASURE '_Measures'[Maintenance Cost] = SUM ( mart_maintenance_monthly[actual_cost] )
+    // format: PKR. Actual cost / unit-months (the units at each month end, summed over the months)
+    MEASURE '_Measures'[Maintenance Cost per Unit-Month] =
+        DIVIDE ( [Maintenance Cost], SUM ( mart_occupancy_monthly[units_month_end] ) )
+
+    // ------------------------------------------------------------------------------- Owners (Q12)
+    // format: PKR
+    MEASURE '_Measures'[Rent Collected] = SUM ( mart_owner_portfolio_monthly[rent_collected] )
+    // format: PKR
+    MEASURE '_Measures'[Management Fee] = SUM ( mart_owner_portfolio_monthly[management_fee] )
+    // format: PKR
+    MEASURE '_Measures'[NOI] = SUM ( mart_owner_portfolio_monthly[noi] )
+
+    // ------------------------------------------------------------------------------- Tenants (whole window)
+    // format: whole number
+    MEASURE '_Measures'[Tenants] = DISTINCTCOUNT ( vw_tenant_by_building[tenant_code] )
+    // format: whole number
+    MEASURE '_Measures'[Chronically Late Tenants] =
+        CALCULATE ( [Tenants], vw_tenant_analysis[payer_segment] = "Chronically late" )
+    // format: PKR
+    MEASURE '_Measures'[Tenant Billed] = SUM ( vw_tenant_by_building[billed_due] )
+    // format: PKR
+    MEASURE '_Measures'[Tenant Collected] = SUM ( vw_tenant_by_building[total_collected] )
+    // format: PKR
+    MEASURE '_Measures'[Tenant Arrears] = SUM ( vw_tenant_by_building[current_arrears] )
+    // format: percent
+    MEASURE '_Measures'[Tenant Arrears Ratio] = DIVIDE ( [Tenant Arrears], [Tenant Billed] )
+    // format: percent
+    MEASURE '_Measures'[Late Payment Share] =
+        DIVIDE ( SUM ( vw_tenant_by_building[late_payments] ), SUM ( vw_tenant_by_building[payments] ) )
+
+    // ------------------------------------------------------------------------------- The portfolio, for comparison
+    // format: percent
+    MEASURE '_Measures'[Collection Rate (Portfolio)] = CALCULATE ( [Collection Rate], REMOVEFILTERS ( vw_dim_building ) )
+    // format: PKR
+    MEASURE '_Measures'[Arrears (Portfolio)] = CALCULATE ( [Arrears], REMOVEFILTERS ( vw_dim_building ) )
+    // format: percent
+    MEASURE '_Measures'[Arrears Ratio (Portfolio)] = CALCULATE ( [Arrears Ratio], REMOVEFILTERS ( vw_dim_building ) )
+    // format: percent
+    MEASURE '_Measures'[Occupancy % (Portfolio)] =
+        CALCULATE ( [Occupancy %], REMOVEFILTERS ( vw_dim_building ), REMOVEFILTERS ( vw_dim_unit_type ) )
+    // format: decimal
+    MEASURE '_Measures'[Avg Days to Resolve (Portfolio)] =
+        CALCULATE (
+            [Avg Days to Resolve],
+            REMOVEFILTERS ( vw_dim_building ),
+            REMOVEFILTERS ( vw_dim_unit_type ),
+            REMOVEFILTERS ( vw_dim_vendor ),
+            REMOVEFILTERS ( vw_dim_maintenance_category )
+        )
+    // format: percent
+    MEASURE '_Measures'[SLA Breach % (Portfolio)] =
+        CALCULATE (
+            [SLA Breach %],
+            REMOVEFILTERS ( vw_dim_building ),
+            REMOVEFILTERS ( vw_dim_unit_type ),
+            REMOVEFILTERS ( vw_dim_vendor ),
+            REMOVEFILTERS ( vw_dim_maintenance_category )
+        )
+    // format: decimal. For one vendor: the average days to resolve of every vendor of its (current) trade
+    MEASURE '_Measures'[Trade Avg Days to Resolve] =
+        VAR Code = SELECTEDVALUE ( vw_dim_vendor[vendor_code] )
+        VAR VendorTrade = LOOKUPVALUE ( vw_dim_vendor[trade], vw_dim_vendor[vendor_code], Code, vw_dim_vendor[is_current], TRUE () )
+        RETURN
+            IF (
+                NOT ISBLANK ( Code ),
+                CALCULATE ( [Avg Days to Resolve], REMOVEFILTERS ( vw_dim_vendor ), vw_dim_vendor[trade] = VendorTrade )
+            )
+    // format: decimal. For one vendor: its average days to resolve over its trade's (above 1 is slower)
+    MEASURE '_Measures'[Days vs Trade] = DIVIDE ( [Avg Days to Resolve], [Trade Avg Days to Resolve] )
+
+    // ------------------------------------------------------------------------------- Labels
+    // format: text
+    MEASURE '_Measures'[Data Window] =
+        "Data window: " & FORMAT ( MIN ( vw_reporting_window[window_start] ), "d mmm yyyy" ) & " to "
+            & FORMAT ( MAX ( vw_reporting_window[window_end] ), "d mmm yyyy" ) & " (synthetic data)"
+
+    // ------------------------------------------------------------------------------- Decision page (US-13.4)
+    // Each recommendation is chosen and worded from the selection, so the text follows the slicers.
+    // A pick is one row of TOPN (ties broken by code); CONCATENATEX returns its text, or "" when nothing qualifies.
+    // format: text. The building with the highest arrears ratio
+    MEASURE '_Measures'[D1 Building] =
+        VAR T =
+            FILTER (
+                ADDCOLUMNS ( VALUES ( vw_dim_building[building_code] ), "@ratio", [Arrears Ratio] ),
+                NOT ISBLANK ( [@ratio] )
+            )
+        RETURN CONCATENATEX ( TOPN ( 1, T, [@ratio], DESC, vw_dim_building[building_code], ASC ), vw_dim_building[building_code] )
+    // format: text
+    MEASURE '_Measures'[D1 Text] =
+        VAR Code = [D1 Building]
+        VAR BuildingName = LOOKUPVALUE ( vw_dim_building[building_name], vw_dim_building[building_code], Code )
+        VAR Ratio = CALCULATE ( [Arrears Ratio], vw_dim_building[building_code] = Code )
+        VAR Rate = CALCULATE ( [Collection Rate], vw_dim_building[building_code] = Code )
+        VAR Owed = CALCULATE ( [Arrears], vw_dim_building[building_code] = Code )
+        VAR PortRate = [Collection Rate (Portfolio)]
+        VAR Gap = ( PortRate - Rate ) * 100
+        RETURN
+            IF (
+                Code = "",
+                "No building has billing in this selection.",
+                "Concentrate arrears follow-up on " & BuildingName & " (" & Code & "). Its arrears ratio is "
+                    & FORMAT ( Ratio, "0.0%" ) & " against " & FORMAT ( [Arrears Ratio (Portfolio)], "0.0%" )
+                    & " for the portfolio, and its collection rate of " & FORMAT ( Rate, "0.0%" )
+                    & IF (
+                        Gap > 0,
+                        " trails the portfolio's " & FORMAT ( PortRate, "0.0%" ) & " by " & FORMAT ( Gap, "0.0" ) & " points.",
+                        " is level with or above the portfolio's " & FORMAT ( PortRate, "0.0%" ) & "."
+                    )
+                    & " Action: a weekly call list and payment plans for its chronically late tenants."
+                    & " Owner: finance head (credit control). Expected effect: recovering half of its PKR "
+                    & FORMAT ( Owed, "#,0" ) & " arrears cuts portfolio arrears by "
+                    & FORMAT ( DIVIDE ( Owed / 2, [Arrears (Portfolio)] ), "0%" ) & "."
+            )
+
+    // format: text. The vendor slowest against its own trade, of those with 20 or more resolved requests
+    MEASURE '_Measures'[D2 Vendor] =
+        VAR T =
+            FILTER (
+                ADDCOLUMNS (
+                    VALUES ( vw_dim_vendor[vendor_code] ),
+                    "@gap", [Days vs Trade],
+                    "@n", [Resolved Requests]
+                ),
+                [@n] >= 20 && NOT ( vw_dim_vendor[vendor_code] IN { "Unknown", "N/A" } )
+            )
+        RETURN CONCATENATEX ( TOPN ( 1, T, [@gap], DESC, vw_dim_vendor[vendor_code], ASC ), vw_dim_vendor[vendor_code] )
+    // format: text
+    MEASURE '_Measures'[D2 Text] =
+        VAR Code = [D2 Vendor]
+        VAR VendorName = LOOKUPVALUE ( vw_dim_vendor[vendor_name], vw_dim_vendor[vendor_code], Code, vw_dim_vendor[is_current], TRUE () )
+        VAR VendorTrade = LOOKUPVALUE ( vw_dim_vendor[trade], vw_dim_vendor[vendor_code], Code, vw_dim_vendor[is_current], TRUE () )
+        VAR VendorDays = CALCULATE ( [Avg Days to Resolve], vw_dim_vendor[vendor_code] = Code )
+        VAR TradeDays = CALCULATE ( [Trade Avg Days to Resolve], vw_dim_vendor[vendor_code] = Code )
+        VAR Breach = CALCULATE ( [SLA Breach %], vw_dim_vendor[vendor_code] = Code )
+        VAR Resolved = CALCULATE ( [Resolved Requests], vw_dim_vendor[vendor_code] = Code )
+        VAR PortBreach = [SLA Breach % (Portfolio)]
+        VAR Peers =
+            FILTER (
+                ADDCOLUMNS (
+                    CALCULATETABLE ( VALUES ( vw_dim_vendor[vendor_code] ), vw_dim_vendor[trade] = VendorTrade ),
+                    "@days", [Avg Days to Resolve],
+                    "@n", [Resolved Requests]
+                ),
+                [@n] >= 20 && vw_dim_vendor[vendor_code] <> Code
+            )
+        VAR Best = CONCATENATEX ( TOPN ( 1, Peers, [@days], ASC, vw_dim_vendor[vendor_code], ASC ), vw_dim_vendor[vendor_code] )
+        VAR BestName = LOOKUPVALUE ( vw_dim_vendor[vendor_name], vw_dim_vendor[vendor_code], Best, vw_dim_vendor[is_current], TRUE () )
+        VAR RefDays =
+            IF ( Best = "", [Avg Days to Resolve (Portfolio)], CALCULATE ( [Avg Days to Resolve], vw_dim_vendor[vendor_code] = Best ) )
+        RETURN
+            IF (
+                Code = "",
+                "No vendor has 20 or more resolved requests in this selection.",
+                "Move urgent " & VendorTrade & " work away from " & VendorName & " (" & Code & "). It takes "
+                    & FORMAT ( VendorDays, "0.0" ) & " days on average to resolve a request, "
+                    & FORMAT ( DIVIDE ( VendorDays, TradeDays ), "0.0" ) & " times the " & FORMAT ( TradeDays, "0.0" ) & " days of all "
+                    & VendorTrade & " vendors, and breaches the SLA on " & FORMAT ( Breach, "0.0%" ) & " of its jobs ("
+                    & FORMAT ( PortBreach, "0.0%" ) & " for all vendors)."
+                    & " Action: give its urgent jobs to "
+                    & IF ( Best = "", "another " & VendorTrade & " vendor", BestName & " (" & Best & "), the fastest " & VendorTrade & " vendor," )
+                    & " and review its contract. Owner: maintenance manager. Expected effect: at the speed of "
+                    & IF ( Best = "", "all vendors", BestName ) & ", its " & FORMAT ( Resolved, "#,0" )
+                    & " requests would have waited about " & FORMAT ( MAX ( 0, ( VendorDays - RefDays ) * Resolved ), "#,0" )
+                    & " fewer days in all over this period."
+            )
+
+    // format: text. The city and unit type with the lowest occupancy (10 or more units)
+    MEASURE '_Measures'[D3 Segment] =
+        VAR T =
+            FILTER (
+                ADDCOLUMNS (
+                    CROSSJOIN ( VALUES ( vw_dim_building[city] ), VALUES ( vw_dim_unit_type[unit_type] ) ),
+                    "@occ", [Occupancy %],
+                    "@units", [Units]
+                ),
+                NOT ISBLANK ( [@occ] ) && [@units] >= 10
+            )
+        VAR Low = TOPN ( 1, T, [@occ], ASC, vw_dim_building[city], ASC, vw_dim_unit_type[unit_type], ASC )
+        RETURN CONCATENATEX ( Low, vw_dim_unit_type[unit_type] & " in " & vw_dim_building[city] )
+    // format: text
+    MEASURE '_Measures'[D3 Text] =
+        VAR T =
+            FILTER (
+                ADDCOLUMNS (
+                    CROSSJOIN ( VALUES ( vw_dim_building[city] ), VALUES ( vw_dim_unit_type[unit_type] ) ),
+                    "@occ", [Occupancy %],
+                    "@units", [Units]
+                ),
+                NOT ISBLANK ( [@occ] ) && [@units] >= 10
+            )
+        VAR Low = TOPN ( 1, T, [@occ], ASC, vw_dim_building[city], ASC, vw_dim_unit_type[unit_type], ASC )
+        VAR City = CONCATENATEX ( Low, vw_dim_building[city] )
+        VAR UnitType = CONCATENATEX ( Low, vw_dim_unit_type[unit_type] )
+        VAR Occ = MAXX ( Low, [@occ] )
+        VAR SegUnits = MAXX ( Low, [@units] )
+        VAR Vacancy =
+            CALCULATE ( [Avg Vacancy Days], vw_dim_building[city] = City, vw_dim_unit_type[unit_type] = UnitType )
+        VAR Rent =  // the segment's rent; when none of its units is let, the unit type's across the portfolio
+            COALESCE (
+                CALCULATE ( [Avg Contract Rent], vw_dim_building[city] = City, vw_dim_unit_type[unit_type] = UnitType ),
+                CALCULATE ( [Avg Contract Rent], REMOVEFILTERS ( vw_dim_building ), vw_dim_unit_type[unit_type] = UnitType )
+            )
+        VAR PortOcc = [Occupancy % (Portfolio)]
+        VAR More = ROUND ( MAX ( 0, ( PortOcc - Occ ) * SegUnits ), 0 )
+        VAR Effect =
+            IF (
+                More = 0,
+                "they are at the portfolio's occupancy already"
+                    & IF ( ISBLANK ( Rent ), ".", "; each one let adds about PKR " & FORMAT ( Rent, "#,0" ) & " of rent a month." ),
+                "reaching the portfolio's occupancy fills about " & FORMAT ( More, "0" ) & IF ( More = 1, " more unit", " more units" )
+                    & IF ( ISBLANK ( Rent ), ".", ", about PKR " & FORMAT ( More * Rent, "#,0" ) & " of rent a month." )
+            )
+        RETURN
+            IF (
+                City = "",
+                "No city and unit type has 10 or more units in this selection.",
+                "Fill vacant " & LOWER ( UnitType ) & "s in " & City & ". Their occupancy is " & FORMAT ( Occ, "0.0%" )
+                    & " against " & FORMAT ( PortOcc, "0.0%" ) & " for the portfolio"
+                    & IF ( ISBLANK ( Vacancy ), ".", ", and a vacancy lasts " & FORMAT ( Vacancy, "0" ) & " days on average." )
+                    & " Action: a vacancy incentive (rent-free weeks) on them, marketed before the summer moving peak."
+                    & " Owner: leasing manager. Expected effect: " & Effect
+            )
+
+EVALUATE
+    ROW ( "Measures defined", 51 )

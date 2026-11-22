@@ -7,8 +7,9 @@
 -- Objects (every column is described in docs/reporting.md):
 --   parameters    vw_reporting_window (the data window: the occupancy snapshot's first and last day),
 --                 vw_reporting_parameter (the stated assumptions: management fee, late-payer bands)
---   slicers       vw_dim_date, vw_dim_month, vw_dim_building, vw_dim_unit, vw_dim_tenant, vw_dim_owner,
---                 vw_dim_vendor, vw_dim_maintenance_category, vw_dim_payment_method (no technical columns)
+--   slicers       vw_dim_date, vw_dim_month, vw_dim_building, vw_dim_unit, vw_dim_unit_type, vw_dim_tenant,
+--                 vw_dim_owner, vw_dim_vendor, vw_dim_maintenance_category, vw_dim_payment_method (no technical
+--                 columns)
 --   marts         mart_collections_monthly      month x building
 --                 mart_occupancy_monthly        month x building x unit type
 --                 mart_maintenance_monthly      raised month x building x unit type x category x vendor
@@ -17,7 +18,8 @@
 --                 sum across buildings, never across months), so a rate is a ratio of sums at any level.
 --   views         vw_monthly_collections, vw_tenant_analysis, vw_unit_performance (the brief's three
 --                 reporting views, LUE names) and their brief-named aliases vw_monthly_sales,
---                 vw_customer_analysis, vw_product_performance (D18)
+--                 vw_customer_analysis, vw_product_performance (D18); vw_tenant_by_building, the tenant
+--                 analysis by building (the dashboard's drill-through from a building to its tenants, US-13.3)
 --
 -- Definitions:
 --   D17 collection rate (cohort): payments against invoice lines due in month M / net amount of the lines
@@ -36,14 +38,14 @@
 
 DROP VIEW IF EXISTS lue_reporting.vw_monthly_sales, lue_reporting.vw_customer_analysis,
     lue_reporting.vw_product_performance CASCADE;
-DROP VIEW IF EXISTS lue_reporting.vw_monthly_collections, lue_reporting.vw_tenant_analysis,
-    lue_reporting.vw_unit_performance CASCADE;
+DROP VIEW IF EXISTS lue_reporting.vw_tenant_by_building, lue_reporting.vw_monthly_collections,
+    lue_reporting.vw_tenant_analysis, lue_reporting.vw_unit_performance CASCADE;
 DROP FUNCTION IF EXISTS lue_reporting.refresh_marts();
 DROP MATERIALIZED VIEW IF EXISTS lue_reporting.mart_collections_monthly, lue_reporting.mart_occupancy_monthly,
     lue_reporting.mart_maintenance_monthly, lue_reporting.mart_owner_portfolio_monthly CASCADE;
 DROP VIEW IF EXISTS lue_reporting.vw_dim_date, lue_reporting.vw_dim_month, lue_reporting.vw_dim_building,
-    lue_reporting.vw_dim_unit, lue_reporting.vw_dim_tenant, lue_reporting.vw_dim_owner, lue_reporting.vw_dim_vendor,
-    lue_reporting.vw_dim_maintenance_category, lue_reporting.vw_dim_payment_method,
+    lue_reporting.vw_dim_unit, lue_reporting.vw_dim_unit_type, lue_reporting.vw_dim_tenant, lue_reporting.vw_dim_owner,
+    lue_reporting.vw_dim_vendor, lue_reporting.vw_dim_maintenance_category, lue_reporting.vw_dim_payment_method,
     lue_reporting.vw_reporting_parameter, lue_reporting.vw_reporting_window CASCADE;
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -96,6 +98,12 @@ SELECT unit_key, unit_nk, building_code, unit_no, unit_type, bedrooms, area_sqft
        building_name, building_class, building_age_band, locality, city, region, effective_from, effective_to,
        is_current
 FROM lue_dw.dim_unit;
+
+-- the unit types, so one slicer filters the occupancy and maintenance marts together
+CREATE VIEW lue_reporting.vw_dim_unit_type AS
+SELECT unit_type, count(*) FILTER (WHERE is_current AND unit_key > 0)::int AS current_units
+FROM lue_dw.dim_unit
+GROUP BY unit_type;
 
 CREATE VIEW lue_reporting.vw_dim_tenant AS
 SELECT tenant_key, tenant_code, tenant_name, tenant_type, employer_sector, contact_channel, is_inferred,
@@ -432,6 +440,55 @@ SELECT o.building_code, b.building_name, b.city, b.building_class, o.unit_type,
 FROM occ o
 LEFT JOIN mnt m ON m.building_code = o.building_code AND m.unit_type = o.unit_type
 LEFT JOIN lue_reporting.vw_dim_building b ON b.building_code = o.building_code;
+
+-- vw_tenant_by_building: one row per tenant version and building, over the data window (US-13.3): the
+-- tenant analysis split by the building billed or paid; summed over the buildings it gives vw_tenant_analysis's
+-- collected and arrears, and summed over a building's tenants Q2's billed and arrears
+CREATE VIEW lue_reporting.vw_tenant_by_building AS
+WITH w AS (SELECT window_start, window_end FROM lue_reporting.vw_reporting_window),
+paid AS (
+    SELECT f.tenant_key, u.building_code,
+           count(DISTINCT f.payment_reference) FILTER (WHERE NOT f.is_reversal) AS payments,
+           count(DISTINCT f.payment_reference) FILTER (WHERE NOT f.is_reversal AND f.days_past_due > 0)
+               AS late_payments,
+           sum(f.payment_amount) AS total_collected
+    FROM lue_dw.fact_payment f
+    JOIN lue_dw.dim_unit u ON u.unit_key = f.unit_key
+    GROUP BY 1, 2),
+alloc AS (
+    SELECT f.invoice_number, f.invoice_line_no, sum(f.payment_amount) AS paid
+    FROM lue_dw.fact_payment f
+    JOIN lue_dw.dim_date fd ON fd.date_key = f.due_date_key
+    JOIN lue_dw.dim_date pd ON pd.date_key = f.paid_date_key
+    CROSS JOIN w
+    WHERE f.due_date_key > 0 AND f.paid_date_key > 0 AND greatest(fd.full_date + 1, pd.full_date) <= w.window_end
+    GROUP BY 1, 2),
+billed AS (
+    SELECT l.tenant_key, u.building_code,
+           count(*) FILTER (WHERE dd.full_date BETWEEN date_trunc('month', w.window_start)::date AND w.window_end)
+               AS invoice_lines,
+           sum(l.net_amount) FILTER (WHERE dd.full_date BETWEEN date_trunc('month', w.window_start)::date
+                                                            AND w.window_end) AS billed_due,
+           sum(l.net_amount - coalesce(a.paid, 0)) FILTER (WHERE dd.full_date + 1 <= w.window_end) AS current_arrears
+    FROM lue_dw.fact_rent_invoice_line l
+    JOIN lue_dw.dim_unit u ON u.unit_key = l.unit_key
+    JOIN lue_dw.dim_date dd ON dd.date_key = l.due_date_key
+    CROSS JOIN w
+    LEFT JOIN alloc a ON a.invoice_number = l.invoice_number AND a.invoice_line_no = l.invoice_line_no
+    WHERE l.due_date_key > 0
+    GROUP BY 1, 2),
+pairs AS (SELECT tenant_key, building_code FROM paid UNION SELECT tenant_key, building_code FROM billed)
+SELECT k.tenant_key, k.building_code, t.tenant_code, t.tenant_name, t.tenant_type, t.employer_sector,
+       t.payer_segment,
+       coalesce(b.invoice_lines, 0)::int AS invoice_lines,
+       coalesce(b.billed_due, 0)::numeric(14,2) AS billed_due,
+       coalesce(p.payments, 0)::int AS payments, coalesce(p.late_payments, 0)::int AS late_payments,
+       coalesce(p.total_collected, 0)::numeric(14,2) AS total_collected,
+       coalesce(b.current_arrears, 0)::numeric(14,2) AS current_arrears
+FROM pairs k
+JOIN lue_reporting.vw_tenant_analysis t ON t.tenant_key = k.tenant_key
+LEFT JOIN paid p ON p.tenant_key = k.tenant_key AND p.building_code = k.building_code
+LEFT JOIN billed b ON b.tenant_key = k.tenant_key AND b.building_code = k.building_code;
 
 -- ---------------------------------------------------------------------------------------------------------
 -- The brief's names (D18): thin aliases of the LUE views, identical rows

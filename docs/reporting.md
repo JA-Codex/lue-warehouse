@@ -131,6 +131,16 @@ row per version: a mart or view row points at the version that was valid at the 
 | `effective_to` | Day after its last day (9999-12-31 while current) |
 | `is_current` | The current version |
 
+### `vw_dim_unit_type`: one row per unit type
+
+One slicer for the occupancy and maintenance marts and `vw_unit_performance` together (all three carry
+`unit_type`); the dashboard's model relates it to each (docs/powerbi).
+
+| Column | Definition |
+|---|---|
+| `unit_type` | Apartment, Office, Shop (and the special members `Unknown`, `Not applicable`) |
+| `current_units` | Units of the type today (current versions) |
+
 ### `vw_dim_tenant`: one row per tenant version (Tenant, Tenant type)
 
 | Column | Definition |
@@ -332,6 +342,31 @@ The tenant as it was when it paid (payments) or was billed (arrears): group by `
 | `vw_monthly_sales` | `vw_monthly_collections` | the same (`SELECT *`) |
 | `vw_customer_analysis` | `vw_tenant_analysis` | the same |
 | `vw_product_performance` | `vw_unit_performance` | the same |
+
+## For the dashboard (E13)
+
+### `vw_tenant_by_building`: one row per tenant version and building, over the window
+
+The tenant analysis split by the building that billed or was paid (a tenant can rent in more than one), so the
+dashboard can drill from a building to its tenants (US-13.3). Summed over a tenant's buildings it gives
+`vw_tenant_analysis`'s `total_collected` and `current_arrears`; summed over a building's tenants it gives Q2's
+billed and arrears. `scripts/test_powerbi.py` checks both.
+
+| Column | Definition |
+|---|---|
+| `tenant_key` | Tenant version (`vw_tenant_analysis`, `vw_dim_tenant`) |
+| `building_code` | Building (`vw_dim_building`) |
+| `tenant_code` | Tenant |
+| `tenant_name` | Name |
+| `tenant_type` | Type of the version |
+| `employer_sector` | Sector of the version |
+| `payer_segment` | The version's payer segment over all its buildings (`vw_tenant_analysis`) |
+| `invoice_lines` | Invoice lines due in the window at this building |
+| `billed_due` | Their net amount |
+| `payments` | Payments made at this building (reversals not counted) |
+| `late_payments` | Of those, made after the due date |
+| `total_collected` | Payments at this building, reversals netted |
+| `current_arrears` | Arrears at the window end on the lines of this building |
 
 ## Refreshing
 
