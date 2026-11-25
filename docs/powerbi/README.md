@@ -11,6 +11,10 @@ order; each ends with a ✅ check. The finished files go in `powerbi/` at the ro
 | `lue_theme.json` | The colour and text theme (step 7) |
 | `../evidence/us-13.1/expected_measures.csv` | The value every measure must show on the full profile, from `scripts/powerbi_expected.py` |
 
+**The team's `powerbi/LUE_Dashboard.pbix` already holds steps 1 to 6** (the model, checked against the recorded
+values). To build the pages from it, follow [`DASHBOARD_GUIDE.md`](DASHBOARD_GUIDE.md): click by click, with the
+size and position of every visual and the number each one must show. The steps below build the model from scratch.
+
 Produced in `powerbi/`: `LUE_Dashboard.pbix`, `LUE_Dashboard.pdf` (the three pages) and `screenshots/`.
 
 ## 0. Before you start
