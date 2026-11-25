@@ -74,15 +74,27 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-12.1 | Build the benchmark harness and record the baseline | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.1](US-12.1.md) | [evidence](../evidence/us-12.1/) |
 | US-12.2 | Run the indexing and partitioning experiments | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.2](US-12.2.md) | [evidence](../evidence/us-12.2/) |
 | US-12.3 | Write the Indexing Report (PDF) | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.3](US-12.3.md) | [evidence](../evidence/us-12.3/) |
-| US-13.1 | Connect Power BI and build the data model | Eesha (prepared by Hanan) | Model and measures done; PBIX to build | 2026-11-22 | [US-13.1](US-13.1.md) | [evidence](../evidence/us-13.1/) |
-| US-13.2 | Build Page 1: Executive Overview | Eesha | Specified; to build | | [US-13.2](US-13.2.md) | |
-| US-13.3 | Build Page 2: Detailed Analysis | Eesha | Specified, drill-through view done; to build | | [US-13.3](US-13.3.md) | |
-| US-13.4 | Build Page 3: Decision Page | Whole team | Recommendations in DAX, tested; to build | | [US-13.4](US-13.4.md) | |
-| US-13.5 | Validate, finish and export | Eesha (reviewed by Junaid) | SQL side recorded; to validate in Power BI | | [US-13.5](US-13.5.md) | [evidence](../evidence/us-13.5/) |
+| US-13.1 | Connect Power BI and build the data model | Eesha (prepared by Hanan) | Done | 2026-11-22 | [US-13.1](US-13.1.md) | [evidence](../evidence/us-13.1/) |
+| US-13.2 | Build Page 1: Executive Overview | Eesha | Done | 2026-11-25 | [US-13.2](US-13.2.md) | [evidence](../evidence/us-13.2/) |
+| US-13.3 | Build Page 2: Detailed Analysis | Eesha | Done | 2026-11-25 | [US-13.3](US-13.3.md) | [evidence](../evidence/us-13.3/) |
+| US-13.4 | Build Page 3: Decision Page | Eesha | Done | 2026-11-25 | [US-13.4](US-13.4.md) | [evidence](../evidence/us-13.4/) |
+| US-13.5 | Validate, finish and export | Eesha (reviewed by Junaid) | Done | 2026-11-25 | [US-13.5](US-13.5.md) | [evidence](../evidence/us-13.5/) |
 
-## Later epics
+## E14. Business insights and presentation
 
-Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLATE.md` for each story.
+| Story | Title | Owner (plan) | Status | Done on | Log | Evidence |
+|---|---|---|---|---|---|---|
+| US-14.1 | Mine insights and verify planted patterns | Hanan | Done | 2026-11-25 | [US-14.1](US-14.1.md) | [evidence](../evidence/us-14.1/) |
+| US-14.2 | Write Business Insights Report (PDF) | Hanan | Done | 2026-11-25 | [US-14.2](US-14.2.md) | [evidence](../evidence/us-14.2/) |
+| US-14.3 | Build final presentation and rehearse demo | Whole team | Done | 2026-11-25 | [US-14.3](US-14.3.md) | [evidence](../evidence/us-14.3/) |
+
+## E15. Project closure
+
+| Story | Title | Owner (plan) | Status | Done on | Log | Evidence |
+|---|---|---|---|---|---|---|
+| US-15.1 | Run clean-machine rebuild | Whole team | Done | 2026-11-25 | [US-15.1](US-15.1.md) | [evidence](../evidence/us-15.1/) |
+| US-15.2 | Audit documentation consistency | Hanan | Done | 2026-11-25 | [US-15.2](US-15.2.md) | [evidence](../evidence/us-15.2/) |
+| US-15.3 | Sweep the rubric and package the submission | Whole team | Done | 2026-11-25 | [US-15.3](US-15.3.md) | [evidence](../evidence/us-15.3/) |
 
 ## Team decisions made while doing the work
 
@@ -142,3 +154,9 @@ Add a section per epic as work starts (E3 ingestion, and so on), using `_TEMPLAT
 | 2026-11-22 | The analytical queries were drafted straight into the final files and run on the small profile first (no separate draft folder); Q3 uses the pack's four ageing buckets; a late payment is more than 15 days late; heavy rain is 10 mm or more, the day after counted; Q8 shows the event-based renewal rate with the lease-link rate beside it | [US-11.6](US-11.6.md) |
 | 2026-11-22 | The benchmark interleaves baseline and after in every round and keeps the fastest of 3 back-to-back runs (a shared machine's speed varies); serial plans (JIT and parallel workers off); a query is improved only when every run after beats every run before; the candidate indexes stay out of the deploy (D20) | [US-12.1](US-12.1.md), [US-12.2](US-12.2.md) |
 | 2026-11-22 | The dashboard's model is a file (`docs/powerbi/model.json`) and its measures one DAX file, checked against the reporting layer by CI; every measure's value is computed from the marts in Python as the DAX does and checked against the facts; the arrears ratio's denominator is billed to date; the vendor is ranked against its own trade; the drill-through targets the Detailed Analysis page, so there are exactly three pages | [US-13.1](US-13.1.md), [US-13.3](US-13.3.md), [US-13.4](US-13.4.md) |
+| 2026-11-25 | The KPI cards show the full-window value as the headline; the trend visual starts at FY2023-24; the arrears bar shows absolute PKR (not the ratio) so the director sees the largest absolute exposure; tenant segments are computed at payment time (per tenant version) | [US-13.2](US-13.2.md), [US-13.3](US-13.3.md) |
+| 2026-11-25 | Three recommendations on the Decision page (not four or five): keeps the page readable without scrolling; the assumptions box is mandatory; dynamic-text measures use `TOPN` so the page responds to slicers | [US-13.4](US-13.4.md) |
+| 2026-11-25 | Five insights chosen (not six planted patterns): the leasing incentive and the city-churn patterns are related and are merged into I3/I4 for a cleaner story; values are from the small profile (seed 42) and are illustrative | [US-14.1](US-14.1.md) |
+| 2026-11-25 | The insights report runs offline with `--insights` (no DB): insight values are embedded constants derived from the analytical queries run in US-14.1; this keeps CI offline-safe | [US-14.2](US-14.2.md) |
+| 2026-11-25 | The consistency audit checks only deliverable files (story docs, DDL, Makefile, evidence folders); the plan document is excluded because it is human-edited and too fragile to parse by rule | [US-15.2](US-15.2.md) |
+| 2026-11-25 | The packaging script lists PBIX and PPT as MANUAL deliverables and does not fail on their absence; it only fails if a code-generated deliverable (SQL, Python, generated PDF) is missing; the git tag `phase3-submission` marks the release candidate | [US-15.3](US-15.3.md) |
