@@ -1,0 +1,6 @@
+Checking C1: story log completeness ...  68/68  ✓
+Checking C2: DDL table names ...  31/31  ✓
+Checking C3: Makefile target comments ...  46/46  ✓
+Checking C4: evidence folders ...  170/170  ✓
+
+4/4 consistency checks passed

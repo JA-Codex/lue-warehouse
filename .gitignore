@@ -35,3 +35,8 @@ Thumbs.db
 
 # Ingestion logs (US-3.1)
 logs/
+
+# Phase 3 documents are submitted in the zip, not kept in the repository
+presentation/*.pptx
+docs/reports/LUE_Business_Insights_Report.pdf
+powerbi/LUE_Dashboard_Screenshots.pdf

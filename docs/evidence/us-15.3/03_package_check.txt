@@ -1,0 +1,32 @@
+Deliverable                                 Path                                                     Status
+------------------------------------------------------------------------------------------------------
+DDL SQL scripts                             sql/10_ddl                                               ✓
+DW dimension DDL                            sql/10_ddl/01_dimensions.sql                             ✓
+DW fact DDL                                 sql/10_ddl/02_facts.sql                                  ✓
+Staging SQL (exported)                      sql/20_staging                                           ✓
+Dimension load SQL                          sql/30_dimensions                                        ✓
+Fact load SQL                               sql/40_facts                                             ✓
+ETL ingest scripts                          etl/ingest                                               ✓
+ETL quality scripts                         etl/quality                                              ✓
+ETL staging scripts                         etl/staging                                              ✓
+ETL dimension scripts                       etl/dimensions                                           ✓
+ETL fact scripts                            etl/facts                                                ✓
+Pipeline orchestrator                       etl/run_pipeline.py                                      ✓
+Data Cleaning Report PDF                    docs/reports/LUE_Data_Cleaning_Report.pdf                ✓
+Data Quality Report PDF                     docs/reports/LUE_Data_Quality_Report.pdf                 ✓
+Analytical SQL                              sql/60_analytics/analytical.sql                          ✓
+OLAP SQL                                    sql/60_analytics/olap.sql                                ✓
+Reporting views SQL                         sql/50_reporting/01_reporting.sql                        ✓
+Indexing Report PDF                         docs/reports/LUE_Indexing_Report.pdf                     ✓
+Power BI dashboard PBIX                     powerbi/LUE_Dashboard.pbix                               ✓
+Dashboard screenshots PDF                   powerbi/LUE_Dashboard.pdf                                ✓
+Business Insights Report PDF                etl/reports/insights.py (PDF in the submission zip)      in the submission zip
+Final presentation PPT                      submission zip: LUE_Final_Presentation.pptx              in the submission zip
+Dashboard screenshots PDF                   submission zip: LUE_Dashboard_Screenshots.pdf            in the submission zip
+Presentation outline                        docs/evidence/us-14.3/01_presentation_outline.md         ✓
+Demo script                                 docs/evidence/us-14.3/02_demo_script.md                  ✓
+
+Code deliverables: 22/22 present
+In the submission zip: 3
+
+All 22 code deliverables present. Ready for submission.

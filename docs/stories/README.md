@@ -84,17 +84,17 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 
 | Story | Title | Owner (plan) | Status | Done on | Log | Evidence |
 |---|---|---|---|---|---|---|
-| US-14.1 | Mine insights and verify planted patterns | Hanan | Done | 2026-11-25 | [US-14.1](US-14.1.md) | [evidence](../evidence/us-14.1/) |
-| US-14.2 | Write Business Insights Report (PDF) | Hanan | Done | 2026-11-25 | [US-14.2](US-14.2.md) | [evidence](../evidence/us-14.2/) |
-| US-14.3 | Build final presentation and rehearse demo | Whole team | Done | 2026-11-25 | [US-14.3](US-14.3.md) | [evidence](../evidence/us-14.3/) |
+| US-14.1 | Mine insights and verify planted patterns | Whole team (done by Hanan) | Done | 2026-11-25 | [US-14.1](US-14.1.md) | [evidence](../evidence/us-14.1/) |
+| US-14.2 | Write Business Insights Report (PDF) | Whole team (done by Hanan) | Done | 2026-11-25 | [US-14.2](US-14.2.md) | [evidence](../evidence/us-14.2/) |
+| US-14.3 | Build final presentation and rehearse demo | Whole team (deck by Hanan) | Done | 2026-11-25 | [US-14.3](US-14.3.md) | [evidence](../evidence/us-14.3/) |
 
 ## E15. Project closure
 
 | Story | Title | Owner (plan) | Status | Done on | Log | Evidence |
 |---|---|---|---|---|---|---|
-| US-15.1 | Run clean-machine rebuild | Whole team | Done | 2026-11-25 | [US-15.1](US-15.1.md) | [evidence](../evidence/us-15.1/) |
-| US-15.2 | Audit documentation consistency | Hanan | Done | 2026-11-25 | [US-15.2](US-15.2.md) | [evidence](../evidence/us-15.2/) |
-| US-15.3 | Sweep the rubric and package the submission | Whole team | Done | 2026-11-25 | [US-15.3](US-15.3.md) | [evidence](../evidence/us-15.3/) |
+| US-15.1 | Run clean-machine rebuild | Ahmad Waqar (done by Hanan) | Done | 2026-11-25 | [US-15.1](US-15.1.md) | [evidence](../evidence/us-15.1/) |
+| US-15.2 | Audit documentation consistency | Junaid (done by Hanan) | Done | 2026-11-25 | [US-15.2](US-15.2.md) | [evidence](../evidence/us-15.2/) |
+| US-15.3 | Sweep the rubric and package the submission | Whole team (done by Hanan) | Done | 2026-11-25 | [US-15.3](US-15.3.md) | [evidence](../evidence/us-15.3/) |
 
 ## Team decisions made while doing the work
 
@@ -156,7 +156,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | 2026-11-22 | The dashboard's model is a file (`docs/powerbi/model.json`) and its measures one DAX file, checked against the reporting layer by CI; every measure's value is computed from the marts in Python as the DAX does and checked against the facts; the arrears ratio's denominator is billed to date; the vendor is ranked against its own trade; the drill-through targets the Detailed Analysis page, so there are exactly three pages | [US-13.1](US-13.1.md), [US-13.3](US-13.3.md), [US-13.4](US-13.4.md) |
 | 2026-11-25 | The KPI cards show the whole window until a slicer is set; the buildings are ranked by arrears ratio (Q2's measure), not absolute PKR; vendors are ranked against their own trade, and only those with 20 or more resolved requests (`Days vs Trade (20+)`); Auto date/time is off | [US-13.2](US-13.2.md), [US-13.3](US-13.3.md), [US-13.4](US-13.4.md) |
 | 2026-11-25 | Three recommendations on the Decision page (not four or five): keeps the page readable without scrolling; the assumptions box is mandatory; dynamic-text measures use `TOPN` so the page responds to slicers | [US-13.4](US-13.4.md) |
-| 2026-11-25 | Five insights chosen (not six planted patterns): the leasing incentive and the city-churn patterns are related and are merged into I3/I4 for a cleaner story; values are from the small profile (seed 42) and are illustrative | [US-14.1](US-14.1.md) |
-| 2026-11-25 | The insights report runs offline with `--insights` (no DB): insight values are embedded constants derived from the analytical queries run in US-14.1; this keeps CI offline-safe | [US-14.2](US-14.2.md) |
+| 2026-11-25 | Four insights, ranked by effect in PKR or days; planted patterns 3, 4 and 6 (seasonal move-ins, incentives, Karachi renewals) form one leasing insight; all figures from the full profile (seed 3004) | [US-14.1](US-14.1.md) |
+| 2026-11-25 | The insights report needs no database: `etl/reports/insights.py` quotes the recorded full-profile results and checks each figure against its evidence file before drawing, so it cannot drift from the SQL | [US-14.2](US-14.2.md) |
 | 2026-11-25 | The consistency audit checks only deliverable files (story docs, DDL, Makefile, evidence folders); the plan document is excluded because it is human-edited and too fragile to parse by rule | [US-15.2](US-15.2.md) |
-| 2026-11-25 | The packaging script lists PBIX and PPT as MANUAL deliverables and does not fail on their absence; it only fails if a code-generated deliverable (SQL, Python, generated PDF) is missing; the git tag `phase3-submission` marks the release candidate | [US-15.3](US-15.3.md) |
+| 2026-11-25 | The packaging script checks every Phase 2 and Phase 3 deliverable, the PBIX, the screenshots PDF and the presentation included, and fails if one is missing; the tag `phase3-submission` marks the submitted commit | [US-15.3](US-15.3.md) |
