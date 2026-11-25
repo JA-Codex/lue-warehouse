@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset insights-report consistency-check
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -137,3 +137,9 @@ db-reset: ## Drop and rebuild the warehouse schemas, reload reference data, smok
 
 db-smoke: ## Count the warehouse objects (US-1.5)
 	$(PYTHON) scripts/test_smoke.py
+
+insights-report: ## Build the Business Insights Report PDF (offline, no DB needed) (US-14.2)
+	$(PYTHON) etl/reports/build.py --insights
+
+consistency-check: ## Offline documentation consistency audit: story log, table names, Makefile targets (US-15.2)
+	$(PYTHON) scripts/check_docs_consistency.py
