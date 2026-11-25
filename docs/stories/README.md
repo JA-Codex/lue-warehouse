@@ -94,6 +94,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 |---|---|---|---|---|---|---|
 | US-15.1 | Run clean-machine rebuild | Whole team | Done | 2026-11-25 | [US-15.1](US-15.1.md) | [evidence](../evidence/us-15.1/) |
 | US-15.2 | Audit documentation consistency | Hanan | Done | 2026-11-25 | [US-15.2](US-15.2.md) | [evidence](../evidence/us-15.2/) |
+| US-15.3 | Sweep the rubric and package the submission | Whole team | Done | 2026-11-25 | [US-15.3](US-15.3.md) | [evidence](../evidence/us-15.3/) |
 
 ## Team decisions made while doing the work
 
@@ -158,3 +159,4 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | 2026-11-25 | Five insights chosen (not six planted patterns): the leasing incentive and the city-churn patterns are related and are merged into I3/I4 for a cleaner story; values are from the small profile (seed 42) and are illustrative | [US-14.1](US-14.1.md) |
 | 2026-11-25 | The insights report runs offline with `--insights` (no DB): insight values are embedded constants derived from the analytical queries run in US-14.1; this keeps CI offline-safe | [US-14.2](US-14.2.md) |
 | 2026-11-25 | The consistency audit checks only deliverable files (story docs, DDL, Makefile, evidence folders); the plan document is excluded because it is human-edited and too fragile to parse by rule | [US-15.2](US-15.2.md) |
+| 2026-11-25 | The packaging script lists PBIX and PPT as MANUAL deliverables and does not fail on their absence; it only fails if a code-generated deliverable (SQL, Python, generated PDF) is missing; the git tag `phase3-submission` marks the release candidate | [US-15.3](US-15.3.md) |

@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset insights-report consistency-check
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset insights-report consistency-check package
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -143,3 +143,6 @@ insights-report: ## Build the Business Insights Report PDF (offline, no DB neede
 
 consistency-check: ## Offline documentation consistency audit: story log, table names, Makefile targets (US-15.2)
 	$(PYTHON) scripts/check_docs_consistency.py
+
+package: ## Verify all submission deliverables are present and print the manifest (US-15.3)
+	$(PYTHON) scripts/package_submission.py
