@@ -75,10 +75,10 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | US-12.2 | Run the indexing and partitioning experiments | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.2](US-12.2.md) | [evidence](../evidence/us-12.2/) |
 | US-12.3 | Write the Indexing Report (PDF) | Junaid (done by Hanan) | Done | 2026-11-22 | [US-12.3](US-12.3.md) | [evidence](../evidence/us-12.3/) |
 | US-13.1 | Connect Power BI and build the data model | Eesha (prepared by Hanan) | Done | 2026-11-22 | [US-13.1](US-13.1.md) | [evidence](../evidence/us-13.1/) |
-| US-13.2 | Build Page 1: Executive Overview | Eesha | Done | 2026-11-25 | [US-13.2](US-13.2.md) | [evidence](../evidence/us-13.2/) |
-| US-13.3 | Build Page 2: Detailed Analysis | Eesha | Done | 2026-11-25 | [US-13.3](US-13.3.md) | [evidence](../evidence/us-13.3/) |
-| US-13.4 | Build Page 3: Decision Page | Eesha | Done | 2026-11-25 | [US-13.4](US-13.4.md) | [evidence](../evidence/us-13.4/) |
-| US-13.5 | Validate, finish and export | Eesha (reviewed by Junaid) | Done | 2026-11-25 | [US-13.5](US-13.5.md) | [evidence](../evidence/us-13.5/) |
+| US-13.2 | Build Page 1: Executive Overview | Eesha (built by Hanan) | Done | 2026-11-25 | [US-13.2](US-13.2.md) | [evidence](../evidence/us-13.2/) |
+| US-13.3 | Build Page 2: Detailed Analysis | Eesha (built by Hanan) | Done | 2026-11-25 | [US-13.3](US-13.3.md) | [evidence](../evidence/us-13.3/) |
+| US-13.4 | Build Page 3: Decision Page | Whole team (built by Hanan) | Done | 2026-11-25 | [US-13.4](US-13.4.md) | [evidence](../evidence/us-13.4/) |
+| US-13.5 | Validate, finish and export | Eesha (built by Hanan, reviewed by Junaid) | Done except the two-machine check | 2026-11-25 | [US-13.5](US-13.5.md) | [evidence](../evidence/us-13.5/) |
 
 ## E14. Business insights and presentation
 
@@ -154,7 +154,7 @@ Story definitions live in the plan: `../plan/LUE_Development_Plan_v1.1.md`.
 | 2026-11-22 | The analytical queries were drafted straight into the final files and run on the small profile first (no separate draft folder); Q3 uses the pack's four ageing buckets; a late payment is more than 15 days late; heavy rain is 10 mm or more, the day after counted; Q8 shows the event-based renewal rate with the lease-link rate beside it | [US-11.6](US-11.6.md) |
 | 2026-11-22 | The benchmark interleaves baseline and after in every round and keeps the fastest of 3 back-to-back runs (a shared machine's speed varies); serial plans (JIT and parallel workers off); a query is improved only when every run after beats every run before; the candidate indexes stay out of the deploy (D20) | [US-12.1](US-12.1.md), [US-12.2](US-12.2.md) |
 | 2026-11-22 | The dashboard's model is a file (`docs/powerbi/model.json`) and its measures one DAX file, checked against the reporting layer by CI; every measure's value is computed from the marts in Python as the DAX does and checked against the facts; the arrears ratio's denominator is billed to date; the vendor is ranked against its own trade; the drill-through targets the Detailed Analysis page, so there are exactly three pages | [US-13.1](US-13.1.md), [US-13.3](US-13.3.md), [US-13.4](US-13.4.md) |
-| 2026-11-25 | The KPI cards show the full-window value as the headline; the trend visual starts at FY2023-24; the arrears bar shows absolute PKR (not the ratio) so the director sees the largest absolute exposure; tenant segments are computed at payment time (per tenant version) | [US-13.2](US-13.2.md), [US-13.3](US-13.3.md) |
+| 2026-11-25 | The KPI cards show the whole window until a slicer is set; the buildings are ranked by arrears ratio (Q2's measure), not absolute PKR; vendors are ranked against their own trade, and only those with 20 or more resolved requests (`Days vs Trade (20+)`); Auto date/time is off | [US-13.2](US-13.2.md), [US-13.3](US-13.3.md), [US-13.4](US-13.4.md) |
 | 2026-11-25 | Three recommendations on the Decision page (not four or five): keeps the page readable without scrolling; the assumptions box is mandatory; dynamic-text measures use `TOPN` so the page responds to slicers | [US-13.4](US-13.4.md) |
 | 2026-11-25 | Five insights chosen (not six planted patterns): the leasing incentive and the city-churn patterns are related and are merged into I3/I4 for a cleaner story; values are from the small profile (seed 42) and are illustrative | [US-14.1](US-14.1.md) |
 | 2026-11-25 | The insights report runs offline with `--insights` (no DB): insight values are embedded constants derived from the analytical queries run in US-14.1; this keeps CI offline-safe | [US-14.2](US-14.2.md) |

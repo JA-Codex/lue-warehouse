@@ -1,29 +1,17 @@
-# Evidence: US-13.3 — Page 2: Detailed Analysis
+# Evidence for US-13.3: Page 2, Detailed Analysis
 
-## Summary
+Built in Power BI Desktop 2.159.883.0 on 25 November 2026 (`docs/powerbi/DASHBOARD_GUIDE.md`, Part 3).
+Screenshots: `powerbi/screenshots/03_detailed_analysis.png`, `04_drill_through.png`; page 2 of `powerbi/LUE_Dashboard.pdf`.
 
-The Detailed Analysis page was built in Power BI Desktop.  It contains a building bar chart, city summary table, tenant segmentation visual, vendor performance matrix, and a drill-through target page backed by `vw_tenant_by_building`.  Vendor SLA breach % values and tenant segment counts were verified against the SQL analytical queries.
-
-## Key checks
+| Section | Visuals |
+|---|---|
+| Buildings and unit types (product-style) | Matrix: city then building, with occupancy, collection rate, arrears ratio, vacancy days, maintenance per unit-month (colour-scaled); occupancy by unit type |
+| Cities (regional) | Collection rate and occupancy by city |
+| Tenant segmentation | Tenants by payer segment (donut); tenants by arrears (table, from `vw_tenant_by_building`) |
+| Vendors | Vendors slowest against their trade (20 or more resolved requests) |
 
 | Check | Result |
 |---|---|
-| Vendor SLA breach % in matrix matches Q9 for three vendors | Pass — values agree within 0.01 pp |
-| Tenant segments (On Time / Occasionally Late / Chronically Late) match `vw_tenant_analysis` | Pass — Lahore FY2024-25 row counts agree |
-| Drill-through from Executive Overview building bar → tenant table | Pass — right-click on GLB03 opens 15 tenants for that building |
-| Cross-filter: selecting a building in the bar filters the tenant table | Pass — tenant table shows only that building's tenants |
-| Vendor matrix conditional formatting (green/amber/red) | Pass — vendor with 42 % breach rate renders in red |
-
-## Files referenced
-
-- `sql/50_reporting/01_reporting.sql` — `vw_tenant_analysis`, `vw_tenant_by_building`
-- `sql/60_analytics/analytical.sql` — Q9 vendor SLA breach %
-- `docs/powerbi/measures.dax` — SLA Breach %, Average Days to Resolve
-
-## Re-check command
-
-```
-python scripts/test_powerbi_contract.py
-# SQL side (requires a loaded warehouse):
-psql -U lue_reader -d lue_warehouse -f sql/60_analytics/analytical.sql
-```
+| The three required sections | Pass: as above |
+| Drill-through works | Pass: the page is the drill-through target on `building_name`; right-click a building on page 1, Drill through, Detailed Analysis opens it filtered (`04_drill_through.png`) |
+| Values | The measures on this page are among the 44 validated in `../us-13.5/01_kpi_reconciliation.md` (tenants 3,455, chronically late 846, late payment share 30.4%) |
