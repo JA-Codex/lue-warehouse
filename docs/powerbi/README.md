@@ -11,6 +11,10 @@ order; each ends with a ✅ check. The finished files go in `powerbi/` at the ro
 | `lue_theme.json` | The colour and text theme (step 7) |
 | `../evidence/us-13.1/expected_measures.csv` | The value every measure must show on the full profile, from `scripts/powerbi_expected.py` |
 
+**The team's `powerbi/LUE_Dashboard.pbix` already holds steps 1 to 6** (the model, checked against the recorded
+values). To build the pages from it, follow [`DASHBOARD_GUIDE.md`](DASHBOARD_GUIDE.md): click by click, with the
+size and position of every visual and the number each one must show. The steps below build the model from scratch.
+
 Produced in `powerbi/`: `LUE_Dashboard.pbix`, `LUE_Dashboard.pdf` (the three pages) and `screenshots/`.
 
 ## 0. Before you start
@@ -34,26 +38,67 @@ Home, Get data, More, **PostgreSQL database**:
 | Database | `lue_warehouse` |
 | Data Connectivity mode | **Import** |
 
-Then the **Database** tab of the credentials dialog: user `lue_reader`, its password. Connect.
+The credentials are on the same page in recent versions (in older ones, a dialog after OK):
 
-If Power BI says the server does not support encryption: File, Options and settings, Data source settings,
-select `localhost:5432;lue_warehouse`, Edit Permissions, untick **Encrypt connections**, OK, and connect again.
+| Field | Value |
+|---|---|
+| Authentication kind | **Basic** (in older versions the **Database** tab); not *Organizational account* |
+| Username | `lue_reader` |
+| Password | `LUE_READER_PASSWORD` in `.env` (`.env.example`'s default: `lue_reader_secure_pass_123`) |
+| Privacy Level | **Organizational** |
+| Use encrypted connection | **Unticked**: the local PostgreSQL has no SSL, and Power BI refuses with "unable to connect using an encrypted connection" |
 
-✅ The Navigator shows the `lue_reporting` objects. Only these load: the reader is refused everything else
-(`scripts/test_reporting.py` shows the refusals).
+Then Next (or Connect). In older versions, if Power BI says the server does not support encryption: File, Options
+and settings, Data source settings, select `localhost:5432;lue_warehouse`, Edit Permissions, untick **Encrypt
+connections**, OK, and connect again.
+
+✅ The Navigator (*Choose data*) lists the `lue_reporting` views. Only these load: the reader is refused everything
+else (`scripts/test_reporting.py` shows the refusals).
 
 ## 2. Load the 15 objects
 
-In the Navigator tick these, then **Transform Data** (not Load):
+**The four marts are not in the Navigator's list**: they are materialized views, which Power BI's PostgreSQL list
+does not show. `lue_reader` can read them; they are added by a short query in part B.
+
+**A. In the Navigator**, tick these 11, then the arrow next to **Load**, **Transform Data** (not Load):
 
 | Role | Objects |
 |---|---|
 | Dimensions | `vw_dim_date`, `vw_dim_building`, `vw_dim_unit_type`, `vw_dim_vendor`, `vw_dim_maintenance_category`, `vw_dim_owner`, `vw_tenant_analysis` (the tenant and its payer segment) |
-| Facts | `mart_collections_monthly`, `mart_occupancy_monthly`, `mart_maintenance_monthly`, `mart_owner_portfolio_monthly`, `vw_tenant_by_building` |
+| Facts | `vw_tenant_by_building` (the four marts come in part B) |
 | Reference (hidden) | `vw_unit_performance`, `vw_monthly_collections` |
 | Parameter | `vw_reporting_window` |
 
-`vw_dim_month`, `vw_dim_unit`, `vw_dim_tenant` and `vw_dim_payment_method` are not needed: no mart has their keys.
+`vw_dim_month`, `vw_dim_unit`, `vw_dim_tenant`, `vw_dim_payment_method` and the brief's aliases are not needed.
+
+**B. Add the four marts** in the Power Query Editor, once each:
+
+1. Right-click the empty space under the Queries list, **New Query**, (Other Sources,) **Blank Query**; or Home,
+   New Source, Blank Query.
+2. Right-click the new query, **Advanced Editor**, replace everything with (for the first mart):
+
+   ```
+   let
+       Source = PostgreSQL.Database("localhost:5432", "lue_warehouse", [Query = "SELECT * FROM lue_reporting.mart_collections_monthly"])
+   in
+       Source
+   ```
+3. Done. If a yellow bar asks for permission: **Edit Permission**, **Run**. If it asks for credentials: as in
+   step 1.
+4. Rename the query to the mart's name: `mart_collections_monthly`.
+
+Then the same for `mart_occupancy_monthly`, `mart_maintenance_monthly` and `mart_owner_portfolio_monthly`
+(change the name in the code and the query's name). A view missed in part A is added the same way with:
+
+```
+let
+    Source = PostgreSQL.Database("localhost:5432", "lue_warehouse"),
+    Data = Source{[Schema = "lue_reporting", Item = "vw_unit_performance"]}[Data]
+in
+    Data
+```
+
+✅ 15 queries on the left.
 
 ## 3. Power Query: names and three filters
 
@@ -72,12 +117,8 @@ In the Navigator tick these, then **Transform Data** (not Load):
    in
        Kept
    ```
-3. **`vw_dim_building`**: Advanced Editor, add a filter step before `in`, and return it:
-
-   ```
-       Kept = Table.SelectRows(<previous step>, each not List.Contains({"N/A", "Unknown"}, [building_code]))
-   ```
-4. **`vw_dim_unit_type`**: the same with `each not List.Contains({"Not applicable", "Unknown"}, [unit_type])`.
+3. **`vw_dim_building`**: the arrow on the `building_code` column header, untick `N/A` and `Unknown`, OK.
+4. **`vw_dim_unit_type`**: the arrow on the `unit_type` column header, untick `Not applicable` and `Unknown`, OK.
 
    No mart row uses these placeholder buildings or unit types (`scripts/test_powerbi.py` checks it), so no total
    changes; they only stay out of the slicers.
@@ -258,6 +299,8 @@ Edit Permissions, credentials `lue_reader` (untick *Encrypt connections* if need
 | Problem | Fix |
 |---|---|
 | "The server does not support SSL" or a certificate error | Step 1: untick *Encrypt connections* |
+| The marts are not in the Navigator | They are materialized views: add them with a query (step 2, part B) |
+| Next stays greyed out, or a *Sign in* button | Authentication kind *Basic* with user and password (step 1), not *Organizational account* |
 | "Password authentication failed for user lue_reader" | The password is `LUE_READER_PASSWORD` in `.env`; the roles are set by `python scripts/db_setup.py` |
 | A measure shows an error after step 4 | A query was not renamed (step 3.1): the measures need the object names exactly |
 | *Mark as date table* refuses `full_date` | The filter of step 3.2 is missing: the special rows repeat 1900 dates |

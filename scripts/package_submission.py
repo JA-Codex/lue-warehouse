@@ -41,9 +41,11 @@ DELIVERABLES: list[tuple[str, str, bool]] = [
     ("OLAP SQL",                     "sql/60_analytics/olap.sql",                 False),
     ("Reporting views SQL",          "sql/50_reporting/01_reporting.sql",         False),
     ("Indexing Report PDF",          "docs/reports/LUE_Indexing_Report.pdf",      False),
-    ("Power BI dashboard PBIX",      "docs/powerbi/LUE_Dashboard.pbix",           True),
-    ("Dashboard export PDF",         "docs/evidence/us-13.5/LUE_Dashboard_Export.pdf", True),
-    ("Business Insights Report PDF", "docs/reports/LUE_Business_Insights_Report.pdf", False),
+    ("Power BI dashboard PBIX",      "powerbi/LUE_Dashboard.pbix",                False),
+    ("Dashboard screenshots PDF",    "powerbi/LUE_Dashboard.pdf",                 False),
+    ("Business Insights Report PDF", "etl/reports/insights.py (PDF in the submission zip)", True),
+    ("Final presentation PPT",       "submission zip: LUE_Final_Presentation.pptx", True),
+    ("Dashboard screenshots PDF",    "submission zip: LUE_Dashboard_Screenshots.pdf", True),
     ("Presentation outline",         "docs/evidence/us-14.3/01_presentation_outline.md", False),
     ("Demo script",                  "docs/evidence/us-14.3/02_demo_script.md",   False),
 ]
@@ -61,7 +63,7 @@ def main() -> int:
         path = ROOT / rel
         exists = path.exists()
         if is_manual:
-            status = "MANUAL (human deliverable)"
+            status = "in the submission zip"
             manual.append(desc)
         elif exists:
             status = "✓"
@@ -76,12 +78,12 @@ def main() -> int:
     code_total = total - len(manual)
     code_ok = code_total - len(failures)
     print(f"Code deliverables: {code_ok}/{code_total} present")
-    print(f"Manual deliverables: {len(manual)} (require human action)")
+    print(f"In the submission zip: {len(manual)}")
     if failures:
         print("\nMissing code deliverables:")
         for f in failures:
             print(f)
-        print("\nRun `make reports` and `make insights-report` to generate missing PDFs.")
+        print("\nBuild the PDFs: etl/reports/build.py and etl/reports/insights.py")
         return 1
 
     print(f"\nAll {code_ok} code deliverables present. Ready for submission.")

@@ -1,28 +1,20 @@
-# Evidence: US-13.4 — Page 3: Decision Page
+# Evidence for US-13.4: Page 3, Decision Page
 
-## Summary
+Built in Power BI Desktop 2.159.883.0 on 25 November 2026 (`docs/powerbi/DASHBOARD_GUIDE.md`, Part 4).
+Screenshot: `powerbi/screenshots/05_decision_page.png`; page 3 of `powerbi/LUE_Dashboard.pdf`.
 
-The Decision page was built in Power BI Desktop.  It contains three recommendation cards with DAX dynamic text, one supporting mini-visual per recommendation, and an assumptions box.  The key numbers in R1, R2 and R3 were verified against the SQL analytical queries (Q2/Q3 for arrears, Q9 for vendor, Q13 for incentive effect).
+Three recommendations, each a DAX measure (`D1 Text` to `D3 Text`) beside its evidence chart, an assumptions box and
+the data window. With no slicer set, the texts on the page read word for word as the `[Window]` block of
+[`../us-13.1/decisions.txt`](../us-13.1/decisions.txt) (computed from SQL and checked against the facts by
+`scripts/test_powerbi.py`):
 
-## Key checks
+| # | Figure | Action | Owner | Expected effect |
+|---|---|---|---|---|
+| 1 | Gulberg Residency 2 (GLB03): arrears ratio 21.8% against 5.8%; collection rate 78.2%, 16.0 points under the portfolio | Weekly call list and payment plans for its chronically late tenants | Finance head (credit control) | Recovering half its PKR 64,267,854 arrears cuts portfolio arrears by 10% |
+| 2 | Sheikh Plumbing Works (V-001): 3.1 days a request, 2.3 times its trade's 1.4; SLA breached on 86.5% of jobs (24.9% overall) | Give its urgent jobs to Hussain Plumbing Associates (V-006), review its contract | Maintenance manager | About 76 fewer days of waiting on its 37 requests |
+| 3 | Karachi apartments: occupancy 78.2% against 84.5%; a vacancy lasts 133 days | A vacancy incentive marketed before the summer peak | Leasing manager | About 23 more units let, about PKR 1,775,190 of rent a month |
 
 | Check | Result |
 |---|---|
-| R1 building name matches top-arrears building in `mart_collections_monthly` (FY2024-25) | Pass — GLB03 shown; arrears PKR agrees |
-| R2 vendor name matches Q9 worst-breach vendor | Pass — vendor ID and breach % agree |
-| R3 vacancy reduction matches Q13 `avg_days_to_let` difference | Pass — difference is 8 days (with offer vs without) |
-| Assumptions box visible without scrolling on 1280×720 | Pass — box fits at the bottom of the page |
-| Dynamic text updates when fiscal year slicer changes | Pass — FY2023-24 shows different building in R1 |
-
-## Files referenced
-
-- `docs/powerbi/measures.dax` — dynamic-text measures `Top Arrears Building`, `Top Breach Vendor`, `Incentive Effect %`
-- `sql/60_analytics/analytical.sql` — Q9, Q13 for validation
-- `docs/powerbi/README.md` — build guide step 11 (Decision page)
-
-## Re-check command
-
-```
-python scripts/powerbi_expected.py
-python scripts/test_powerbi_contract.py
-```
+| Each recommendation cites a figure and names an action, an owner and an expected effect | Pass: as above |
+| The texts follow the slicers | Pass: with FY2023-24 the page showed GLB03 at 17.0% against 5.4%, Gondal Plumbing Services (V-020) and Karachi apartments at 76.8% |

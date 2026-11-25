@@ -2,7 +2,7 @@ US-8.4 Full-volume run and baseline timings (full profile, seed 3004). One comma
 make rebuild PROFILE=full (python scripts/db_reset.py, then python etl/run_pipeline.py --profile full --seed 3004).
 Machine: the project's Linux build container (PostgreSQL 16); a laptop is in the same range.
 
-/tmp/claude-0/-home-claude/db8f5b8c-4ce8-5c3b-9375-b7df4d39a1d1/scratchpad/ci311/bin/python scripts/db_reset.py
+python scripts/db_reset.py
 ======================================================================
  LUE Warehouse - reset lue_warehouse (the source database is not touched)
 ======================================================================
@@ -36,7 +36,7 @@ Audit tables
 ======================================================================
  RESULT: RESET COMPLETE. The warehouse is rebuilt and the smoke test passed.
 ======================================================================
-/tmp/claude-0/-home-claude/db8f5b8c-4ce8-5c3b-9375-b7df4d39a1d1/scratchpad/ci311/bin/python etl/run_pipeline.py --profile full --seed 3004
+python etl/run_pipeline.py --profile full --seed 3004
 ========================================================================================================
  Pipeline run 1: generate, setup, deploy, reference, source, ingest, validate, transform, dimensions, facts, reconcile
 ========================================================================================================

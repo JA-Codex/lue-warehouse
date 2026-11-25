@@ -1,23 +1,14 @@
-# Evidence: US-14.2 — Business Insights Report
+# Evidence for US-14.2: the Business Insights Report
 
-## Summary
-
-`insights_report()` was added to `etl/reports/build.py` and the `main()` loop updated.  The function generates `docs/reports/LUE_Business_Insights_Report.pdf` with five sections (one per insight) and a summary table.  The report runs offline (no database connection) with `--insights --data data`, using the same `build()` / `p()` / `table()` helpers as the other two reports.
-
-## Key checks
+| File | What it is |
+|---|---|
+| `LUE_Business_Insights_Report.pdf` (in the Phase 3 submission zip; rebuild with `python etl/reports/insights.py`) | The report: a summary with the four findings and decisions, one section per insight (finding, evidence, decision and expected effect, caveat), the dashboard pages and notes on the data |
+| [`../../../etl/reports/insights.py`](../../../etl/reports/insights.py) | Builds the PDF; before drawing, looks up each of its figures in `docs/analytics.md`, `docs/evidence/us-13.1/01_expected_values.txt` or `decisions.txt` and stops if one is missing |
+| [`../../reports/figures/`](../../reports/figures/) | The charts (`make_figures.py`, matplotlib) and the architecture diagram used by the report and the presentation |
 
 | Check | Result |
 |---|---|
-| `python etl/reports/build.py --insights --data data` exits 0 | Pass |
-| PDF written to `docs/reports/LUE_Business_Insights_Report.pdf` | Pass |
-| `make insights-report` exits 0 | Pass |
-| `python -m ruff check etl/reports/build.py` — 0 errors | Pass |
-| PDF has five insight sections with correct Q-number references | Pass (I1→Q2/Q3, I2→Q9, I3→Q6/Q8, I4→Q13, I5→Q11/Q14) |
-
-## Re-check command
-
-```
-python etl/reports/build.py --insights --data data
-make insights-report
-python -m ruff check etl/reports/build.py
-```
+| Each insight has evidence, a decision and a caveat | Pass: sections 1 to 4 |
+| The figures match the dashboard and SQL | Pass: every figure is in the SQL answers or the Decision Page texts, which match Power BI 176 of 176 (`../us-13.5/`) |
+| The data is stated to be synthetic | Pass: in the summary and in section 6 |
+| Recommendations tie to the Decision Page | Pass: insights 1 to 3 are D1 to D3 |

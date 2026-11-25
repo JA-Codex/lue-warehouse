@@ -1,25 +1,8 @@
-# Evidence: US-14.3 — Presentation and Demo
+# Evidence for US-14.3: the final presentation and demo
 
-## Summary
-
-The slide outline, demo script and rehearsal notes were written and committed.  The presentation covers the full project arc in 13 slides; the demo script covers five live actions; the rehearsal notes assign speakers and document the backup plan.
-
-## Key checks
-
-| Check | Result |
+| File | What it is |
 |---|---|
-| Slide outline: 13 slides, all required topics present | Pass |
-| Demo script: five steps (`make rebuild`, quarantine, SCD2, benchmark, dashboard) | Pass |
-| Rehearsal notes: 20-minute breakdown, speaker assignments, backup plan | Pass |
-
-## Files
-
-- `docs/evidence/us-14.3/01_presentation_outline.md`
-- `docs/evidence/us-14.3/02_demo_script.md`
-- `docs/evidence/us-14.3/03_rehearsal_notes.md`
-
-## Re-check command
-
-```
-cat docs/evidence/us-14.3/01_presentation_outline.md
-```
+| `LUE_Final_Presentation.pptx` (in the Phase 3 submission zip) | 21 slides built on the Slidesgo "Real Estate Infographics" template |
+| [`01_presentation_outline.md`](01_presentation_outline.md) | Slide by slide: the message and where its figures come from |
+| [`02_demo_script.md`](02_demo_script.md) | The live demo, step by step, with the commands |
+| [`03_rehearsal_notes.md`](03_rehearsal_notes.md) | Timing per slide, the fallback plan and answers to the likely questions |

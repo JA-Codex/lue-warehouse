@@ -139,7 +139,7 @@ db-smoke: ## Count the warehouse objects (US-1.5)
 	$(PYTHON) scripts/test_smoke.py
 
 insights-report: ## Build the Business Insights Report PDF (offline, no DB needed) (US-14.2)
-	$(PYTHON) etl/reports/build.py --insights
+	$(PYTHON) etl/reports/insights.py
 
 consistency-check: ## Offline documentation consistency audit: story log, table names, Makefile targets (US-15.2)
 	$(PYTHON) scripts/check_docs_consistency.py

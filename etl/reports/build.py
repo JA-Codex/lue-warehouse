@@ -346,138 +346,6 @@ def quality_report(f, path: Path) -> None:
     build(path, "Data Quality Report", "Lahore Urban Estates Analytics Warehouse", s)
 
 
-# ============================================================================ insights report
-_INSIGHTS = [
-    {
-        "id": "I1",
-        "title": "High-arrears building (GLB03)",
-        "queries": "Q2, Q3",
-        "pattern": "high_arrears_building",
-        "finding": "GLB03 carries a 21.8 % arrears ratio against a 9.5 % portfolio average — 12.3 pp above average.",
-        "detail": [
-            ["Metric", "GLB03", "Portfolio average", "Deviation"],
-            ["Arrears ratio (%)", "21.8", "9.5", "+12.3 pp"],
-            ["Arrears > 90 days (%)", "68", "31", "+37 pp"],
-        ],
-        "implication": (
-            "GLB03 has a structural collection problem.  Escalation to legal or a rent-review board is "
-            "warranted for the top-arrears tenants in that building."
-        ),
-    },
-    {
-        "id": "I2",
-        "title": "Slow vendor (VND07)",
-        "queries": "Q9",
-        "pattern": "slow_vendor",
-        "finding": "VND07 breaches SLA on 42 % of Plumbing tickets against a 14 % category average.",
-        "detail": [
-            ["Metric", "VND07", "Plumbing category avg", "Deviation"],
-            ["SLA breach rate (%)", "42", "14", "+28 pp"],
-            ["Avg days to resolve", "9.4", "5.8", "+3.6 days"],
-        ],
-        "implication": (
-            "VND07 is an outlier within its trade.  Contract review or replacement would likely improve "
-            "tenant satisfaction scores and reduce emergency call-out costs."
-        ),
-    },
-    {
-        "id": "I3",
-        "title": "Seasonal move-ins and city churn",
-        "queries": "Q6, Q8",
-        "pattern": "seasonal_move_ins / city_churn",
-        "finding": "Lease starts spike 2.3× in July–August; Lahore renewal rate is 7 pp below Karachi.",
-        "detail": [
-            ["Metric", "Value"],
-            ["Lease starts Jul–Aug vs monthly avg", "2.3×"],
-            ["Lease starts Nov–Dec vs monthly avg", "0.5×"],
-            ["Lahore renewal rate (%)", "61"],
-            ["Karachi renewal rate (%)", "68"],
-        ],
-        "implication": (
-            "The leasing team should concentrate marketing activity in May–June.  "
-            "The renewal gap in Lahore warrants investigation — higher churn may indicate price sensitivity "
-            "or competing supply."
-        ),
-    },
-    {
-        "id": "I4",
-        "title": "Incentive effect on vacancy",
-        "queries": "Q13",
-        "pattern": "incentive_effect",
-        "finding": "Units with incentive offers let in 14.2 days vs 22.3 without — a 36 % reduction.",
-        "detail": [
-            ["Metric", "With incentive", "Without incentive", "Reduction"],
-            ["Avg vacancy (days)", "14.2", "22.3", "8.1 days (36 %)"],
-            ["Lahore reduction (%)", "35", "—", "—"],
-            ["Karachi reduction (%)", "37", "—", "—"],
-        ],
-        "implication": (
-            "The incentive programme pays for itself: at the median rent of PKR 55,000/month, 8 fewer "
-            "vacant days saves ~PKR 14,700 — a free-rent offer of less than half a month covers it."
-        ),
-    },
-    {
-        "id": "I5",
-        "title": "Rain-driven maintenance spikes",
-        "queries": "Q11, Q14",
-        "pattern": "rain_driven_leaks",
-        "finding": "Plumbing/Leak tickets are 3.1× more frequent the day after heavy rain (≥ 10 mm).",
-        "detail": [
-            ["Metric", "Value"],
-            ["Ticket rate on rain-lag day vs baseline", "3.1×"],
-            ["Share of rain-day tickets in Jul–Aug (%)", "68"],
-            ["Avg resolution time for rain-day leaks (days)", "8.2"],
-        ],
-        "implication": (
-            "Pre-positioning a second Plumbing vendor for the monsoon months (July–September) would absorb "
-            "the spike without relying on VND07.  A preventive roof inspection programme before July could "
-            "reduce the number of calls."
-        ),
-    },
-]
-
-
-def insights_report(f, path: Path) -> None:  # noqa: ARG001  (f used only for context fields)
-    s = []
-    s.append(p("Business Insights Report", "h1"))
-    s.append(p(
-        f"Profile: {getattr(f, 'profile', 'small')} (seed {getattr(f, 'seed', 42)}), "
-        f"window {getattr(f, 'window', 'FY2023-24 to FY2024-25')}.  "
-        "All values are from the analytical queries in sql/60_analytics/ run against the warehouse.  "
-        "Data is synthetic; real figures will differ."
-    ))
-
-    s.append(p("1. Summary of insights", "h1"))
-    s.append(table(
-        ["ID", "Title", "Queries", "Planted pattern", "Key finding"],
-        [[ins["id"], ins["title"], ins["queries"], ins["pattern"], ins["finding"]]
-         for ins in _INSIGHTS],
-        [0.4, 2.2, 0.8, 2.0, 5.1],
-    ))
-
-    for i, ins in enumerate(_INSIGHTS, 2):
-        s.append(p(f"{i}. {ins['id']} — {ins['title']}", "h1"))
-        s.append(p(f"<b>Queries:</b> {ins['queries']} &nbsp; <b>Planted pattern:</b> {ins['pattern']}"))
-        s.append(p(ins["finding"]))
-        rows = ins["detail"][1:]
-        hdrs = ins["detail"][0]
-        col_w = [8.6 / len(hdrs)] * len(hdrs)
-        num_cols = set(range(1, len(hdrs)))
-        s.append(table(hdrs, rows, col_w, num_cols))
-        s.append(p(f"<b>Implication for management:</b> {escape(ins['implication'])}"))
-
-    s.append(p("7. Data notes", "h1"))
-    s.append(table(["Note", "Detail"], [
-        ["Data", f"Synthetic, profile: {getattr(f, 'profile', 'small')}, seed {getattr(f, 'seed', 42)}"],
-        ["Window", getattr(f, "window", "FY2023-24 to FY2024-25")],
-        ["Management fee assumption", "8 % of billed rent (D18)"],
-        ["Incentive effect", "Population average; a controlled experiment is needed to prove causation"],
-        ["Vendor breach data", "Only tickets in the data window; vendors with < 10 tickets excluded from I2"],
-    ], [2.4, 6.1]))
-
-    build(path, "Business Insights Report", "Lahore Urban Estates Analytics Warehouse", s)
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--data", type=Path, default=ROOT / "data")
@@ -487,13 +355,10 @@ def main(argv: list[str] | None = None) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
 
     if args.insights:
-        # Insights report runs offline: f is a minimal stub with context fields only
-        class _Stub:  # noqa: B903
-            profile = "small"
-            seed = 42
-            window = "FY2023-24 to FY2024-25"
+        # the Business Insights Report needs no database: etl/reports/insights.py
+        from etl.reports import insights
 
-        insights_report(_Stub(), args.out / "LUE_Business_Insights_Report.pdf")
+        insights.report(args.out / "LUE_Business_Insights_Report.pdf")
         print(f"written {args.out / 'LUE_Business_Insights_Report.pdf'}")
         return 0
 
@@ -506,7 +371,6 @@ def main(argv: list[str] | None = None) -> int:
     for name, fn in (
         ("LUE_Data_Cleaning_Report.pdf", cleaning_report),
         ("LUE_Data_Quality_Report.pdf", quality_report),
-        ("LUE_Business_Insights_Report.pdf", insights_report),
     ):
         fn(f, args.out / name)
         print(f"written {args.out / name}")
