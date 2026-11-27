@@ -1,6 +1,6 @@
 PYTHON ?= python
 .DEFAULT_GOAL := help
-.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset insights-report consistency-check package
+.PHONY: help setup rebuild pipeline test lint sqlcheck manifest contract gen-test generate patterns weather weather-check ingest validate reports load-sql marts reporting-test analytics analytics-test benchmark benchmark-test indexing-report powerbi-expected powerbi-test db-setup db-deploy db-load-ref db-load-source db-smoke db-test ingest-test quality-test db-reset insights-report consistency-check package frontend frontend-live frontend-data frontend-test portal-sql
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -146,3 +146,18 @@ consistency-check: ## Offline documentation consistency audit: story log, table 
 
 package: ## Verify all submission deliverables are present and print the manifest (US-15.3)
 	$(PYTHON) scripts/package_submission.py
+
+frontend-live: ## Serve the owner portal reading the warehouse live as lue_reader at http://127.0.0.1:8080; needs make db-deploy first
+	$(PYTHON) frontend/serve.py --live $(if $(PORT),--port $(PORT),)
+
+portal-sql: ## Regenerate sql/50_reporting/02_owner_portal.sql from sql/60_analytics/analytical.sql (CI fails while they differ)
+	$(PYTHON) scripts/export_portal_sql.py
+
+frontend-data: ## Rebuild frontend/data.js from the recorded warehouse outputs and data/ (owner portal); needs data/ from make generate
+	$(PYTHON) frontend/build_data.py
+
+frontend: ## Serve the owner portal at http://127.0.0.1:8080 (no database needed): make frontend [PORT=9000]
+	$(PYTHON) frontend/serve.py $(if $(PORT),--port $(PORT),)
+
+frontend-test: ## Owner portal data checks against the recorded dashboard values; no database
+	$(PYTHON) scripts/test_frontend.py
