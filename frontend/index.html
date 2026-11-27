@@ -1,0 +1,375 @@
+<meta charset="utf-8">
+<title>LUE Owner Portal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap">
+<style>
+/* Layout: fixed left nav + sticky owner bar; pages are stacks of KPI tiles, charts and one table. Reference: Stitch "PropTech Asset Intelligence". */
+:root{
+  --bg:#f8f9ff; --surface:#ffffff; --surface-2:#eff4ff; --line:#d9e3f7;
+  --fg:#0b1c30; --muted:#505a70; --faint:#737686;
+  --accent:#004ac6; --accent-2:#2563eb; --accent-soft:#dbe1ff;
+  --good:#006242; --good-soft:#d9f5e8; --warn:#8a5a00; --warn-soft:#fff0cf; --bad:#ba1a1a; --bad-soft:#ffdad6;
+  --series-2:#0e8f6b; --grid:#e3ebfa;
+  --display:'Plus Jakarta Sans',system-ui,sans-serif; --text:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a1322; --surface:#111c30; --surface-2:#16233b; --line:#25344f;
+  --fg:#e6eefc; --muted:#a6b3cc; --faint:#8493b0;
+  --accent:#7ea2ff; --accent-2:#5d8bff; --accent-soft:#1b2d57;
+  --good:#5fe0a9; --good-soft:#0f3a2b; --warn:#f2c35d; --warn-soft:#3b2c0a; --bad:#ff8f86; --bad-soft:#4a1a18;
+  --series-2:#4bd0a5; --grid:#1d2b45; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1322; --surface:#111c30; --surface-2:#16233b; --line:#25344f;
+  --fg:#e6eefc; --muted:#a6b3cc; --faint:#8493b0;
+  --accent:#7ea2ff; --accent-2:#5d8bff; --accent-soft:#1b2d57;
+  --good:#5fe0a9; --good-soft:#0f3a2b; --warn:#f2c35d; --warn-soft:#3b2c0a; --bad:#ff8f86; --bad-soft:#4a1a18;
+  --series-2:#4bd0a5; --grid:#1d2b45; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--text);font-variant-numeric:tabular-nums}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+nav{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{font:700 17px var(--display);letter-spacing:-.01em;padding:0 10px 14px}
+.brand small{display:block;font:500 11px var(--text);color:var(--faint);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+nav a{display:block;padding:9px 12px;border-radius:6px;color:var(--muted);text-decoration:none;font-weight:500}
+nav a:hover{background:var(--surface-2);color:var(--fg)}
+nav a[aria-current="page"]{background:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) nav a[aria-current="page"]{color:#06122b}}
+:root[data-theme="dark"] nav a[aria-current="page"]{color:#06122b}
+nav a:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+.navnote{margin-top:auto;padding:10px;font-size:11px;color:var(--faint);line-height:1.5}
+main{min-width:0;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));padding-block:0 40px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:22px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.who{display:flex;flex-direction:column;min-width:0}
+.who label{font:600 11px var(--text);letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+select{font:600 15px var(--display);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px;max-width:100%}
+.meta{margin-left:auto;font-size:12px;color:var(--faint);text-align:right}
+h1{font:700 26px/1.2 var(--display);letter-spacing:-.02em;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 20px;max-width:70ch}
+h2{font:600 16px var(--display);margin:0 0 2px;letter-spacing:-.01em}
+.cap{color:var(--muted);font-size:12px;margin:0 0 12px}
+.grid{display:grid;gap:16px;margin-bottom:16px}
+.k4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.c2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.c3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.kpi .l{font:600 11px var(--text);letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.kpi .v{font:700 28px/1.15 var(--display);letter-spacing:-.02em;margin:6px 0 4px}
+.kpi .n{font-size:12px;color:var(--muted)}
+.pill{display:inline-block;font:600 11px var(--text);padding:2px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap}
+.p-good{background:var(--good-soft);color:var(--good)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--accent-soft);color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font:600 11px var(--text);letter-spacing:.04em;text-transform:uppercase;color:var(--faint);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right}
+tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.bad{color:var(--bad);font-weight:600} .ok{color:var(--good);font-weight:600}
+.sm{font-size:12px;color:var(--muted)}
+/* horizontal bars */
+.hb{display:grid;gap:9px}
+.hb .r{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) 80px;gap:10px;align-items:center;font-size:13px}
+.hb .t{position:relative;height:14px;background:var(--surface-2);border-radius:3px}
+.hb .f{position:absolute;inset:0 auto 0 0;background:var(--accent-2);border-radius:3px}
+.hb .f.hot{background:var(--bad)} .hb .f.alt{background:var(--series-2)}
+.hb .m{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--fg);opacity:.75}
+.hb .lab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .val{text-align:right;font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.cols{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px}
+.cols div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;font-size:10px;color:var(--faint)}
+.cols b{display:block;width:100%;background:var(--accent-2);border-radius:3px 3px 0 0}
+.cols .pk b{background:var(--series-2)}
+svg text{fill:var(--faint);font:11px var(--text)}
+.rec{border-left:4px solid var(--accent-2)}
+.rec.high{border-left-color:var(--bad)} .rec.med{border-left-color:var(--warn)}
+.rec h3{font:600 15px var(--display);margin:6px 0 6px}
+.rec p{margin:0 0 8px;max-width:78ch}
+.tag{font:600 10px var(--text);letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.btn{font:600 12px var(--text);padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--accent-2)}
+.note{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:16px}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  nav{position:static;height:auto;flex-direction:row;overflow-x:auto;padding:8px max(12px,env(safe-area-inset-left,0px));gap:2px;border-right:0;border-bottom:1px solid var(--line)}
+  .brand,.navnote{display:none} nav a{white-space:nowrap}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .meta{margin-left:0;text-align:left}
+  .c2{grid-template-columns:minmax(0,1fr)}
+  .hb .r{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 72px}
+}
+@media (prefers-reduced-motion:no-preference){.f,.cols b{transition:width .3s,height .3s}}
+</style>
+
+<div class="app">
+  <nav aria-label="Sections">
+    <div class="brand">Lahore Urban Estates<small>Owner portal</small></div>
+    <a href="#portfolio" data-p="portfolio">My Portfolio</a>
+    <a href="#collections" data-p="collections">Collections &amp; Arrears</a>
+    <a href="#leasing" data-p="leasing">Occupancy &amp; Leasing</a>
+    <a href="#maintenance" data-p="maintenance">Maintenance</a>
+    <a href="#actions" data-p="actions">Recommended Actions</a>
+    <div class="navnote" id="navnote">Source: lue_warehouse, full profile (seed 3004), 1 Jul 2023 to 30 Jun 2026. Synthetic data. All amounts in PKR.</div>
+  </nav>
+  <main>
+    <div class="bar">
+      <div class="who"><label for="owner">Viewing as owner</label><select id="owner"></select></div>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+<script src="data.js"></script>
+<script>
+(function(){
+let D = window.LUE;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = (x, d=1) => (x*100).toFixed(d) + '%';
+function pkr(n){const a=Math.abs(n),s=n<0?'-':'';
+  if(a>=1e9)return s+'PKR '+(a/1e9).toFixed(2)+'bn'; if(a>=1e6)return s+'PKR '+(a/1e6).toFixed(a>=1e8?0:2)+'M';
+  if(a>=1e3)return s+'PKR '+(a/1e3).toFixed(0)+'K'; return s+'PKR '+Math.round(a);}
+const full = n => 'PKR ' + Math.round(n).toLocaleString('en-US');
+const MR = k => { const v=(D.measures[k]||[])[1]; return v===undefined||v===''?NaN:parseFloat(v); };   // raw Window value
+const Mn = MR;
+const M = k => { const f=(D.measures[k]||[])[0], v=MR(k); if(isNaN(v)) return 'n/a';
+  return f==='percent'?pct(v): f==='PKR'?pkr(v): f==='decimal'?v.toFixed(1): Math.round(v).toLocaleString('en-US'); };
+let P, B, cash, owner, live=false, liveAt=null, liveErr=null;
+function setData(d){
+  D=d; B=D.buildings;
+  P={collection:Mn('Collection Rate'), arrearsRatio:Mn('Arrears Ratio'), occupancy:Mn('Occupancy %'),
+     sla:Mn('SLA Breach %'), days:Mn('Avg Days to Resolve'), costUM:Mn('Maintenance Cost per Unit-Month'),
+     vac:Mn('Avg Vacancy Days'), late:Mn('Late Payment Share')};
+  const tot=Object.values(B).reduce((a,b)=>({e:a.e+(b.leases_expired||0),r:a.r+(b.renewed||0)}),{e:0,r:0});
+  P.renewal=tot.e?tot.r/tot.e:0;
+  cash=D.cash_by_month.map(r=>({x:r.year_month,y:r.cash_received,rate:r.collection_rate_cohort}));
+  let f=owner&&D.owners.find(o=>o.code===owner.code);
+  if(!f){try{f=D.owners.find(o=>o.code===localStorage.getItem('lue-owner'))}catch(e){}}
+  owner=f||D.owners[0];
+}
+
+function flags(b){
+  const f=[];
+  if(b.arrears_ratio>=2*P.arrearsRatio) f.push({k:'arrears',sev:2,t:`Arrears ratio ${pct(b.arrears_ratio)} against ${pct(P.arrearsRatio)} for the portfolio`});
+  else if(b.arrears_ratio>=1.5*P.arrearsRatio) f.push({k:'arrears',sev:1,t:`Arrears ratio ${pct(b.arrears_ratio)} against ${pct(P.arrearsRatio)} for the portfolio`});
+  if(b.renewal_rate<0.2) f.push({k:'renewal',sev:1,t:`Only ${pct(b.renewal_rate,0)} of expiring leases renewed (portfolio ${pct(P.renewal,0)})`});
+  if(b.sla_rate>=P.sla+0.05) f.push({k:'sla',sev:1,t:`Maintenance SLA missed on ${pct(b.sla_rate,0)} of requests (portfolio ${pct(P.sla,0)})`});
+  if(b.cost_per_unit_month>=1.5*P.costUM) f.push({k:'cost',sev:1,t:`Maintenance costs ${full(b.cost_per_unit_month)} per unit a month (portfolio ${full(P.costUM)})`});
+  return f;
+}
+const status = f => { const s=f.reduce((a,x)=>a+x.sev,0); return s>=3||f.some(x=>x.sev===2)?['Critical','p-bad']: s>=1?['Attention','p-warn']:['Healthy','p-good']; };
+const myBuildings = () => owner.buildings.map(x=>({...B[x.code],held:x}))
+  .map(b=>({...b,flags:flags(b)})).sort((a,b)=>b.flags.reduce((s,x)=>s+x.sev,0)-a.flags.reduce((s,x)=>s+x.sev,0));
+const heldText = h => ['Apartment','Office','Shop'].filter(t=>h[t]).map(t=>h[t]+' '+t.toLowerCase()+(h[t]>1?'s':'')).join(', ');
+
+/* ---------- small chart helpers ---------- */
+function line(pts, {fmt=v=>v, color='var(--accent-2)', min, max, ticks=4}={}){
+  const W=640,H=210,l=56,r=18,t=14,b=26;
+  const ys=pts.map(p=>p.y); let lo=min!=null?min:Math.min(...ys), hi=max!=null?max:Math.max(...ys);
+  const pad=(hi-lo)*0.08||1; if(min==null) lo-=pad; if(max==null) hi+=pad;
+  const X=i=>l+i*(W-l-r)/(pts.length-1), Y=v=>t+(1-(v-lo)/(hi-lo))*(H-t-b);
+  let g=''; for(let i=0;i<=ticks;i++){const v=lo+(hi-lo)*i/ticks,y=Y(v);
+    g+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="var(--grid)"/><text x="${l-8}" y="${y+4}" text-anchor="end">${esc(fmt(v))}</text>`;}
+  const path=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.y).toFixed(1)).join('');
+  const area=path+`L${X(pts.length-1)} ${H-b}L${X(0)} ${H-b}Z`;
+  let xl=''; pts.forEach((p,i)=>{ if(i%6===0||i===pts.length-1) xl+=`<text x="${X(i)}" y="${H-6}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}">${esc(p.x)}</text>`;});
+  const e=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Line chart">${g}<path d="${area}" fill="${color}" opacity=".12"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2.2"/><circle cx="${X(pts.length-1)}" cy="${Y(e.y)}" r="4" fill="${color}"/>${xl}</svg>`;
+}
+function hbars(rows,{ref,refLabel,fmt=v=>v,max}={}){
+  const mx=max||Math.max(...rows.map(r=>r.v),ref||0)*1.08||1;
+  return `<div class="hb">${rows.map(r=>`<div class="r"><div class="lab" title="${esc(r.label)}">${esc(r.label)}</div><div class="t"><div class="f ${r.cls||''}" style="width:${Math.max(1,r.v/mx*100)}%"></div>${ref!=null?`<div class="m" style="left:${ref/mx*100}%"></div>`:''}</div><div class="val">${esc(fmt(r.v))}</div></div>`).join('')}</div>`
+  + (ref!=null?`<div class="legend"><span><i style="background:var(--fg);opacity:.75;width:2px;height:12px"></i>${esc(refLabel)}</span></div>`:'');
+}
+const kpi=(l,v,n)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+
+/* ---------- pages ---------- */
+const pages = {
+portfolio(){
+  const o=owner, bs=myBuildings(), margin=o.margin, maintPct=o.rent?o.maint/o.rent:0;
+  const avgM=D.owners.reduce((a,x)=>a+(x.rent?x.maint/x.rent:0),0)/D.owners.length;
+  const flagged=bs.filter(b=>b.flags.length);
+  const tot=o.rent;
+  const seg=(v,c,l)=>`<div style="flex:${tot?v/tot:1};background:${c};min-width:2px" title="${l}: ${full(v)}"></div>`;
+  return `<h1>${esc(o.name)}</h1>
+  <p class="sub">${o.type} owner ${o.code}, with ${o.units} unit${o.units>1?'s':''} in ${o.buildings.length} building${o.buildings.length>1?'s':''}. Income for 1 Jul 2023 to 30 Jun 2026.</p>
+  <div class="grid k4">
+    ${kpi('Net operating income',pkr(o.noi),`Rank ${o.rank} of ${D.total_owners} owners`)}
+    ${kpi('NOI margin',pct(margin),'Share of rent you keep after costs and fee')}
+    ${kpi('Rent collected',pkr(o.rent),'Rent charges only, as paid')}
+    ${kpi('Maintenance cost',pkr(o.maint),`${pct(maintPct)} of rent (average for the ${D.owners.length} owners listed ${pct(avgM)})`)}
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Where your rent goes</h2><p class="cap">Rent collected, split into what you keep and what it cost</p>
+      <div style="display:flex;height:26px;border-radius:4px;overflow:hidden;gap:2px">${seg(o.noi,'var(--accent-2)','NOI')}${seg(o.fee,'var(--warn)','Management fee')}${seg(o.maint,'var(--bad)','Maintenance')}</div>
+      <table style="margin-top:12px"><tbody>
+        <tr><td><span class="legend" style="margin:0"><i style="background:var(--accent-2)"></i>Net operating income</span></td><td class="n">${full(o.noi)}</td></tr>
+        <tr><td><span class="legend" style="margin:0"><i style="background:var(--warn)"></i>LUE management fee (8% of rent)</span></td><td class="n">${full(o.fee)}</td></tr>
+        <tr><td><span class="legend" style="margin:0"><i style="background:var(--bad)"></i>Maintenance</span></td><td class="n">${full(o.maint)}</td></tr>
+        <tr><td><b>Rent collected</b></td><td class="n"><b>${full(o.rent)}</b></td></tr></tbody></table>
+      <p class="sm" style="margin:10px 0 0">The 8% fee is an assumption recorded in the warehouse; the project brief gives no rate.</p></section>
+    <section class="card"><h2>What you own</h2><p class="cap">Units held on 30 Jun 2026</p>
+      ${hbars(Object.entries(o.unit_mix).map(([k,v])=>({label:k+'s',v})),{fmt:v=>v+' unit'+(v>1?'s':'')})}
+      <p class="sm" style="margin:12px 0 0">${o.buildings.length} building${o.buildings.length>1?'s':''} in ${[...new Set(o.buildings.map(x=>B[x.code].city))].join(', ')}.</p></section>
+  </div>
+  ${o.series?`<section class="card" style="margin-bottom:16px"><h2>Your NOI by month</h2><p class="cap">Rent collected less maintenance and the management fee, PKR</p>${line(o.series.m.map((m,i)=>({x:m,y:o.series.noi[i]})),{fmt:v=>pkr(v).replace('PKR ','')})}</section>`:''}
+  <section class="card" style="margin-bottom:16px"><h2>Your buildings</h2>
+    <p class="cap">${flagged.length?`${flagged.length} of ${bs.length} need attention. Portfolio figures are for the whole building, not only your units.`:'None of your buildings is flagged. Figures are for the whole building, not only your units.'}</p>
+    <div class="scroll"><table><thead><tr><th>Building</th><th>Your units</th><th class="n">Arrears ratio</th><th class="n">Lease renewals</th><th class="n">SLA missed</th><th>Status</th></tr></thead><tbody>
+    ${bs.map(b=>{const [s,c]=status(b.flags);return `<tr><td><b>${esc(b.name)}</b><div class="sm">${esc(b.locality)}, ${esc(b.city)}</div></td><td>${esc(heldText(b.held))}</td>
+      <td class="n ${b.arrears_ratio>=1.5*P.arrearsRatio?'bad':''}">${pct(b.arrears_ratio)}</td><td class="n ${b.renewal_rate<.2?'bad':''}">${pct(b.renewal_rate,0)}</td><td class="n ${b.sla_rate>=P.sla+.05?'bad':''}">${pct(b.sla_rate,0)}</td>
+      <td><span class="pill ${c}">${s}</span></td></tr>`}).join('')}</tbody></table></div>
+    <p class="sm" style="margin:10px 0 0">Portfolio: arrears ${pct(P.arrearsRatio)}, renewals ${pct(P.renewal,0)}, SLA missed ${pct(P.sla,0)}.</p></section>
+  <section class="card"><h2>Portfolio cash received by month</h2><p class="cap">All LUE buildings, PKR. For context against your own income.</p>${line(cash,{fmt:v=>pkr(v).replace('PKR ','')})}</section>`;
+},
+
+collections(){
+  const bs=myBuildings();
+  const rows=bs.map(b=>({label:b.name,v:b.arrears_ratio,cls:b.arrears_ratio>=1.5*P.arrearsRatio?'hot':''}));
+  const ag=D.ageing, agMax=Math.max(...ag.map(a=>a.overdue_balance));
+  return `<h1>Collections &amp; Arrears</h1>
+  <p class="sub">How reliably tenants pay in the buildings that hold your units. Collection rate counts payments against the invoices that fell due in a month, as of 30 Jun 2026.</p>
+  <div class="grid k4">
+    ${kpi('Collection rate',M('Collection Rate'),'Portfolio, paid against billed')}
+    ${kpi('Arrears',M('Arrears').replace('PKR ','PKR '),`${M('Arrears Ratio')} of all rent billed`)}
+    ${kpi('Late payments',M('Late Payment Share'),'Share of payments made late')}
+    ${kpi('Repeat late tenants',M('Chronically Late Tenants'),'Three or more late payments in 12 months')}
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Arrears ratio in your buildings</h2><p class="cap">Arrears as a share of rent billed, whole building</p>
+      ${hbars(rows,{ref:P.arrearsRatio,refLabel:'Portfolio '+pct(P.arrearsRatio),fmt:v=>pct(v)})}</section>
+    <section class="card"><h2>How old is the overdue rent?</h2><p class="cap">Overdue balance by days past due, whole portfolio</p>
+      ${hbars(ag.map(a=>({label:a.bucket+' days',v:a.overdue_balance,cls:a.bucket==='90+'?'hot':''})),{fmt:v=>pkr(v),max:agMax*1.05})}
+      <p class="sm" style="margin:12px 0 0">${pct(ag[3].share_of_overdue,0)} of overdue rent is more than 90 days old. The problem is old debt, not slow payment of new bills.</p></section>
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Cash received by month</h2><p class="cap">Portfolio, PKR</p>${line(cash,{fmt:v=>pkr(v).replace('PKR ','')})}</section>
+    <section class="card"><h2>Collection rate by month</h2><p class="cap">Recent months read lower because tenants have had less time to pay</p>${line(cash.map(c=>({x:c.x,y:c.rate*100})),{fmt:v=>v.toFixed(0)+'%',color:'var(--series-2)'})}</section>
+  </div>
+  <section class="card"><h2>Tenants who pay late most often</h2><p class="cap">Portfolio-wide, last 12 months. A late payment is more than 15 days after the due date.</p>
+    <div class="scroll"><table><thead><tr><th>Tenant</th><th>Type</th><th class="n">Late / payments</th><th class="n">Average days late</th></tr></thead><tbody>
+    ${D.late_payers.slice(0,8).map(t=>`<tr><td><b>${esc(t.tenant_name)}</b><div class="sm">${esc(t.tenant_code)}</div></td><td>${esc(t.tenant_type)}</td><td class="n">${t.late_payments} / ${t.payments}</td><td class="n">${t.avg_days_late_when_late.toFixed(0)}</td></tr>`).join('')}</tbody></table></div></section>`;
+},
+
+leasing(){
+  const bs=myBuildings(), vt=D.vacancy_by_type, inc=D.incentives, ms=D.move_in_season;
+  const mx=Math.max(...ms.map(m=>m.move_ins)), pk=Math.max(...ms.map(m=>m.index_vs_average_month));
+  const none=inc.find(i=>i.offer_group==='No offer'), any=inc.find(i=>i.offer_group==='Any offer');
+  const mine=Object.keys(owner.unit_mix);
+  return `<h1>Occupancy &amp; Leasing</h1>
+  <p class="sub">How full your buildings are, how long a vacant unit stays empty, and whether tenants stay when the lease ends.</p>
+  <div class="grid k4">
+    ${kpi('Occupancy',M('Occupancy %'),'Portfolio, share of unit-days let')}
+    ${kpi('Average vacancy',M('Avg Vacancy Days')+' days','Length of a completed vacancy')}
+    ${kpi('Lease renewals',pct(P.renewal,0),'Expired leases that were renewed')}
+    ${kpi('Active leases',M('Active Leases'),`across ${M('Units')} units`)}
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Renewal rate in your buildings</h2><p class="cap">Leases that reached expiry and were renewed</p>
+      ${hbars(bs.map(b=>({label:b.name,v:b.renewal_rate,cls:b.renewal_rate<.2?'hot':''})),{ref:P.renewal,refLabel:'Portfolio '+pct(P.renewal,0),fmt:v=>pct(v,0),max:.5})}
+      <p class="sm" style="margin:12px 0 0">Karachi buildings lose the most tenants at renewal.</p></section>
+    <section class="card"><h2>How long a vacancy lasts</h2><p class="cap">Average days of a completed vacancy, by unit type${mine.length?' (yours highlighted)':''}</p>
+      ${hbars(vt.map(v=>({label:v.unit_type,v:v.avg_vacancy_days,cls:mine.includes(v.unit_type)?'alt':''})),{fmt:v=>v.toFixed(0)+' d'})}
+      <p class="sm" style="margin:12px 0 0">Offices stay empty longest, apartments shortest.</p></section>
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Offers shorten vacancies</h2><p class="cap">Average days a unit stayed vacant</p>
+      ${hbars(inc.map(i=>({label:i.offer_group,v:i.avg_vacancy_days,cls:i.offer_group==='No offer'?'hot':'alt'})),{fmt:v=>v.toFixed(0)+' d'})}
+      <p class="sm" style="margin:12px 0 0">A unit with an offer was let in ${any.avg_vacancy_days.toFixed(0)} days against ${none.avg_vacancy_days.toFixed(0)} without one, ${pct(any.ratio_to_no_offer,0)} of the time.</p></section>
+    <section class="card"><h2>When tenants move in</h2><p class="cap">New leases by calendar month, whole portfolio</p>
+      <div class="cols">${ms.map(m=>`<div class="${m.index_vs_average_month===pk?'pk':''}"><b style="height:${m.move_ins/mx*100}%" title="${m.month_name}: ${m.move_ins}"></b>${m.month_name.slice(0,3)}</div>`).join('')}</div>
+      <p class="sm" style="margin:12px 0 0">Move-ins peak in the summer months. List vacant units before June.</p></section>
+  </div>`;
+},
+
+maintenance(){
+  const bs=myBuildings(), slow=[...D.vendors].sort((a,b)=>b.avg_days_to_resolve-a.avg_days_to_resolve).slice(0,6), trades=[...new Set(D.vendors.map(v=>v.category_name))].join(' and ');
+  return `<h1>Maintenance</h1>
+  <p class="sub">What repairs cost in your buildings and whether they are fixed on time.</p>
+  <div class="grid k4">
+    ${kpi('Cost per unit per month',M('Maintenance Cost per Unit-Month'),'Portfolio')}
+    ${kpi('Average time to fix',M('Avg Days to Resolve')+' days','Request raised to resolved')}
+    ${kpi('Missed SLA',M('SLA Breach %'),`${M('SLA Breaches')} of ${M('Resolved Requests')} requests`)}
+    ${kpi('Your maintenance bill',pkr(owner.maint),`${pct(owner.rent?owner.maint/owner.rent:0)} of your rent`)}
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Cost per unit per month</h2><p class="cap">Your buildings, whole building</p>
+      ${hbars(bs.map(b=>({label:b.name,v:b.cost_per_unit_month,cls:b.cost_per_unit_month>=1.5*P.costUM?'hot':''})),{ref:P.costUM,refLabel:'Portfolio '+full(P.costUM),fmt:v=>Math.round(v).toLocaleString('en-US')})}</section>
+    <section class="card"><h2>Requests that missed the SLA</h2><p class="cap">Share of resolved requests, your buildings</p>
+      ${hbars(bs.map(b=>({label:b.name,v:b.sla_rate,cls:b.sla_rate>=P.sla+.05?'hot':''})),{ref:P.sla,refLabel:'Portfolio '+pct(P.sla,0),fmt:v=>pct(v,0),max:.45})}</section>
+  </div>
+  <div class="grid c2">
+    <section class="card"><h2>Slowest vendors</h2><p class="cap">Average days to resolve. This extract covers the ${esc(trades)} trades only; the live version will cover all trades.</p>
+      <div class="scroll"><table><thead><tr><th>Trade</th><th>Vendor</th><th class="n">Days</th><th class="n">Jobs</th></tr></thead><tbody>
+      ${slow.map(v=>`<tr><td>${esc(v.category_name)}</td><td>${esc(v.vendor_name)}<div class="sm">${esc(v.vendor_code)}, rating ${esc(v.rating_when_raised)}</div></td><td class="n">${v.avg_days_to_resolve.toFixed(1)}</td><td class="n">${v.resolved_requests}</td></tr>`).join('')}</tbody></table></div></section>
+    <section class="card"><h2>Leaks follow the rain</h2><p class="cap">Leak and seepage requests per 1,000 unit-days</p>
+      ${hbars(D.rain.map((r,i)=>({label:i?'Other days':'Heavy rain or the day after',v:r.leak_requests_per_1000_unit_days,cls:i?'':'hot'})),{fmt:v=>v.toFixed(2)})}
+      <p class="sm" style="margin:12px 0 0">Heavy-rain days (10 mm or more) bring ${D.rain[0].ratio_to_other_days.toFixed(1)} times as many leak requests. Check roofs and drains before the monsoon.</p></section>
+  </div>`;
+},
+
+actions(){
+  const bs=myBuildings(), recs=[], dd=D.decisions['Window'];
+  bs.forEach(b=>b.flags.forEach(f=>{
+    const base={b,f,evidence:f.t};
+    if(f.k==='arrears') recs.push({...base,sev:f.sev,tag:'Collections',title:`Push collections at ${b.name}`,
+      body:`${f.t}. The building has ${full(b.arrears)} in open arrears. Ask the property manager for a weekly call list of late tenants and payment plans for balances older than 90 days.`,src:'Q2, lue_reporting'});
+    if(f.k==='renewal') recs.push({...base,sev:1,tag:'Retention',title:`Start renewals earlier at ${b.name}`,
+      body:`${f.t}. ${b.lost_at_renewal} leases were lost at renewal. Ask for renewal offers 90 days before expiry. Units with an offer are let in about 58 days instead of 134.`,src:'Q8, Q13'});
+    if(f.k==='sla') recs.push({...base,sev:1,tag:'Maintenance',title:`Ask for an SLA review at ${b.name}`,
+      body:`${f.t}. ${b.sla_breaches} of ${b.resolved} resolved requests missed their deadline. Ask which vendors are slowest and request a monthly SLA report.`,src:'Q10'});
+    if(f.k==='cost') recs.push({...base,sev:1,tag:'Cost',title:`Question maintenance spend at ${b.name}`,
+      body:`${f.t}: ${b.requests} requests cost ${full(b.maint_cost)}. Ask for a breakdown by trade and a second quote on jobs above PKR 50,000.`,src:'Q11'});
+  }));
+  recs.sort((a,b)=>b.sev-a.sev);
+  const card=r=>`<article class="card rec ${r.sev>1?'high':'med'}"><span class="tag">${r.tag} · ${r.sev>1?'High priority':'Worth acting on'} · ${r.src}</span><h3>${esc(r.title)}</h3><p>${esc(r.body)}</p><button class="btn" data-copy="${esc(r.title+'. '+r.body)}">Copy for your property manager</button></article>`;
+  return `<h1>Recommended Actions</h1>
+  <p class="sub">What to ask your property manager to do, based on the buildings that hold your units. Each item names the figure that triggered it.</p>
+  <div class="grid">${recs.length?recs.map(card).join(''):`<div class="card"><h3 style="margin:0 0 6px;font:600 15px var(--display)">Nothing to flag</h3><p style="margin:0">None of your buildings is above the warning levels for arrears, renewals, SLA misses or maintenance cost. Check again after the next monthly refresh.</p></div>`}</div>
+  <h2 style="margin:24px 0 8px">Portfolio-wide priorities</h2><p class="cap">Where the portfolio as a whole has the most to gain</p>
+  <div class="grid c3">${['D1','D2','D3'].map((k,i)=>{const t=(dd||{})[k]||'';const head=t.split('. ')[0];const rest=t.slice(head.length+2);
+    return `<article class="card"><span class="tag">${['Collections','Maintenance','Leasing'][i]}</span><h3 style="font:600 15px var(--display);margin:6px 0">${esc(head)}</h3><p class="sm" style="margin:0">${esc(rest)}</p></article>`}).join('')}</div>
+  <p class="note">Recommendations are rules applied to warehouse figures, not forecasts. The effects quoted in the portfolio priorities are simple estimates.</p>`;
+}};
+
+/* ---------- shell ---------- */
+function statusHtml(){
+  const w=`Data window ${D.window.from} to ${D.window.to}`;
+  if(live) return `<span class="pill ${liveErr?'p-warn':'p-good'}">${liveErr?'Live, last read failed':'Live'}</span> updated ${liveAt.toLocaleTimeString()}<br>${w}${liveErr?`<br>${esc(liveErr)}`:''}`;
+  return `<span class="pill p-info">Snapshot</span> recorded run<br>${w}`;
+}
+function render(){
+  const p=(location.hash||'#portfolio').slice(1); const page=pages[p]?p:'portfolio';
+  document.querySelectorAll('nav a').forEach(a=>{const on=a.dataset.p===page;a.setAttribute('aria-current',on?'page':'false');if(on&&a.scrollIntoView)a.scrollIntoView({block:'nearest',inline:'center'});});
+  $('#view').innerHTML=pages[page]();
+  $('#meta').innerHTML=statusHtml();
+  $('#navnote').textContent=live?'Live from lue_warehouse as the read-only lue_reader role. Refreshes every minute. Synthetic data. All amounts in PKR.':'Snapshot of the recorded full-profile run (seed 3004), 1 Jul 2023 to 30 Jun 2026. Synthetic data. All amounts in PKR.';
+}
+function fillOwners(){
+  $('#owner').innerHTML=D.owners.map(o=>`<option value="${esc(o.code)}">#${o.rank} ${esc(o.name)} · ${esc(o.code)}</option>`).join('');
+  $('#owner').value=owner.code;
+}
+$('#owner').addEventListener('change',e=>{owner=D.owners.find(o=>o.code===e.target.value)||owner;try{localStorage.setItem('lue-owner',owner.code)}catch(x){} render();});
+async function poll(){
+  if(location.protocol==='file:') return;  // opened as a file: snapshot only
+  try{
+    const r=await fetch('api/data',{cache:'no-store'});
+    if(!r.ok) throw new Error(r.status===404?'off':'HTTP '+r.status);
+    const d=await r.json(); if(!d.owners||!d.owners.length) throw new Error('empty');
+    const wasLive=live; live=true; liveErr=null; liveAt=new Date();
+    const y=window.scrollY; setData(d); if(!wasLive||$('#owner').options.length!==D.owners.length) fillOwners(); render(); window.scrollTo(0,y);
+  }catch(e){
+    if(live){liveErr='Showing the last read. '+(e.message||''); $('#meta').innerHTML=statusHtml();}
+    else return;  // no live endpoint: stay on the snapshot, do not poll
+  }
+  setTimeout(poll,60000);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-copy]'); if(!b) return;
+  const txt=b.dataset.copy; const done=()=>{b.textContent='Copied'; setTimeout(()=>b.textContent='Copy for your property manager',1500)};
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(done,()=>{b.textContent='Select and copy not available here'}); else b.textContent='Copy not available here';});
+window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
+setData(window.LUE); fillOwners(); render(); poll();
+})();
+</script>

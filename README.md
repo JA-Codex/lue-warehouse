@@ -26,6 +26,7 @@ Team: Junaid Minhas, Ahmad Waqar, Hanan Tiwana, Eesha Khurram.
 | Query optimisation (E12): a benchmark harness (`python scripts/benchmark.py`), indexing and partitioning experiments before and after with `EXPLAIN ANALYZE`, and the Indexing Report ([docs/reports/LUE_Indexing_Report.pdf](docs/reports/LUE_Indexing_Report.pdf)); the candidate indexes in `sql/70_performance/` stay out of the deploy (D20) | US-12.1 to US-12.3 (Done) |
 | Power BI (E13): the data model ([docs/powerbi/model.json](docs/powerbi/model.json)), 51 DAX measures, the theme and a step-by-step build guide ([docs/powerbi/README.md](docs/powerbi/README.md)); every measure's expected value computed from the marts and checked against the facts (`python scripts/powerbi_expected.py`, `scripts/test_powerbi.py`); the dashboard [powerbi/LUE_Dashboard.pbix](powerbi/LUE_Dashboard.pbix) (Executive Overview, Detailed Analysis, Decision Page), its export [powerbi/LUE_Dashboard.pdf](powerbi/LUE_Dashboard.pdf) and screenshots; 176 of 176 values match SQL | US-13.1 to US-13.5 (Done) |
 | Insights and presentation (E14): the insights, the Business Insights Report (built by `python etl/reports/insights.py`) and the final presentation; the report, the presentation and the dashboard screenshots PDF are submitted in the Phase 3 zip, not kept here | US-14.1 to US-14.3 (Done) |
+| Owner portal (extra, beyond the brief): a five-page web UI for a property owner (portfolio and NOI, collections and arrears, occupancy and leasing, maintenance, recommended actions) over the recorded warehouse results; `make frontend`; its numbers are checked against the dashboard's expected values (`make frontend-test`); guide in [frontend/README.md](frontend/README.md) | Done: snapshot mode tested here; live mode (reads lue_reporting as lue_reader) tested against an empty schema, not yet against your loaded warehouse |
 | Release (E15): clean-machine rebuild, documentation audit, the Appendix B checklist ([docs/evidence/us-15.3/](docs/evidence/us-15.3/)); tag `phase3-submission` | US-15.1 to US-15.3 (Done) |
 
 ## Run it from a fresh clone (Phase 2 submission, US-9.3)
@@ -102,6 +103,7 @@ etl/              run_pipeline.py, generate_data.py, ingest/, quality/, staging/
                   reconcile.py, reporting.py, reports/
 data/             generated source files (not committed) and data/weather_cache.json (committed)
 powerbi/          PBIX and screenshots
+frontend/         owner portal: index.html, serve.py, live_data.py, portal_data.py, data.js (snapshot); see frontend/README.md
 presentation/     final slides
 scripts/          run_ci.py (every CI check), database setup and reset, export_load_sql.py, the tests
 ```
@@ -210,6 +212,11 @@ make pipeline    run the whole pipeline on the data in data/ (one run_id; FROM=s
 make reports     build the Phase 2 reports from the loaded warehouse (after make rebuild or make pipeline):
                  docs/reports/LUE_Data_Cleaning_Report.pdf and LUE_Data_Quality_Report.pdf (every number read, none
                  typed); E9 tests: python scripts/test_reports.py (11 PASS lines)
+make frontend-live  serve the owner portal reading the warehouse live (after make db-deploy)
+make portal-sql  regenerate sql/50_reporting/02_owner_portal.sql from analytical.sql
+make frontend    serve the owner portal at http://127.0.0.1:8080 (no database); PORT=9000 to change the port
+make frontend-test  portal data against the dashboard's recorded values, no database (python scripts/test_frontend.py, 20 PASS lines)
+make frontend-data  rebuild frontend/data.js (needs data/ from make generate and the evidence files)
 make marts       refresh the four reporting marts (the pipeline's last stage; alone: python etl/reporting.py, US-10.2)
 make reporting-test  E10 acceptance tests: 18 PASS lines; views and marts against the facts, aliases, lue_reader's
                  access and its denials (python scripts/test_reporting.py; needs a loaded warehouse, changes nothing)

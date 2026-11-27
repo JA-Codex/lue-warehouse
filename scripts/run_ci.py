@@ -24,11 +24,12 @@ GROUPS: dict[str, list[list[str]]] = {
     "lint": [[PY, "-m", "ruff", "check", "etl", "scripts"]],
     "sqlcheck": [[PY, "scripts/ci_checks.py", "--sql"]],
     "manifest": [[PY, "scripts/ci_checks.py", "--manifest"]],
-    "contract": [[PY, "scripts/check_contract.py"], [PY, "scripts/export_load_sql.py", "--check"]],
+    "contract": [[PY, "scripts/check_contract.py"], [PY, "scripts/export_load_sql.py", "--check"],
+                 [PY, "scripts/export_portal_sql.py", "--check"]],
     "gen-test": [[PY, f"scripts/{name}.py"] for name in (
         "test_generator", "test_master_data", "test_leases", "test_payments", "test_tickets", "test_weather",
         "test_defects", "test_ingest_contract", "test_quality_contract", "test_staging_contract",
-        "test_dim_load_contract", "test_fact_load_contract", "test_pipeline_contract", "test_submission_contract", "test_reporting_contract", "test_analytics_contract", "test_benchmark_contract", "test_powerbi_contract")],
+        "test_dim_load_contract", "test_fact_load_contract", "test_pipeline_contract", "test_submission_contract", "test_reporting_contract", "test_analytics_contract", "test_benchmark_contract", "test_powerbi_contract", "test_frontend")],
 }  # fmt: skip
 
 
